@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: genz
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: channangan
+    password: root@123
+
+  jpa:
+    database: POSTGRESQL
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
