@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class LoginRequest {
 
-    @NotBlank
+    @NotBlank(message = "The Phone Number id required")
     private String phoneNumber;
 
     @NotBlank
