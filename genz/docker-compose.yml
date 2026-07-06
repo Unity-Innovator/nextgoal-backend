@@ -1,37 +1,20 @@
 services:
-  db:
+  postgres:
     image: postgres:17
-    container_name: savemate-db
-    restart: unless-stopped
+    container_name: postgres-db
+
+    restart: always
+
     environment:
-      POSTGRES_DB: savemate
-      POSTGRES_USER: channangan
-      POSTGRES_PASSWORD: root@123
+      POSTGRES_DB: mydb
+      POSTGRES_USER: Chea Teng
+      POSTGRES_PASSWORD: teng1234
+
     ports:
       - "5432:5432"
-    volumes:
-      - savemate-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U channangan -d savemate"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: savemate-backend
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/savemate
-      SPRING_DATASOURCE_USERNAME: channangan
-      SPRING_DATASOURCE_PASSWORD: root@123
-    ports:
-      - "8080:8080"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
-  savemate-db-data:
+  postgres-data:
