@@ -1,4 +1,7 @@
 package com.example.genz.common.exception;
 
-public class ResourceNotFoundExceptionj {
+public class ResourceNoteFoundException extends RuntimeException{
+    public ResourceNoteFoundException(String message){
+        super(message);
+    }
 }
