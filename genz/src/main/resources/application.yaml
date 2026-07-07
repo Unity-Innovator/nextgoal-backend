@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5432/mydb
-    username: Chea Teng
-    password: teng1234
+    username: postgres
+    password: postgres
 
   jpa:
     database: POSTGRESQL
@@ -19,3 +19,9 @@ spring:
 jwt:
   secret: 52656d656d62657220746f206d616b6520737572652074686973206973206174206c65617374203235362062697473206c6f6e67
   expiration: 86400000
+
+otp:
+  expiration-minutes: 5
+  max-attempts: 5
+  resend-cooldown-seconds: 60
+  length: 6
