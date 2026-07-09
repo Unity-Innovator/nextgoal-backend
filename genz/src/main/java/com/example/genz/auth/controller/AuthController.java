@@ -1,9 +1,6 @@
 package com.example.genz.auth.controller;
 
-import com.example.genz.auth.dto.LoginRequest;
-import com.example.genz.auth.dto.LoginResponse;
-import com.example.genz.auth.dto.SendOtpRequest;
-import com.example.genz.auth.dto.VerifyOtpRequest;
+import com.example.genz.auth.dto.*;
 import com.example.genz.auth.service.AuthService;
 import com.example.genz.auth.service.OtpService;
 import com.example.genz.common.exception.ApiResponse;
@@ -27,6 +24,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(new ApiResponse<>("success", authService.login(request)));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>("success", authService.register(request)));
     }
 
     @PostMapping("/send-otp")

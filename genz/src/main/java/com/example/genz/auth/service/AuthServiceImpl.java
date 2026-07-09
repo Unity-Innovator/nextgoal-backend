@@ -1,9 +1,7 @@
 package com.example.genz.auth.service;
 
-import com.example.genz.auth.dto.UserResponse;
+import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.User;
-import com.example.genz.auth.dto.LoginRequest;
-import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +14,9 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -50,5 +48,51 @@ public class AuthServiceImpl implements AuthService {
                 .expiresIn(900L)
                 .user(userResponse)
                 .build();
+    }
+
+    @Override
+    public RegisterResponse register(RegisterRequest request) {
+
+        final String fullName = request.getFirstName() + " " + request.getLastName();
+
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Passwords do not match");
+        }
+
+        if (userRepository.existsByPhoneNumber(request.getPhoneNumber())){
+            throw new RuntimeException("Phone number already exists");
+        }
+
+        User user = User.builder()
+                .fullName(fullName)
+                .phoneNumber(request.getPhoneNumber())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .pinHash(passwordEncoder.encode(request.getPin()))
+                .gender(request.getGender())
+                .dateOfBirth(request.getDateOfBirth())
+                .status("ACTIVE")
+                .build();
+
+        user =  userRepository.save(user);
+
+        String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
+
+        UserResponse userResponse = new UserResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getPhoneNumber(),
+                user.getGender(),
+                user.getDateOfBirth(),
+                user.getStatus()
+        );
+
+        return new RegisterResponse(
+                accessToken,
+                refreshToken,
+                "Bearer",
+                900L,
+                userResponse
+        );
     }
 }
