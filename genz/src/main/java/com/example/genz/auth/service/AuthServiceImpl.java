@@ -2,6 +2,7 @@ package com.example.genz.auth.service;
 
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.User;
+import com.example.genz.common.exception.EmailAlreadyExistException;
 import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())){
-            throw new RuntimeException("Phone number already exists");
+            throw new EmailAlreadyExistException("Email already exist");
         }
 
         User user = User.builder()
@@ -75,8 +76,12 @@ public class AuthServiceImpl implements AuthService {
 
         user =  userRepository.save(user);
 
-        String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
+        /*
+        // todo: set a default wallet when the user account has been register
+        */
+
+        final String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
+        final String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
 
         UserResponse userResponse = new UserResponse(
                 user.getId(),

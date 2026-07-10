@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextgoal-backend
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: nextgoal-backend
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512GI"
+              cpu: "500m"

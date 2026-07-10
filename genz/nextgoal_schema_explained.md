@@ -1,4 +1,4 @@
-# SaveMate Database Schema — Full Explanation
+# Next goal Database Schema — Full Explanation
 
 This document explains every table and column in the SaveMate ERD, organized by feature area. For each table: **what it's for**, **why it exists as its own table**, and **what each column does**.
 

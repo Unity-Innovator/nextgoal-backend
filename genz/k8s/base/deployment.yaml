@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nextgoal-backend
+  labels:
+    app: nextgoal-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nextgoal-backend
+  template:
+    metadata:
+      labels:
+        app: nextgoal-backend
+    spec:
+      containers:
+        - name: nextgoal-backend
+          image: genz-backend:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: nextgoal-config
+            - secretRef:
+                name: nextgoal-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
