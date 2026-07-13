@@ -3,12 +3,12 @@ package com.example.genz.security.config;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.enums.Gender;
 import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.qr.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -18,6 +18,7 @@ public class DataSeeder {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletRepository walletRepository;
 
     @Bean
     CommandLineRunner seedDatabase() {

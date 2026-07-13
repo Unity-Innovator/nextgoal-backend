@@ -1,6 +1,7 @@
 package com.example.genz.auth.entity;
 
 import com.example.genz.auth.enums.Gender;
+import com.example.genz.qr.entity.Wallet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -55,7 +56,11 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @OneToMany(mappedBy = "users")
+    private List<Wallet> wallets;
+
     @PrePersist
+
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
