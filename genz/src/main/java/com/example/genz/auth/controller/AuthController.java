@@ -3,7 +3,7 @@ package com.example.genz.auth.controller;
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.service.AuthService;
 import com.example.genz.auth.service.OtpService;
-import com.example.genz.common.exception.ApiResponse;
+import com.example.genz.exception.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

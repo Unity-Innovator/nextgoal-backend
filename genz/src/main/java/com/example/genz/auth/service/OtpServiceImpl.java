@@ -9,7 +9,7 @@ import com.example.genz.auth.entity.Otp;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.repository.OtpRepository;
 import com.example.genz.auth.repository.UserRepository;
-import com.example.genz.common.exception.OtpException;
+import com.example.genz.exception.OtpException;
 import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -91,7 +91,7 @@ public class OtpServiceImpl implements OtpService {
         otpRepository.save(otpEntity);
 
         User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElseGet(() -> createNewUser(phoneNumber));
+                .orElseThrow(() -> new OtpException("No account found. Please register first."));
 
         String accessToken = jwtUtil.generateAccessToken(phoneNumber);
         String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
@@ -160,12 +160,4 @@ public class OtpServiceImpl implements OtpService {
         System.out.println("========================================");
     }
 
-    private User createNewUser(String phoneNumber) {
-        User user = User.builder()
-                .fullName("User")
-                .phoneNumber(phoneNumber)
-                .status("ACTIVE")
-                .build();
-        return userRepository.save(user);
-    }
 }

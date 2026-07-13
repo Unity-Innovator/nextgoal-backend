@@ -2,7 +2,10 @@ package com.example.genz.auth.service;
 
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.User;
-import com.example.genz.common.exception.EmailAlreadyExistException;
+import com.example.genz.exception.EmailAlreadyExistException;
+import com.example.genz.qr.entity.Wallet;
+import com.example.genz.qr.enums.Currency;
+import com.example.genz.qr.repository.WalletRepository;
 import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,11 +13,16 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
@@ -52,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
         final String fullName = request.getFirstName() + " " + request.getLastName();
@@ -75,10 +84,24 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         user =  userRepository.save(user);
+        System.out.println("User saved");
 
-        /*
-        // todo: set a default wallet when the user account has been register
-        */
+        List<Wallet> defaultWallets = List.of(
+                Wallet.builder()
+                        .users(user)
+                        .balance(BigDecimal.ZERO)
+                        .accountNumber("USD-" + user.getPhoneNumber())
+                        .currency(Currency.USD)
+                        .build(),
+                Wallet.builder()
+                        .users(user)
+                        .balance(BigDecimal.ZERO)
+                        .accountNumber("KHR-" + user.getPhoneNumber())
+                        .currency(Currency.KHR)
+                        .build()
+        );
+
+        walletRepository.saveAll(defaultWallets);
 
         final String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
         final String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
