@@ -21,6 +21,10 @@ management:
     health:
       probes:
         enabled: true
+    web:
+      exposure:
+        include: "health,info"
+
   health:
     readiness-state:
       enabled: true

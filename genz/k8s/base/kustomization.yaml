@@ -7,3 +7,4 @@ resources:
   - secret.yaml
   - ingress.yaml
   - postgres.yaml
+  - backendconfig.yaml

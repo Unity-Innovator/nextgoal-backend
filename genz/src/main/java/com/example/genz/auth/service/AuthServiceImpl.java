@@ -48,6 +48,9 @@ public class AuthServiceImpl implements AuthService {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
+                .gender(user.getGender())
+                .dateOfBirth(user.getDateOfBirth())
+                .status(user.getStatus())
                 .build();
 
         return LoginResponse.builder()
@@ -70,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())){
-            throw new EmailAlreadyExistException("Email already exist");
+            throw new RuntimeException("Phone number already exists");
         }
 
         User user = User.builder()
