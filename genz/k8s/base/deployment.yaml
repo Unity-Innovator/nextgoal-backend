@@ -24,22 +24,38 @@ spec:
                 name: nextgoal-config
             - secretRef:
                 name: nextgoal-secret
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xms256m -Xmx768m -XX:MaxRAMPercentage=70"
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "250m"
             limits:
-              memory: "512Gi"
+              memory: "1Gi"
               cpu: "500m"
+
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 12
+
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 80
             periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
+
           livenessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3 

@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nextgoal-backend
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "nextgoal-backend-config"}'
 spec:
   selector:
     app: nextgoal-backend
