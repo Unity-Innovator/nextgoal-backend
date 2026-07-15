@@ -129,8 +129,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Boolean chekcUser(String phoneNumber) {
+    public Boolean checkUser(String phoneNumber) {
         User user=userRepository.findByPhoneNumber(phoneNumber).orElseThrow(()->new ResourceNoteFoundException("User not found"));
-        return user !=null==true;
+        return user !=null;
     }
 }

@@ -43,6 +43,6 @@ public class AuthController {
 
     @GetMapping("/check")
     public ResponseEntity<ApiResponse<Boolean>> checkUser(@RequestParam String phoneNumber){
-        return ResponseEntity.ok(new ApiResponse<>("Success",authService.chekcUser(phoneNumber)));
+        return ResponseEntity.ok(new ApiResponse<>("Success",authService.checkUser(phoneNumber)));
     }
 }

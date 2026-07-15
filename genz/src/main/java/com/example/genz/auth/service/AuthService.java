@@ -9,9 +9,11 @@ import com.example.genz.auth.dto.RegisterResponse;
 
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface AuthService {
     LoginResponse login(LoginRequest user);
     RegisterResponse register(@Valid @RequestBody RegisterRequest request);
+    Boolean checkUser(@RequestParam String phoneNumber);
 }
 
