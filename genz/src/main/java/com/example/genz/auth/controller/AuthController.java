@@ -7,10 +7,8 @@ import com.example.genz.exception.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Repository;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -41,5 +39,10 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         LoginResponse response = otpService.verifyOtp(request);
         return ResponseEntity.ok(new ApiResponse<>("OTP verified successfully", response));
+    }
+
+    @GetMapping("/check")
+    public ResponseEntity<ApiResponse<Boolean>> checkUser(@RequestParam String phoneNumber){
+        return ResponseEntity.ok(new ApiResponse<>("Success",authService.chekcUser(phoneNumber)));
     }
 }

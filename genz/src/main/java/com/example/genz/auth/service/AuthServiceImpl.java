@@ -3,6 +3,7 @@ package com.example.genz.auth.service;
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.User;
 import com.example.genz.exception.EmailAlreadyExistException;
+import com.example.genz.exception.ResourceNoteFoundException;
 import com.example.genz.qr.entity.Wallet;
 import com.example.genz.qr.enums.Currency;
 import com.example.genz.qr.repository.WalletRepository;
@@ -122,5 +123,11 @@ public class AuthServiceImpl implements AuthService {
                 900L,
                 userResponse
         );
+    }
+
+    @Override
+    public Boolean chekcUser(String phoneNumber) {
+        User user=userRepository.findByPhoneNumber(phoneNumber).orElseThrow(()->new ResourceNoteFoundException("User not found"));
+        return user !=null==true;
     }
 }
