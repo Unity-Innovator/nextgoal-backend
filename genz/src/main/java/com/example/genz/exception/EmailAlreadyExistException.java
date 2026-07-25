@@ -1,4 +1,4 @@
-package com.example.genz.exception;
+package com.example.genz.Exception;
 
 public class EmailAlreadyExistException extends RuntimeException{
     public EmailAlreadyExistException(String message){
