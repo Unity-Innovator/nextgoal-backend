@@ -1,6 +1,6 @@
 package com.example.genz.security.user;
 
-import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.Repository.AuthRepository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

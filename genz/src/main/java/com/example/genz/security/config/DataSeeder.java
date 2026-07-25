@@ -1,9 +1,9 @@
 package com.example.genz.security.config;
 
-import com.example.genz.auth.entity.User;
-import com.example.genz.auth.enums.Gender;
-import com.example.genz.auth.repository.UserRepository;
-import com.example.genz.qr.repository.WalletRepository;
+import com.example.genz.Entity.OTP.User;
+import com.example.genz.Enums.Gender;
+import com.example.genz.Repository.AuthRepository.UserRepository;
+import com.example.genz.Repository.QrCodeRepository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package com.example.genz.exception;
+package com.example.genz.Exception;
 
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;

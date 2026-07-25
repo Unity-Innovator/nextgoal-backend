@@ -1,4 +1,4 @@
-package com.example.genz.exception;
+package com.example.genz.Exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
