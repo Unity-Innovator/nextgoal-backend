@@ -1,6 +1,6 @@
 package com.example.genz.Entity.Transaction;
 
-import com.example.genz.Entity.QrCode.Wallet;
+import com.example.genz.Entity.Wallet.Wallet;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package com.example.genz.Repository.QrCodeRepository;
 
-import com.example.genz.Entity.QrCode.GoalWallet;
+import com.example.genz.Entity.Wallet.GoalWallet;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

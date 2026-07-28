@@ -1,9 +1,9 @@
 package com.example.genz.Repository.QrCodeRepository;
 
-import com.example.genz.Entity.QrCode.Wallet;
+import com.example.genz.Entity.Wallet.Wallet;
 import com.example.genz.Enums.Currency;
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.example.genz.Entity.OTP.User;
+import com.example.genz.Entity.Auth.User;
 
 import java.util.Optional;
 import java.util.UUID;

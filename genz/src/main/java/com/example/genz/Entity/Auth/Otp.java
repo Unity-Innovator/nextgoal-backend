@@ -1,4 +1,4 @@
-package com.example.genz.Entity.OTP;
+package com.example.genz.Entity.Auth;
 
 import jakarta.persistence.*;
 import lombok.*;
