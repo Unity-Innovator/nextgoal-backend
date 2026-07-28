@@ -1,9 +1,9 @@
 package com.example.genz.Service.AuthService;
 
 import com.example.genz.DTO.AuthDTO.*;
-import com.example.genz.Entity.OTP.User;
+import com.example.genz.Entity.Auth.User;
 import com.example.genz.Exception.ResourceNoteFoundException;
-import com.example.genz.Entity.QrCode.Wallet;
+import com.example.genz.Entity.Wallet.Wallet;
 import com.example.genz.Enums.Currency;
 import com.example.genz.Repository.QrCodeRepository.WalletRepository;
 import com.example.genz.security.jwt.JwtUtil;

@@ -1,5 +1,5 @@
-package com.example.genz.Entity.QrCode;
-import com.example.genz.Entity.OTP.User;
+package com.example.genz.Entity.Wallet;
+import com.example.genz.Entity.Auth.User;
 import com.example.genz.Enums.Currency;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

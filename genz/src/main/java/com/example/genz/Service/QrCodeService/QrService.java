@@ -1,12 +1,12 @@
 package com.example.genz.Service.QrCodeService;
 
-import com.example.genz.Entity.OTP.User;
+import com.example.genz.Entity.Auth.User;
 import com.example.genz.Repository.AuthRepository.UserRepository;
 import com.example.genz.Exception.ResourceNoteFoundException;
 import com.example.genz.DTO.QrCodeDTO.GoalWalletRequest;
 import com.example.genz.DTO.QrCodeDTO.WalletRequest;
-import com.example.genz.Entity.QrCode.GoalWallet;
-import com.example.genz.Entity.QrCode.Wallet;
+import com.example.genz.Entity.Wallet.GoalWallet;
+import com.example.genz.Entity.Wallet.Wallet;
 import com.example.genz.Enums.Currency;
 import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
 import com.example.genz.Repository.QrCodeRepository.WalletRepository;

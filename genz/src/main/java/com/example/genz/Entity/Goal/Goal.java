@@ -1,4 +1,4 @@
-package com.example.genz.goal.entity;
+package com.example.genz.Entity.Goal;
 
 import com.example.genz.Enums.Currency;
 import com.example.genz.Enums.GoalStatus;
@@ -17,6 +17,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -69,4 +70,13 @@ public class Goal {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GoalContribution> contributions;
+
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GoalMember> members;
+
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WithdrawalRequest> withdrawalRequests;
 }

@@ -4,8 +4,8 @@ This document explains every table and column in the SaveMate ERD, organized by 
 
 ---
 
-## 1. Users & Authentication
-
+## 1. Users & Authentication 
+//done
 ### `USERS`
 The core identity table — every other table ultimately traces back to a user.
 
@@ -28,7 +28,7 @@ The core identity table — every other table ultimately traces back to a user.
 **Why OTP fields live directly on `USERS`** rather than a separate `otp_codes` table: a user only ever has one *active* OTP at a time, so there's no need for a history table unless you want to audit past OTP attempts — in which case you'd add an `OTP_LOGS` table later.
 
 ---
-
+done
 ### `USER_SETTINGS`
 A 1:1 extension of `USERS` holding preferences and toggles, kept separate so the core `USERS` table (security-sensitive) stays lean.
 
@@ -56,70 +56,7 @@ A 1:1 extension of `USERS` holding preferences and toggles, kept separate so the
 **Why separate from `USERS`**: settings change frequently and have no security implications, whereas `USERS` holds credentials — separating them means you can cache/read settings without touching sensitive auth data, and evolve settings independently as you add features.
 
 ---
-
-## 2. Bill Splitting
-
-### `BILLS`
-Represents a shared expense someone wants to split with others (e.g. a dinner, a taxi, a utility bill).
-
-| Column | Purpose |
-|---|---|
-| `id` | Unique bill identifier. |
-| `creator_id` | The user who created/paid the bill originally. |
-| `name` | Description (e.g. "Dinner at Lucky Burger"). |
-| `total_amount` | The full bill amount before splitting. |
-| `currency` | KHR or USD. |
-| `category` | e.g. Food, Transport, Utilities — used for spending insights/analytics. |
-| `receipt_url` | Optional photo of the receipt for reference. |
-| `status` | `OPEN`, `SETTLED`, `CANCELLED`. |
-| `bill_date` | When the expense actually occurred (may differ from `created_at`). |
-
-### `BILL_PARTICIPANTS`
-Each row = one person's share of a bill.
-
-| Column | Purpose |
-|---|---|
-| `bill_id` | Which bill this share belongs to. |
-| `user_id` | Who owes this share. |
-| `amount_owed` | Their portion of the total. |
-| `split_type` | `EQUAL`, `PERCENTAGE`, `CUSTOM` — how the split was calculated. |
-| `is_paid` | Whether this participant has settled their share. |
-| `paid_at` | When they paid. |
-
-**Why separate from `BILLS`**: a bill has many participants (one-to-many), so this junction table lets any number of people be linked to one bill, each with their own owed amount and payment status.
-
-### `SETTLEMENTS`
-Tracks the actual money movement to resolve a bill share — separate from `BILL_PARTICIPANTS` because a settlement is a *transaction event*, while a participant row is just a *record of who owes what*.
-
-| Column | Purpose |
-|---|---|
-| `bill_id` | Which bill this settlement resolves. |
-| `payer_id` | Who is paying. |
-| `receiver_id` | Who is receiving (usually the original bill creator). |
-| `amount` | How much was paid. |
-| `currency` | KHR or USD. |
-| `status` | `PENDING`, `COMPLETED`, `FAILED`. |
-| `settled_at` | When the payment cleared. |
-
----
-
-## 3. Personal Savings Goals
-
-### `SAVING_GOALS`
-A user's individual savings target (e.g. "New Phone — 500,000 KHR by December").
-
-| Column | Purpose |
-|---|---|
-| `user_id` | Goal owner. |
-| `name` | Goal title. |
-| `target_amount` | The amount they're saving toward. |
-| `current_amount` | Running total saved so far — denormalized (kept in sync via `SAVING_CONTRIBUTIONS`) to avoid summing contributions on every read. |
-| `currency` | KHR or USD. |
-| `category` | e.g. Electronics, Travel, Emergency Fund. |
-| `icon` | Visual icon for the goal card in the UI. |
-| `deadline` | Target completion date. |
-| `status` | `ACTIVE`, `COMPLETED`, `ABANDONED`. |
-
+done
 ### `SAVING_CONTRIBUTIONS`
 Each individual deposit toward a goal.
 
@@ -132,7 +69,7 @@ Each individual deposit toward a goal.
 | `contributed_at` | When the deposit happened. |
 
 **Why a separate table instead of just updating `current_amount` directly**: keeping every contribution as its own row gives you a full history/timeline (useful for charts, streaks, and the "share your success" community posts), not just a final number.
-
+done
 ### `SAVING_MILESTONES`
 Checkpoints within a goal (e.g. 25%, 50%, 75%, 100%) that can trigger rewards.
 
@@ -149,7 +86,7 @@ Checkpoints within a goal (e.g. 25%, 50%, 75%, 100%) that can trigger rewards.
 ---
 
 ## 4. Gamification & Rewards
-
+done
 ### `REWARDS`
 The catalog of things a user can earn (badges, points, perks) — this is reference/lookup data, not tied to any one user.
 
@@ -161,7 +98,7 @@ The catalog of things a user can earn (badges, points, perks) — this is refere
 | `description` | What the reward is and how it was earned. |
 | `points_value` | Points awarded, if applicable. |
 | `is_active` | Whether this reward is currently obtainable (lets you retire old rewards without deleting history). |
-
+done
 ### `USER_REWARDS`
 Tracks which rewards a specific user has actually earned — the junction between `USERS` and `REWARDS`.
 
@@ -177,7 +114,7 @@ Tracks which rewards a specific user has actually earned — the junction betwee
 ---
 
 ## 5. Financial Literacy Lessons
-
+done
 ### `LESSONS`
 The catalog of educational content (e.g. "Budgeting 101", "Understanding Interest Rates").
 
@@ -190,7 +127,7 @@ The catalog of educational content (e.g. "Budgeting 101", "Understanding Interes
 | `estimated_minutes` | Expected time to complete. |
 | `points_reward` | Points earned on completion. |
 | `is_active` | Whether the lesson is currently published. |
-
+done
 ### `LESSON_QUESTIONS`
 Quiz questions attached to a lesson, used to test comprehension.
 
@@ -201,7 +138,7 @@ Quiz questions attached to a lesson, used to test comprehension.
 | `option_a` – `option_d` | Multiple choice answers. |
 | `correct_answer` | Which option is correct. |
 | `order_index` | Display order within the lesson's quiz. |
-
+done
 ### `USER_LESSONS`
 Tracks an individual user's progress through a specific lesson — the junction between `USERS` and `LESSONS`.
 
@@ -230,7 +167,7 @@ Stores the conversation history between a user and the in-app AI financial assis
 | `created_at` | Message timestamp, used to reconstruct conversation order. |
 
 ---
-
+done
 ## 7. Community & Social Feed
 
 ### `POSTS`
@@ -241,7 +178,6 @@ The core feed table — users sharing experiences, goal successes, or life updat
 | `user_id` | Who posted. |
 | `post_type` | `EXPERIENCE`, `GOAL_SUCCESS`, `LIFE_UPDATE`, `TIP`, `MILESTONE` — one table serves multiple content types instead of needing separate tables per type. |
 | `content` | The post text. |
-| `image_url` | Optional attached photo. |
 | `goal_id` | If this post celebrates a personal savings goal, links back to it (nullable). |
 | `group_id` | If this post celebrates a group savings goal, links back to it (nullable). |
 | `visibility` | `PUBLIC`, `FRIENDS_ONLY`, `PRIVATE`. |
@@ -249,7 +185,7 @@ The core feed table — users sharing experiences, goal successes, or life updat
 | `status` | `ACTIVE`, `HIDDEN`, `DELETED`, `FLAGGED` — soft-moderation states. |
 | `like_count` | Denormalized count for fast feed rendering (avoids a `COUNT()` join on every load). |
 | `comment_count` | Same reasoning as `like_count`. |
-
+done
 ### `POST_LIKES`
 Junction table tracking who liked which post.
 
@@ -258,7 +194,7 @@ Junction table tracking who liked which post.
 | `post_id` | Which post was liked. |
 | `user_id` | Who liked it. |
 | Unique constraint on `(post_id, user_id)` | Prevents the same user liking a post twice. |
-
+done
 ### `POST_COMMENTS`
 Comments on posts, with support for threaded replies.
 
@@ -269,7 +205,7 @@ Comments on posts, with support for threaded replies.
 | `parent_comment_id` | If this is a reply to another comment (nullable, self-referencing FK) — enables threaded discussions. |
 | `content` | The comment text. |
 | `status` | `ACTIVE`, `HIDDEN`, `DELETED`. |
-
+done
 ### `USER_FOLLOWS`
 Lets users follow each other, so the feed can show followed users' posts rather than everything public.
 
@@ -278,7 +214,7 @@ Lets users follow each other, so the feed can show followed users' posts rather 
 | `follower_id` | The user doing the following. |
 | `following_id` | The user being followed. |
 | Unique constraint on `(follower_id, following_id)` | Prevents duplicate follows; a `CHECK` prevents following yourself. |
-
+done
 ### `POST_REPORTS`
 Moderation — lets users flag inappropriate content.
 
@@ -291,9 +227,7 @@ Moderation — lets users flag inappropriate content.
 | `status` | `PENDING`, `REVIEWED`, `DISMISSED` — moderation workflow state. |
 
 ---
-
-## 8. Group Savings
-
+done
 ### `SAVING_GROUPS`
 A shared savings pool multiple users contribute to (e.g. roommates saving for a trip, a family goal).
 
@@ -310,6 +244,7 @@ A shared savings pool multiple users contribute to (e.g. roommates saving for a 
 
 **Why not just reuse `SAVING_GOALS` with a `group_id`?** A group needs membership, roles, and multi-party permissions — concerns a personal goal never has. Keeping them separate avoids a pile of nullable "only applies if it's a group" columns on `SAVING_GOALS`, and lets group-specific features (like withdrawal approvals) attach cleanly.
 
+done
 ### `GROUP_MEMBERS`
 Junction table tracking who belongs to which group and their role.
 
@@ -320,7 +255,7 @@ Junction table tracking who belongs to which group and their role.
 | `role` | `ADMIN` or `MEMBER` — determines permissions (e.g. only admins might approve withdrawals). |
 | `status` | `ACTIVE`, `LEFT`, `REMOVED`. |
 | `joined_at` | When they joined. |
-
+done
 ### `GROUP_CONTRIBUTIONS`
 Each individual deposit into a group's shared goal — mirrors `SAVING_CONTRIBUTIONS` but scoped to groups.
 
@@ -331,7 +266,7 @@ Each individual deposit into a group's shared goal — mirrors `SAVING_CONTRIBUT
 | `amount` / `currency` | How much, in what currency. |
 | `note` | Optional memo. |
 | `contributed_at` | Timestamp. |
-
+done
 ### `GROUP_INVITATIONS`
 Tracks pending invites to join a group before someone actually accepts.
 
@@ -343,20 +278,8 @@ Tracks pending invites to join a group before someone actually accepts.
 | `status` | `PENDING`, `ACCEPTED`, `DECLINED`, `EXPIRED`. |
 | `qr_code_data` / `qr_image_url` | Optional QR version of the invite, so joining can happen via scan instead of typing a code. |
 | `expires_at` | Invite expiry, so stale invites can't be used indefinitely. |
-
+done
 ---
-
-## 9. Wallets & Payments
-
-### `WALLETS`
-Every user's in-app money balance — the personal ledger's "current state" snapshot.
-
-| Column | Purpose |
-|---|---|
-| `user_id` | Whose wallet this is (1:1). |
-| `balance_khr` / `balance_usd` | Two separate balances instead of one, since SaveMate supports dual currency natively. |
-| `status` | `ACTIVE`, `FROZEN`, `CLOSED` — lets you disable a wallet (e.g. fraud hold) without deleting financial history. |
-
 ### `PAYMENT_METHODS`
 External bank accounts/cards linked for moving real money in and out of the app.
 
@@ -369,26 +292,11 @@ External bank accounts/cards linked for moving real money in and out of the app.
 | `is_default` | Which method is used automatically for top-ups. |
 | `status` | `ACTIVE`, `INACTIVE`, `VERIFICATION_PENDING`. |
 
-### `WALLET_TRANSACTIONS`
-The single source of truth for every movement of money in a user's wallet — the actual ledger.
-
-| Column | Purpose |
-|---|---|
-| `wallet_id` | Whose wallet this transaction affects. |
-| `payment_method_id` | Which external account was used (only populated for top-ups/withdrawals; null for internal transactions). |
-| `transaction_type` | `TOP_UP`, `WITHDRAWAL`, `BILL_PAYMENT`, `SETTLEMENT`, `SAVING_CONTRIBUTION`, `GROUP_CONTRIBUTION`, `REFUND`. |
-| `amount` / `currency` | How much moved, in what currency. |
-| `balance_before` / `balance_after` | Snapshot of the wallet balance immediately before/after — critical for auditing and catching bugs, since you can reconstruct exact history rather than trusting only the current balance. |
-| `reference_type` / `reference_id` | A polymorphic pointer back to whatever triggered this transaction (a `BILL`, `SETTLEMENT`, `SAVING_GOAL`, or `SAVING_GROUP`) — avoids needing four separate nullable FK columns. |
-| `status` | `PENDING`, `COMPLETED`, `FAILED`, `REVERSED`. |
-| `description` | Human-readable label shown in transaction history. |
-
-**Why this table matters most**: in a financial app, every balance change must be traceable and auditable. Rather than just updating `WALLETS.balance_khr` directly, every change is first recorded here — the wallet's current balance is really just a cached sum of this ledger.
 
 ---
 
 ## 10. Group Wallets
-
+done
 ### `GROUP_WALLETS`
 Same concept as `WALLETS`, but for a group's pooled money — kept separate because group funds need different rules (multiple contributors, approval-gated withdrawals).
 
@@ -397,7 +305,7 @@ Same concept as `WALLETS`, but for a group's pooled money — kept separate beca
 | `group_id` | Which group this wallet belongs to (1:1). |
 | `balance_khr` / `balance_usd` | Same dual-currency pattern as personal wallets. |
 | `status` | `ACTIVE`, `FROZEN`, `CLOSED`. |
-
+done
 ### `GROUP_WALLET_TRANSACTIONS`
 Ledger for the group's shared pool — mirrors `WALLET_TRANSACTIONS`.
 
@@ -410,7 +318,7 @@ Ledger for the group's shared pool — mirrors `WALLET_TRANSACTIONS`.
 | `amount` / `currency` | Transaction details. |
 | `balance_before` / `balance_after` | Same auditability reasoning as personal wallet transactions. |
 | `status` | `PENDING`, `COMPLETED`, `FAILED`, `REVERSED`. |
-
+done
 ### `GROUP_WITHDRAWAL_REQUESTS`
 Since group money belongs to multiple people, a withdrawal isn't a unilateral action — it starts as a *request* that needs approval.
 
@@ -424,7 +332,7 @@ Since group money belongs to multiple people, a withdrawal isn't a unilateral ac
 | `approvals_required` | How many "yes" votes are needed (e.g. majority of active members). |
 | `approvals_received` | Running count of approvals so far. |
 | `resolved_at` | When the request was finally approved/rejected. |
-
+done
 ### `GROUP_WITHDRAWAL_APPROVALS`
 Each individual member's vote on a withdrawal request.
 
@@ -440,7 +348,7 @@ Each individual member's vote on a withdrawal request.
 ---
 
 ## 11. QR Codes
-
+done
 ### `PAYMENT_QR_CODES`
 Generates scannable codes for receiving payments — works for both personal and group wallets via two mutually-exclusive nullable FKs.
 
@@ -457,16 +365,6 @@ Generates scannable codes for receiving payments — works for both personal and
 | `expires_at` | Nullable for `STATIC`, set for `DYNAMIC`. |
 | `used_at` | When the QR was successfully scanned and paid. |
 
-### `QR_SCAN_LOGS`
-Audit trail of every scan attempt — links back into the wallet transaction system.
-
-| Column | Purpose |
-|---|---|
-| `qr_code_id` | Which QR was scanned. |
-| `scanned_by` | Who scanned it. |
-| `result` | `SUCCESS`, `FAILED`, `EXPIRED`, `CANCELLED`. |
-| `transaction_id` | Points to the resulting row in `WALLET_TRANSACTIONS` or `GROUP_WALLET_TRANSACTIONS` (polymorphic, same pattern as `reference_id` elsewhere). |
-| `scanned_at` | Timestamp. |
 
 ---
 

@@ -1,6 +1,6 @@
 package com.example.genz.security.config;
 
-import com.example.genz.Entity.OTP.User;
+import com.example.genz.Entity.Auth.User;
 import com.example.genz.Enums.Gender;
 import com.example.genz.Repository.AuthRepository.UserRepository;
 import com.example.genz.Repository.QrCodeRepository.WalletRepository;
