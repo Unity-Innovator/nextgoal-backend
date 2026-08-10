@@ -1,7 +1,6 @@
 package com.example.genz.Entity.Auth;
 
 import com.example.genz.Entity.DailyChallenge.UserDailyChallenge;
-import com.example.genz.Entity.Goal.GoalContribution;
 import com.example.genz.Entity.Learning.UserAnswer;
 import com.example.genz.Entity.Learning.UserLesson;
 import com.example.genz.Entity.Reward.UserBadge;
@@ -9,9 +8,9 @@ import com.example.genz.Entity.Reward.UserReward;
 import com.example.genz.Entity.Reward.XpTransaction;
 import com.example.genz.Entity.Settings.UserSettings;
 import com.example.genz.Entity.Transaction.PaymentMethod;
-import com.example.genz.Entity.Wallet.GoalWallet;
+import com.example.genz.Entity.Transaction.WalletTransaction;
+import com.example.genz.Entity.Wallet.GrouplWallet;
 import com.example.genz.Enums.Gender;
-import com.example.genz.Entity.Wallet.Wallet;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -66,11 +65,8 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "users")
-    private List<Wallet> wallets;
-
-    @OneToMany(mappedBy = "users")
-    private List<GoalWallet> goalWallets;
+    @OneToMany(mappedBy = "user")
+    private List<GrouplWallet> goalWallets;
 
     @OneToOne(mappedBy = "user")
     private UserSettings settings;
@@ -95,6 +91,9 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaymentMethod> paymentMethods;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WalletTransaction> transactions;
 
     @PrePersist
 

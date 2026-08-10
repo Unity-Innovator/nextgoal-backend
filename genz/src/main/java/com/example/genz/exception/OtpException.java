@@ -1,4 +1,4 @@
-package com.example.genz.Exception;
+package com.example.genz.exception;
 
 public class OtpException extends RuntimeException {
     public OtpException(String message) {

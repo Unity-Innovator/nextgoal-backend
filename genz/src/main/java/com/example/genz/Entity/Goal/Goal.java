@@ -1,11 +1,12 @@
 package com.example.genz.Entity.Goal;
 
-import com.example.genz.Enums.Currency;
+import com.example.genz.Entity.Auth.User;
+import com.example.genz.Entity.Transaction.GoalContribution;
+import com.example.genz.Entity.Transaction.WithdrawalRequest;
+import com.example.genz.Enums.GoalCategory;
 import com.example.genz.Enums.GoalStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jdk.jfr.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,42 +35,45 @@ public class Goal {
     @Column(name = "goal_id", columnDefinition = "uuid", updatable = false, nullable = false)
     private UUID id;
 
-    @NotBlank
-    @Size(max = 100)
-    @Column(nullable = false)
-    private String name;
+    @Column(name = "goal_name", nullable = false, length = 100)
+    private String goalName;
 
-    @Size(max = 500)
-    private String description;
-
-    @NotNull
     @Column(name = "target_amount", nullable = false, precision = 19, scale = 4)
     private BigDecimal targetAmount;
 
-    @NotNull
     @Column(name = "current_amount", nullable = false, precision = 19, scale = 4)
-    private BigDecimal currentAmount;
+    private BigDecimal currentAmount = BigDecimal.ZERO;
 
-    @NotNull
+    @Column(name = "target_date", nullable = false)
+    private LocalDate targetDate;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Currency currency;
+    private GoalCategory category;
 
-    @NotNull
-    private LocalDate deadline;
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
-    @NotNull
+    @Column(name = "remain_balance")
+    private BigDecimal remaining;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private GoalStatus status;
+    private GoalStatus status = GoalStatus.ACTIVE;
 
-    @CreationTimestamp
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name="completed_at")
+    private LocalDateTime completedAt;
 
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GoalContribution> contributions;

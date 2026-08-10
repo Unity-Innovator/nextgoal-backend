@@ -3,7 +3,6 @@ package com.example.genz.security.config;
 import com.example.genz.Entity.Auth.User;
 import com.example.genz.Enums.Gender;
 import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.Repository.QrCodeRepository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +17,6 @@ public class DataSeeder {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final WalletRepository walletRepository;
 
     @Bean
     CommandLineRunner seedDatabase() {

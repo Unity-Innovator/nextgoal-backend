@@ -1,10 +1,7 @@
 package com.example.genz.Entity.Transaction;
 
-import com.example.genz.Entity.Auth.User;
 import com.example.genz.Entity.Goal.GoalMember;
-import com.example.genz.Entity.Goal.WithdrawalRequest;
-import com.example.genz.Entity.Wallet.GoalWallet;
-import com.example.genz.Entity.Wallet.Wallet;
+import com.example.genz.Entity.Wallet.GrouplWallet;
 import com.example.genz.Enums.Currency;
 import com.example.genz.Enums.GroupTransactionStatus;
 import com.example.genz.Enums.GroupTransactionType;
@@ -37,16 +34,12 @@ public class GroupWalletTransaction {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_wallet_id", nullable = false)
-    private GoalWallet groupWallet;
+    private GrouplWallet groupWallet;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "goal_member_id", nullable = false)
     private GoalMember goalMember;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_method_id")
-    private Wallet paymentMethod;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "withdrawal_request_id")
