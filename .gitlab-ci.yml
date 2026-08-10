@@ -57,11 +57,13 @@ deploy_ubuntu:
     - cd "$CI_PROJECT_DIR/genz"
     - >-
       docker compose
+      --project-name nextgoal
       --env-file /etc/default/nextgoal-env
       -f docker-compose.prod.yaml
       up -d --build backend
     - >-
       docker compose
+      --project-name nextgoal
       --env-file /etc/default/nextgoal-env
       -f docker-compose.prod.yaml
       ps
