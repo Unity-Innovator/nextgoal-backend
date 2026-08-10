@@ -7,9 +7,6 @@ variables:
   APP_DIR: genz
   MAVEN_USER_HOME: "$CI_PROJECT_DIR/.m2"
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
-  DOCKER_HOST: tcp://docker:2376
-  DOCKER_TLS_CERTDIR: "/certs"
-  DOCKER_DRIVER: overlay2
 
 cache:
   key:
@@ -37,6 +34,10 @@ test:
 build_image:
   stage: build
   image: docker:27.5.1-cli
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_DRIVER: overlay2
   services:
     - name: docker:27.5.1-dind
       alias: docker
