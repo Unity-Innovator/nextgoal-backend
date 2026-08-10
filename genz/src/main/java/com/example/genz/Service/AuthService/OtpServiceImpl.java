@@ -1,6 +1,7 @@
 package com.example.genz.Service.AuthService;
 
 import com.example.genz.config.OtpProperties;
+import com.example.genz.exception.OtpException;
 import com.example.genz.DTO.AuthDTO.LoginResponse;
 import com.example.genz.DTO.AuthDTO.SendOtpRequest;
 import com.example.genz.DTO.AuthDTO.UserResponse;
@@ -9,7 +10,6 @@ import com.example.genz.Entity.Auth.Otp;
 import com.example.genz.Entity.Auth.User;
 import com.example.genz.Repository.AuthRepository.OtpRepository;
 import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.Exception.OtpException;
 import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

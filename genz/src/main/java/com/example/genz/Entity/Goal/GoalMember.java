@@ -3,6 +3,7 @@ package com.example.genz.Entity.Goal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.example.genz.Entity.Transaction.GoalContribution;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 

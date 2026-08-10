@@ -2,6 +2,7 @@ package com.example.genz.Entity.Wallet;
 
 import com.example.genz.Entity.Auth.User;
 import com.example.genz.Entity.Goal.Goal;
+import com.example.genz.Enums.Currency;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,10 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
-import com.example.genz.Entity.Goal.WithdrawalRequest;
+import com.example.genz.Entity.Transaction.WithdrawalRequest;
 import com.example.genz.Entity.Transaction.GroupWalletTransaction;
 
 import java.math.BigDecimal;
@@ -26,8 +24,8 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "goal_wallets")
-public class GoalWallet {
+@Table(name = "group_wallets")
+public class GrouplWallet {
 
     @Id
     @GeneratedValue
@@ -38,15 +36,12 @@ public class GoalWallet {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
 
-    @Column(name = "goal_number", nullable = false, unique = true)
-    private Goal goal;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "creator_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "goal_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "goal_id", nullable = false, unique = true)
     private Goal goal;
 
     @CreationTimestamp
@@ -54,6 +49,10 @@ public class GoalWallet {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Currency currency;
 
     @OneToMany(mappedBy = "wallet", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WithdrawalRequest> withdrawalRequests;

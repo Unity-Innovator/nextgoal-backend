@@ -2,12 +2,10 @@ package com.example.genz.Service.AuthService;
 
 import com.example.genz.DTO.AuthDTO.*;
 import com.example.genz.Entity.Auth.User;
-import com.example.genz.Exception.ResourceNoteFoundException;
-import com.example.genz.Entity.Wallet.Wallet;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Repository.QrCodeRepository.WalletRepository;
 import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.Repository.AuthRepository.UserRepository;
+import com.example.genz.exception.ResourceNoteFoundException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,14 +13,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final WalletRepository walletRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
@@ -88,23 +84,6 @@ public class AuthServiceImpl implements AuthService {
 
         user =  userRepository.save(user);
         System.out.println("User saved");
-
-        List<Wallet> defaultWallets = List.of(
-                Wallet.builder()
-                        .users(user)
-                        .balance(BigDecimal.ZERO)
-                        .accountNumber("USD-" + user.getPhoneNumber())
-                        .currency(Currency.USD)
-                        .build(),
-                Wallet.builder()
-                        .users(user)
-                        .balance(BigDecimal.ZERO)
-                        .accountNumber("KHR-" + user.getPhoneNumber())
-                        .currency(Currency.KHR)
-                        .build()
-        );
-
-        walletRepository.saveAll(defaultWallets);
 
         final String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
         final String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());

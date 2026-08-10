@@ -2,11 +2,16 @@ spring:
   application:
     name: genz
 
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nextgoal}
+    username: ${SPRING_DATASOURCE_USERNAME:channangan}
+    password: ${SPRING_DATASOURCE_PASSWORD:root@123}
+
   jpa:
     database: POSTGRESQL
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
@@ -15,6 +20,11 @@ otp:
   max-attempts: 5
   resend-cooldown-seconds: 60
   length: 6
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-expiration: ${JWT_ACCESS_EXPIRATION:900000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 management:
   endpoint:
