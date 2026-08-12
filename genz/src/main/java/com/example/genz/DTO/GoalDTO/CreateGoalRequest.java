@@ -1,7 +1,9 @@
 package com.example.genz.DTO.GoalDTO;
 
+import com.example.genz.Enums.ContributionFrequency;
 import com.example.genz.Enums.Currency;
 import com.example.genz.Enums.GoalCategory;
+import com.example.genz.Enums.GoalType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -25,7 +27,6 @@ public class CreateGoalRequest {
     @DecimalMin(value = "0.01", message = "Target amount must be greater than zero")
     private BigDecimal targetAmount;
 
-    @NotNull(message = "Target date is required")
     @FutureOrPresent(message = "Target date cannot be in the past")
     private LocalDate targetDate;
 
@@ -34,6 +35,19 @@ public class CreateGoalRequest {
 
     @NotNull(message = "Currency is required")
     private Currency currency;
+
+    private GoalType goalType;
+
+    @DecimalMin(value = "0.01", message = "Contribution amount must be greater than zero")
+    private BigDecimal contributionAmount;
+
+    private ContributionFrequency frequency;
+
+    @FutureOrPresent(message = "Next contribution date cannot be in the past")
+    private LocalDate nextContributionDate;
+
+    @FutureOrPresent(message = "First due date cannot be in the past")
+    private LocalDate firstDueDate;
 
     private String imageUrl;
 }

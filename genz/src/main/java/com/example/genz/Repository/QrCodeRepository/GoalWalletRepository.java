@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface GoalWalletRepository extends JpaRepository<GrouplWallet, UUID> {
     Optional<GrouplWallet> findByUserIdAndGoalId(UUID userId, UUID goalId);
     List<GrouplWallet> findByUserId(UUID userId);
+    Optional<GrouplWallet> findByGoal(com.example.genz.Entity.Goal.Goal goal);
+    Optional<GrouplWallet> findByGoalId(UUID goalId);
 }
