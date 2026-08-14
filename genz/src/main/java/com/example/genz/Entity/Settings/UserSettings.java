@@ -1,8 +1,9 @@
-package com.example.genz.Entity.Settings;
+package com.example.genz.entity.Settings;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.PostVisibility;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.PostVisibility;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

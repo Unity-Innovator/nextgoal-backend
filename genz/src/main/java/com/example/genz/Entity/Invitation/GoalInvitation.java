@@ -1,8 +1,8 @@
-package com.example.genz.Entity.Invitation;
+package com.example.genz.entity.Invitation;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Enums.InvitationStatus;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.enums.InvitationStatus;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

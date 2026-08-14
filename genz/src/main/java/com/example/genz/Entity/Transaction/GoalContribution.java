@@ -1,6 +1,4 @@
-package com.example.genz.Entity.Transaction;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Goal.GoalMember;
+package com.example.genz.entity.Transaction;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,6 +7,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Goal.GoalMember;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -1,16 +1,16 @@
-package com.example.genz.Service.WalletService;
+package com.example.genz.service.WalletService;
 
-import com.example.genz.DTO.WalletDTO.DepositRequest;
-import com.example.genz.DTO.WalletDTO.DepositResponse;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Transaction.WalletTransaction;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.TransactionStatus;
-import com.example.genz.Enums.TransactionType;
-import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
-import com.example.genz.Repository.TransactionRepository.WalletTransactionRepository;
+import com.example.genz.dto.WalletDTO.DepositRequest;
+import com.example.genz.dto.WalletDTO.DepositResponse;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Transaction.WalletTransaction;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.TransactionStatus;
+import com.example.genz.enums.TransactionType;
 import com.example.genz.exception.ResourceNoteFoundException;
+import com.example.genz.repository.AuthRepository.UserRepository;
+import com.example.genz.repository.QrCodeRepository.GoalWalletRepository;
+import com.example.genz.repository.TransactionRepository.WalletTransactionRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,10 +1,11 @@
-package com.example.genz.Entity.Goal;
+package com.example.genz.entity.Goal;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Transaction.GoalContribution;
-import com.example.genz.Entity.Transaction.WithdrawalRequest;
-import com.example.genz.Enums.GoalCategory;
-import com.example.genz.Enums.GoalStatus;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Transaction.GoalContribution;
+import com.example.genz.entity.Transaction.WithdrawalRequest;
+import com.example.genz.enums.GoalCategory;
+import com.example.genz.enums.GoalStatus;
+
 import jakarta.persistence.*;
 import jdk.jfr.Timestamp;
 import lombok.AllArgsConstructor;

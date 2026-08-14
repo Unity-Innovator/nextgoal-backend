@@ -1,7 +1,8 @@
-package com.example.genz.Repository.QrCodeRepository;
+package com.example.genz.repository.QrCodeRepository;
 
-import com.example.genz.Entity.Wallet.GrouplWallet;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.genz.entity.Wallet.GrouplWallet;
 
 import java.util.List;
 import java.util.Optional;

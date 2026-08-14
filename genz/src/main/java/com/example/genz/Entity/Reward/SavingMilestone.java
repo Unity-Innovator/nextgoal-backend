@@ -1,4 +1,4 @@
-package com.example.genz.Entity.Reward;
+package com.example.genz.entity.Reward;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Enums.MilestoneStatus;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.enums.MilestoneStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

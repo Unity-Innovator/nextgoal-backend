@@ -1,11 +1,11 @@
-package com.example.genz.Service.GoalService;
-
-import com.example.genz.DTO.GoalDTO.CreateGoalRequest;
-import com.example.genz.DTO.GoalDTO.GoalResponse;
-import com.example.genz.DTO.GoalDTO.UpdateGoalRequest;
+package com.example.genz.service.GoalService;
 
 import java.util.List;
 import java.util.UUID;
+
+import com.example.genz.dto.GoalDTO.CreateGoalRequest;
+import com.example.genz.dto.GoalDTO.GoalResponse;
+import com.example.genz.dto.GoalDTO.UpdateGoalRequest;
 
 public interface GoalService {
     GoalResponse createGoal(CreateGoalRequest request, String phoneNumber);

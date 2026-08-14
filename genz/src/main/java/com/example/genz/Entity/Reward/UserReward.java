@@ -1,6 +1,5 @@
-package com.example.genz.Entity.Reward;
+package com.example.genz.entity.Reward;
 
-import com.example.genz.Entity.Auth.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+
+import com.example.genz.entity.Auth.User;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

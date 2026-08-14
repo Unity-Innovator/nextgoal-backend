@@ -1,8 +1,9 @@
-package com.example.genz.Entity.Community;
+package com.example.genz.entity.Community;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.ReportReason;
-import com.example.genz.Enums.ReportStatus;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.ReportReason;
+import com.example.genz.enums.ReportStatus;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

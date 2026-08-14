@@ -1,10 +1,10 @@
-package com.example.genz.Service.AuthService;
+package com.example.genz.service.AuthService;
 
-import com.example.genz.DTO.AuthDTO.*;
-import com.example.genz.Entity.Auth.User;
 import com.example.genz.security.jwt.JwtUtil;
-import com.example.genz.Repository.AuthRepository.UserRepository;
+import com.example.genz.dto.AuthDTO.*;
+import com.example.genz.entity.Auth.User;
 import com.example.genz.exception.ResourceNoteFoundException;
+import com.example.genz.repository.AuthRepository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;

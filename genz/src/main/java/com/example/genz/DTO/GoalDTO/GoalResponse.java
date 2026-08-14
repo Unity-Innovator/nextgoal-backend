@@ -1,7 +1,5 @@
-package com.example.genz.DTO.GoalDTO;
+package com.example.genz.dto.GoalDTO;
 
-import com.example.genz.Enums.GoalCategory;
-import com.example.genz.Enums.GoalStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,6 +7,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import com.example.genz.enums.GoalCategory;
+import com.example.genz.enums.GoalStatus;
 
 @Getter
 @Builder

@@ -1,16 +1,17 @@
-package com.example.genz.Entity.Auth;
+package com.example.genz.entity.Auth;
 
-import com.example.genz.Entity.DailyChallenge.UserDailyChallenge;
-import com.example.genz.Entity.Learning.UserAnswer;
-import com.example.genz.Entity.Learning.UserLesson;
-import com.example.genz.Entity.Reward.UserBadge;
-import com.example.genz.Entity.Reward.UserReward;
-import com.example.genz.Entity.Reward.XpTransaction;
-import com.example.genz.Entity.Settings.UserSettings;
-import com.example.genz.Entity.Transaction.PaymentMethod;
-import com.example.genz.Entity.Transaction.WalletTransaction;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.Gender;
+import com.example.genz.entity.DailyChallenge.UserDailyChallenge;
+import com.example.genz.entity.Learning.UserAnswer;
+import com.example.genz.entity.Learning.UserLesson;
+import com.example.genz.entity.Reward.UserBadge;
+import com.example.genz.entity.Reward.UserReward;
+import com.example.genz.entity.Reward.XpTransaction;
+import com.example.genz.entity.Settings.UserSettings;
+import com.example.genz.entity.Transaction.PaymentMethod;
+import com.example.genz.entity.Transaction.WalletTransaction;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.Gender;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;

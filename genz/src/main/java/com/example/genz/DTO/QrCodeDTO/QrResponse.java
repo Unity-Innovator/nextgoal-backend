@@ -1,4 +1,4 @@
-package com.example.genz.DTO.QrCodeDTO;
+package com.example.genz.dto.QrCodeDTO;
 
 import lombok.Data;
 

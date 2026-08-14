@@ -1,10 +1,11 @@
-package com.example.genz.Entity.Community;
+package com.example.genz.entity.Community;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Enums.PostStatus;
-import com.example.genz.Enums.PostType;
-import com.example.genz.Enums.PostVisibility;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.enums.PostStatus;
+import com.example.genz.enums.PostType;
+import com.example.genz.enums.PostVisibility;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

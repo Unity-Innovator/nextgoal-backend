@@ -1,6 +1,5 @@
-package com.example.genz.Entity.Reward;
+package com.example.genz.entity.Reward;
 
-import com.example.genz.Enums.BadgeRequirementType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
+
+import com.example.genz.enums.BadgeRequirementType;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,17 +1,18 @@
-package com.example.genz.Service.GoalService;
+package com.example.genz.service.GoalService;
 
-import com.example.genz.DTO.GoalDTO.CreateGoalRequest;
-import com.example.genz.DTO.GoalDTO.GoalResponse;
-import com.example.genz.DTO.GoalDTO.UpdateGoalRequest;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.GoalStatus;
-import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.Repository.GoalRepository.GoalRepository;
-import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
+import com.example.genz.dto.GoalDTO.CreateGoalRequest;
+import com.example.genz.dto.GoalDTO.GoalResponse;
+import com.example.genz.dto.GoalDTO.UpdateGoalRequest;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.GoalStatus;
 import com.example.genz.exception.ResourceNoteFoundException;
+import com.example.genz.repository.AuthRepository.UserRepository;
+import com.example.genz.repository.GoalRepository.GoalRepository;
+import com.example.genz.repository.QrCodeRepository.GoalWalletRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;

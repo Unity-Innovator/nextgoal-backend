@@ -1,4 +1,4 @@
-package com.example.genz.DTO.AuthDTO;
+package com.example.genz.dto.AuthDTO;
 
 public record RegisterResponse(
         String accessToken,

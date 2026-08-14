@@ -1,7 +1,5 @@
-package com.example.genz.DTO.GoalDTO;
+package com.example.genz.dto.GoalDTO;
 
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.GoalCategory;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -12,6 +10,9 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.GoalCategory;
 
 @Getter
 @Setter

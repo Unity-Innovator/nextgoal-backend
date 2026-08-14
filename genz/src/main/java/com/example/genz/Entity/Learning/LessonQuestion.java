@@ -1,4 +1,4 @@
-package com.example.genz.Entity.Learning;
+package com.example.genz.entity.Learning;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
