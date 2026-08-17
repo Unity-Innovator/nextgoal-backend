@@ -33,3 +33,7 @@ build/
 .vscode/
 .env
 .env.prod
+chat_core_api.md
+community_chat_erd.mermaid
+community_chat_schema_notes.md
+community_chat_target_schema.sql

@@ -1,38 +1,59 @@
 package com.example.genz.config;
 
-import java.util.List;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.DefaultContentTypeResolver;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON;
+import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+
+import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON;
 
 
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final ObjectMapper objectMapper;
+    private final WebSocketAuthenticationInterceptor authenticationInterceptor;
+
+    @Value("${app.websocket.allowed-origin-patterns:http://localhost:*,https://localhost:*}")
+    private String[] allowedOriginPatterns;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(allowedOriginPatterns)
                 .withSockJS();
 
-        registry.addEndpoint("/ws-raw").setAllowedOriginPatterns("*");
+        registry.addEndpoint("/ws-raw")
+                .setAllowedOriginPatterns(allowedOriginPatterns);
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic", "/queue");
+        registry.enableSimpleBroker("/topic", "/queue")
+                .setHeartbeatValue(new long[]{10_000, 10_000})
+                .setTaskScheduler(webSocketTaskScheduler());
         registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
+        registry.setPreservePublishOrder(true);
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(authenticationInterceptor);
     }
 
     @Override
@@ -40,11 +61,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         DefaultContentTypeResolver resolver = new DefaultContentTypeResolver();
         resolver.setDefaultMimeType(APPLICATION_JSON);
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setObjectMapper(new ObjectMapper());
+        converter.setObjectMapper(objectMapper);
         converter.setContentTypeResolver(resolver);
         messageConverters.add(converter);
 
         return false;
     }
 
+    @Bean
+    public ThreadPoolTaskScheduler webSocketTaskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("ws-heartbeat-");
+        scheduler.setRemoveOnCancelPolicy(true);
+        return scheduler;
+    }
 }

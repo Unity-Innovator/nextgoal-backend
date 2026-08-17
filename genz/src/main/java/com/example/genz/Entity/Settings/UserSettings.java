@@ -2,7 +2,7 @@ package com.example.genz.entity.Settings;
 
 import com.example.genz.entity.Auth.User;
 import com.example.genz.enums.Currency;
-import com.example.genz.enums.PostVisibility;
+import com.example.genz.community.post.enums.PostVisibility;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
