@@ -40,6 +40,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.example.genz.mapper.GoalMapper;
+import com.example.genz.mapper.SavingPlanMapper;
+import com.example.genz.mapper.WalletMapper;
+import org.mockito.Spy;
+
 @ExtendWith(MockitoExtension.class)
 class GoalProgressAndCompletionTest {
 
@@ -55,6 +60,12 @@ class GoalProgressAndCompletionTest {
     private SavingPlanRepository savingPlanRepository;
     @Mock
     private GoalContributionRepository goalContributionRepository;
+    @Spy
+    private GoalMapper goalMapper = new GoalMapper();
+    @Spy
+    private SavingPlanMapper savingPlanMapper = new SavingPlanMapper();
+    @Spy
+    private WalletMapper walletMapper = new WalletMapper();
 
     @InjectMocks
     private GoalServiceImpl goalService;
