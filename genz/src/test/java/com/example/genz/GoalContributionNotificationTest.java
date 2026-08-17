@@ -20,6 +20,7 @@ import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
 import com.example.genz.Repository.TransactionRepository.WalletTransactionRepository;
 import com.example.genz.Service.NotificationService.NotificationServiceImpl;
 import com.example.genz.Service.WalletService.WalletServiceImpl;
+import com.example.genz.mapper.WalletMapper;
 import com.example.genz.exception.BadRequestException;
 import com.example.genz.exception.ResourceNoteFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.example.genz.mapper.NotificationMapper;
+import org.mockito.Spy;
+
 @ExtendWith(MockitoExtension.class)
 class GoalContributionNotificationTest {
 
@@ -49,6 +53,8 @@ class GoalContributionNotificationTest {
     private UserRepository userRepository;
     @Mock
     private GoalMemberRepository goalMemberRepository;
+    @Spy
+    private NotificationMapper notificationMapper = new NotificationMapper();
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
@@ -93,7 +99,8 @@ class GoalContributionNotificationTest {
                 goalContributionRepository,
                 walletTransactionRepository,
                 savingPlanRepository,
-                mockNotificationService
+                mockNotificationService,
+                new WalletMapper()
         );
 
         owner = new User();

@@ -19,6 +19,11 @@ import com.example.genz.Enums.MemberRole;
 import com.example.genz.Enums.MemberStatus;
 import com.example.genz.Enums.PeriodStatus;
 import com.example.genz.Enums.SavingPlanStatus;
+import com.example.genz.Enums.BadgeRequirementType;
+import com.example.genz.mapper.GoalMapper;
+import com.example.genz.mapper.SavingPlanMapper;
+import com.example.genz.mapper.WalletMapper;
+import com.example.genz.Service.RewardService.AchievementService;
 import com.example.genz.Repository.AuthRepository.UserRepository;
 import com.example.genz.Repository.GoalRepository.GoalContributionRepository;
 import com.example.genz.Repository.GoalRepository.GoalMemberRepository;
@@ -35,8 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -51,6 +56,10 @@ public class GoalServiceImpl implements GoalService {
     private final GoalMemberRepository goalMemberRepository;
     private final SavingPlanRepository savingPlanRepository;
     private final GoalContributionRepository goalContributionRepository;
+    private final AchievementService achievementService;
+    private final GoalMapper goalMapper;
+    private final SavingPlanMapper savingPlanMapper;
+    private final WalletMapper walletMapper;
 
     @Override
     @Transactional
@@ -60,44 +69,27 @@ public class GoalServiceImpl implements GoalService {
 
         validateContributionPlanFields(request);
 
-        Goal goal = new Goal();
-        goal.setGoalName(request.getGoalName());
-        goal.setTargetAmount(request.getTargetAmount());
-        goal.setCurrentAmount(BigDecimal.ZERO);
-        goal.setRemaining(request.getTargetAmount());
-        goal.setTargetDate(request.getTargetDate());
-        goal.setGoalType(goalType);
-        goal.setCategory(request.getCategory());
-        goal.setImageUrl(request.getImageUrl());
-        goal.setStatus(GoalStatus.ACTIVE);
-        goal.setOwner(owner);
-        goal.setCreatedAt(LocalDateTime.now());
-
+        Goal goal = goalMapper.toEntity(request, owner, goalType);
         Goal saved = goalRepository.save(goal);
 
-        GrouplWallet wallet = new GrouplWallet();
-        wallet.setBalance(BigDecimal.ZERO);
-        wallet.setUser(owner);
-        wallet.setGoal(saved);
-        wallet.setCurrency(request.getCurrency());
+        GrouplWallet wallet = walletMapper.toGoalWalletEntity(owner, saved, request.getCurrency());
         goalWalletRepository.save(wallet);
 
         addOwnerAsMember(saved, owner);
 
         if (request.getContributionAmount() != null && request.getFrequency() != null) {
-            SavingPlan plan = new SavingPlan();
-            plan.setGoal(saved);
-            plan.setContributionAmount(request.getContributionAmount());
-            plan.setFrequency(request.getFrequency());
             LocalDate initialDueDate = request.getFirstDueDate() != null ? request.getFirstDueDate() : request.getNextContributionDate();
-            if (initialDueDate == null) {
-                initialDueDate = LocalDate.now();
+            SavingPlan plan = savingPlanMapper.toEntity(request, saved, initialDueDate);
+            if (plan != null) {
+                savingPlanRepository.save(plan);
             }
-            plan.setNextContributionDate(initialDueDate);
-            plan.setStatus(SavingPlanStatus.ACTIVE);
-            plan.setContributedThisPeriod(BigDecimal.ZERO);
-            savingPlanRepository.save(plan);
         }
+
+        try {
+            achievementService.evaluateAndUnlockAchievements(owner, BadgeRequirementType.FIRST_GOAL_CREATED, Map.of("createdGoalCount", 1));
+            achievementService.evaluateAndUnlockAchievements(owner, BadgeRequirementType.MULTI_GOAL_MASTER, Map.of());
+        } catch (Exception ignored) {}
+
         return toGoalResponse(saved);
     }
 
@@ -151,18 +143,11 @@ public class GoalServiceImpl implements GoalService {
         SavingPlan plan = savingPlanRepository.findByGoalId(goal.getId())
                 .orElseThrow(() -> new ResourceNoteFoundException("Saving plan not found for this goal"));
 
-        if (request.getContributionAmount() != null) {
-            if (request.getContributionAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new BadRequestException("contributionAmount must be greater than 0");
-            }
-            plan.setContributionAmount(request.getContributionAmount());
+        if (request.getContributionAmount() != null && request.getContributionAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("contributionAmount must be greater than 0");
         }
-        if (request.getFrequency() != null) {
-            plan.setFrequency(request.getFrequency());
-        }
-        if (request.getNextContributionDate() != null) {
-            plan.setNextContributionDate(request.getNextContributionDate());
-        }
+
+        savingPlanMapper.updateEntity(plan, request);
 
         SavingPlan updated = savingPlanRepository.save(plan);
         return toSavingPlanResponse(goal, updated);
@@ -179,24 +164,7 @@ public class GoalServiceImpl implements GoalService {
             throw new AccessDeniedException("You do not have permission to update this goal");
         }
 
-        if (request.getGoalName() != null) {
-            goal.setGoalName(request.getGoalName());
-        }
-        if (request.getTargetAmount() != null) {
-            goal.setTargetAmount(request.getTargetAmount());
-            BigDecimal current = goal.getCurrentAmount() != null ? goal.getCurrentAmount() : BigDecimal.ZERO;
-            BigDecimal rem = request.getTargetAmount().subtract(current);
-            goal.setRemaining(rem.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : rem);
-        }
-        if (request.getTargetDate() != null) {
-            goal.setTargetDate(request.getTargetDate());
-        }
-        if (request.getCategory() != null) {
-            goal.setCategory(request.getCategory());
-        }
-        if (request.getImageUrl() != null) {
-            goal.setImageUrl(request.getImageUrl());
-        }
+        goalMapper.updateEntity(goal, request);
 
         Goal saved = goalRepository.save(goal);
         return toGoalResponse(saved);
@@ -273,20 +241,9 @@ public class GoalServiceImpl implements GoalService {
         long memberCount = goalMemberRepository.countByGoalAndStatus(goal, MemberStatus.ACTIVE);
         LocalDate estimatedCompletionDate = estimateCompletionDate(goal, plan, memberCount > 0 ? memberCount : 1);
 
-        return ContributionPlanStatusResponse.builder()
-                .goalId(goal.getId())
-                .targetAmount(targetAmount)
-                .currentAmount(currentAmount)
-                .remainingAmount(remainingAmount)
-                .contributionAmount(contributionAmount)
-                .frequency(plan.getFrequency())
-                .nextDueDate(plan.getNextContributionDate())
-                .contributedThisPeriod(contributedThisPeriod)
-                .remainingThisPeriod(remainingThisPeriod)
-                .periodStatus(periodStatus)
-                .planStatus(plan.getStatus())
-                .estimatedCompletionDate(estimatedCompletionDate)
-                .build();
+        return savingPlanMapper.toContributionPlanStatusResponse(
+                goal, plan, remainingAmount, remainingThisPeriod, periodStatus, estimatedCompletionDate
+        );
     }
 
     private void addOwnerAsMember(Goal goal, User owner) {
@@ -300,15 +257,9 @@ public class GoalServiceImpl implements GoalService {
 
     private SavingPlanResponse toSavingPlanResponse(Goal goal, SavingPlan plan) {
         long memberCount = goalMemberRepository.countByGoalAndStatus(goal, MemberStatus.ACTIVE);
-        return SavingPlanResponse.builder()
-                .frequency(plan.getFrequency())
-                .contributionAmount(plan.getContributionAmount())
-                .estimatedCompletionDate(estimateCompletionDate(goal, plan, memberCount))
-                .nextContributionDate(plan.getNextContributionDate())
-                .status(plan.getStatus())
-                .contributedThisPeriod(plan.getContributedThisPeriod())
-                .progress(calculateProgress(goal))
-                .build();
+        LocalDate estimatedDate = estimateCompletionDate(goal, plan, memberCount);
+        int progress = calculateProgress(goal);
+        return savingPlanMapper.toSavingPlanResponse(plan, progress, estimatedDate);
     }
 
     private LocalDate estimateCompletionDate(Goal goal, SavingPlan plan, long memberCount) {
@@ -455,14 +406,6 @@ public class GoalServiceImpl implements GoalService {
         CompletionStatus completionStatus = calculateCompletionStatus(expectedDate, estimatedDate);
         Long daysDifference = calculateDaysDifference(expectedDate, estimatedDate);
 
-        GoalResponse.OwnerInfo ownerInfo = null;
-        if (goal.getOwner() != null) {
-            ownerInfo = GoalResponse.OwnerInfo.builder()
-                    .userId(goal.getOwner().getId())
-                    .name(goal.getOwner().getFullName())
-                    .build();
-        }
-
         List<GoalMember> activeMembers = null;
         if (goalMemberRepository != null) {
             activeMembers = goalMemberRepository.findByGoalAndStatusWithUser(goal, MemberStatus.ACTIVE);
@@ -470,34 +413,17 @@ public class GoalServiceImpl implements GoalService {
                 activeMembers = goalMemberRepository.findByGoalAndStatus(goal, MemberStatus.ACTIVE);
             }
         }
-        List<GoalResponse.MemberInfo> memberInfos = (activeMembers != null) ? activeMembers.stream()
-                .map(m -> GoalResponse.MemberInfo.builder()
-                        .userId(m.getUser() != null ? m.getUser().getId() : null)
-                        .name(m.getUser() != null ? m.getUser().getFullName() : null)
-                        .role(m.getRole())
-                        .build())
-                .toList() : java.util.Collections.emptyList();
 
-        return GoalResponse.builder()
-                .goalId(goal.getId())
-                .goalName(goal.getGoalName())
-                .targetAmount(target)
-                .currentAmount(current)
-                .remainingAmount(rem)
-                .progressPercentage(progressPercentage)
-                .targetDate(goal.getTargetDate())
-                .expectedCompletionDate(expectedDate)
-                .estimatedCompletionDate(estimatedDate)
-                .completionStatus(completionStatus)
-                .daysDifference(daysDifference)
-                .category(goal.getCategory())
-                .goalType(goal.getGoalType() != null ? goal.getGoalType() : GoalType.FLEXIBLE)
-                .imageUrl(goal.getImageUrl())
-                .status(goal.getStatus())
-                .createdAt(goal.getCreatedAt())
-                .completedAt(goal.getCompletedAt())
-                .owner(ownerInfo)
-                .members(memberInfos)
-                .build();
+        return goalMapper.toGoalResponse(
+                goal,
+                current,
+                rem,
+                progressPercentage,
+                expectedDate,
+                estimatedDate,
+                completionStatus,
+                daysDifference,
+                activeMembers
+        );
     }
 }

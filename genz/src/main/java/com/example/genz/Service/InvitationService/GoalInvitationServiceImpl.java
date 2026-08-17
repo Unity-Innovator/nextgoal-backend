@@ -10,6 +10,7 @@ import com.example.genz.Enums.InvitationStatus;
 import com.example.genz.Enums.MemberRole;
 import com.example.genz.Enums.MemberStatus;
 import com.example.genz.Enums.NotificationType;
+import com.example.genz.mapper.GoalInvitationMapper;
 import com.example.genz.Repository.AuthRepository.UserRepository;
 import com.example.genz.Repository.GoalRepository.GoalMemberRepository;
 import com.example.genz.Repository.GoalRepository.GoalRepository;
@@ -24,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +35,7 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
     private final GoalMemberRepository goalMemberRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final GoalInvitationMapper goalInvitationMapper;
 
     @Override
     @Transactional
@@ -68,11 +69,7 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
             throw new BadRequestException("Pending invitation already exists for this user");
         }
 
-        GoalInvitation invitation = new GoalInvitation();
-        invitation.setGoal(goal);
-        invitation.setInviter(inviter);
-        invitation.setInvitee(invitee);
-        invitation.setStatus(InvitationStatus.PENDING);
+        GoalInvitation invitation = goalInvitationMapper.toEntity(goal, inviter, invitee);
         GoalInvitation savedInvitation = goalInvitationRepository.save(invitation);
 
         // 5. Create notification for invitee
@@ -80,7 +77,7 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
         String message = inviter.getFullName() + " invited you to join " + goal.getGoalName() + " goal";
         notificationService.createNotification(invitee, title, message, NotificationType.GOAL_INVITATION, savedInvitation.getId());
 
-        return toInvitationResponse(savedInvitation);
+        return goalInvitationMapper.toInvitationResponse(savedInvitation);
     }
 
     @Override
@@ -89,10 +86,8 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
         User invitee = userRepository.findByPhoneNumber(inviteePhoneNumber)
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
 
-        return goalInvitationRepository.findByInviteeIdOrderByCreatedAtDesc(invitee.getId())
-                .stream()
-                .map(this::toInvitationResponse)
-                .collect(Collectors.toList());
+        List<GoalInvitation> invitations = goalInvitationRepository.findByInviteeIdOrderByCreatedAtDesc(invitee.getId());
+        return goalInvitationMapper.toInvitationResponseList(invitations);
     }
 
     @Override
@@ -128,7 +123,7 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
 
         notificationService.markNotificationAsReadByReference(invitation.getId(), invitee.getId());
 
-        return toInvitationResponse(updatedInvitation);
+        return goalInvitationMapper.toInvitationResponse(updatedInvitation);
     }
 
     @Override
@@ -154,17 +149,6 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
 
         notificationService.markNotificationAsReadByReference(invitation.getId(), invitee.getId());
 
-        return toInvitationResponse(updatedInvitation);
-    }
-
-    private InvitationResponse toInvitationResponse(GoalInvitation invitation) {
-        return InvitationResponse.builder()
-                .invitationId(invitation.getId())
-                .goalId(invitation.getGoal().getId())
-                .goalName(invitation.getGoal().getGoalName())
-                .inviterName(invitation.getInviter().getFullName())
-                .status(invitation.getStatus().name())
-                .createdAt(invitation.getCreatedAt())
-                .build();
+        return goalInvitationMapper.toInvitationResponse(updatedInvitation);
     }
 }

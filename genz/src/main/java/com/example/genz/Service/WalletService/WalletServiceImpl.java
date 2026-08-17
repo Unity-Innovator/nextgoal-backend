@@ -4,18 +4,27 @@ import com.example.genz.DTO.WalletDTO.DepositRequest;
 import com.example.genz.DTO.WalletDTO.DepositResponse;
 import com.example.genz.Entity.Auth.User;
 import com.example.genz.Entity.Goal.Goal;
+import com.example.genz.Entity.Goal.GoalMember;
+import com.example.genz.Entity.Goal.SavingPlan;
 import com.example.genz.Entity.Transaction.GoalContribution;
 import com.example.genz.Entity.Transaction.WalletTransaction;
 import com.example.genz.Entity.Wallet.GrouplWallet;
+import com.example.genz.Enums.ContributionFrequency;
 import com.example.genz.Enums.GoalStatus;
+import com.example.genz.Enums.MemberRole;
+import com.example.genz.Enums.MemberStatus;
+import com.example.genz.Enums.SavingPlanStatus;
 import com.example.genz.Enums.TransactionStatus;
 import com.example.genz.Enums.TransactionType;
+import com.example.genz.mapper.WalletMapper;
 import com.example.genz.Repository.AuthRepository.UserRepository;
 import com.example.genz.Repository.GoalRepository.GoalContributionRepository;
 import com.example.genz.Repository.GoalRepository.GoalMemberRepository;
 import com.example.genz.Repository.GoalRepository.GoalRepository;
+import com.example.genz.Repository.GoalRepository.SavingPlanRepository;
 import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
 import com.example.genz.Repository.TransactionRepository.WalletTransactionRepository;
+import com.example.genz.Service.NotificationService.NotificationService;
 import com.example.genz.exception.BadRequestException;
 import com.example.genz.exception.ResourceNoteFoundException;
 
@@ -25,16 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import com.example.genz.Entity.Goal.SavingPlan;
-import com.example.genz.Enums.ContributionFrequency;
-import com.example.genz.Enums.SavingPlanStatus;
-import com.example.genz.Repository.GoalRepository.SavingPlanRepository;
-
-import com.example.genz.Entity.Goal.GoalMember;
-import com.example.genz.Enums.MemberRole;
-import com.example.genz.Enums.MemberStatus;
-import com.example.genz.Service.NotificationService.NotificationService;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +47,7 @@ public class WalletServiceImpl implements WalletService {
     private final WalletTransactionRepository walletTransactionRepository;
     private final SavingPlanRepository savingPlanRepository;
     private final NotificationService notificationService;
+    private final WalletMapper walletMapper;
 
     @Override
     @Transactional
@@ -125,24 +125,21 @@ public class WalletServiceImpl implements WalletService {
                     return goalMemberRepository.save(newMember);
                 });
 
-        GoalContribution contribution = new GoalContribution();
-        contribution.setGoal(goal);
-        contribution.setGoalMember(member);
-        contribution.setAmount(request.getAmount());
-        contribution.setNote("Manual deposit");
+        GoalContribution contribution = walletMapper.toGoalContributionEntity(goal, member, request.getAmount(), "Manual deposit");
         GoalContribution savedContribution = goalContributionRepository.save(contribution);
 
-        WalletTransaction transaction = new WalletTransaction();
-        transaction.setWallet(wallet);
-        transaction.setUser(user);
-        transaction.setAmount(request.getAmount());
-        transaction.setType(TransactionType.DEPOSIT);
-        transaction.setStatus(TransactionStatus.SUCCESS);
-        transaction.setDescription("Deposit to goal: " + goal.getGoalName());
+        WalletTransaction transaction = walletMapper.toWalletTransactionEntity(
+                wallet,
+                user,
+                request.getAmount(),
+                TransactionType.DEPOSIT,
+                TransactionStatus.SUCCESS,
+                "Deposit to goal: " + goal.getGoalName()
+        );
         walletTransactionRepository.save(transaction);
 
         notificationService.createGoalContributionNotifications(goal, savedContribution, user);
 
-        return new DepositResponse(true, "Deposit successful.", newBalance);
+        return walletMapper.toDepositResponse(true, "Deposit successful.", newBalance);
     }
 }

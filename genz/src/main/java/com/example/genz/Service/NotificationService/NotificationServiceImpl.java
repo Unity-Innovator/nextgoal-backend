@@ -1,4 +1,5 @@
 package com.example.genz.Service.NotificationService;
+
 import com.example.genz.DTO.NotificationDTO.NotificationResponse;
 import com.example.genz.Entity.Auth.User;
 import com.example.genz.Entity.Notification.Notification;
@@ -7,6 +8,7 @@ import com.example.genz.Entity.Goal.Goal;
 import com.example.genz.Entity.Goal.GoalMember;
 import com.example.genz.Entity.Transaction.GoalContribution;
 import com.example.genz.Enums.MemberStatus;
+import com.example.genz.mapper.NotificationMapper;
 import com.example.genz.Repository.AuthRepository.UserRepository;
 import com.example.genz.Repository.GoalRepository.GoalMemberRepository;
 import com.example.genz.Repository.NotificationRepository.NotificationRepository;
@@ -20,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +30,12 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final GoalMemberRepository goalMemberRepository;
+    private final NotificationMapper notificationMapper;
 
     @Override
     @Transactional
     public Notification createNotification(User user, String title, String message, NotificationType type, UUID referenceId) {
-        Notification notification = new Notification();
-        notification.setUser(user);
-        notification.setTitle(title);
-        notification.setMessage(message);
-        notification.setType(type);
-        notification.setReferenceId(referenceId);
-        notification.setRead(false);
+        Notification notification = notificationMapper.toEntity(user, title, message, type, referenceId);
         return notificationRepository.save(notification);
     }
 
@@ -49,10 +45,8 @@ public class NotificationServiceImpl implements NotificationService {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
 
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
-                .stream()
-                .map(this::toNotificationResponse)
-                .collect(Collectors.toList());
+        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        return notificationMapper.toNotificationResponseList(notifications);
     }
 
     @Override
@@ -107,17 +101,5 @@ public class NotificationServiceImpl implements NotificationService {
         for (User recipient : recipientMap.values()) {
             createNotification(recipient, title, message, NotificationType.GOAL_CONTRIBUTION, contribution.getId());
         }
-    }
-
-    private NotificationResponse toNotificationResponse(Notification notification) {
-        return NotificationResponse.builder()
-                .id(notification.getId())
-                .title(notification.getTitle())
-                .message(notification.getMessage())
-                .type(notification.getType().name())
-                .referenceId(notification.getReferenceId())
-                .isRead(notification.isRead())
-                .createdAt(notification.getCreatedAt())
-                .build();
     }
 }

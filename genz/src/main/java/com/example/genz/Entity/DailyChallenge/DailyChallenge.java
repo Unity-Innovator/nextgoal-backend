@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class DailyChallenge {
 
     @Id
@@ -44,7 +46,7 @@ public class DailyChallenge {
     @Column(name = "xp_reward")
     private Integer xpReward;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active",nullable = false)
     private Boolean isActive;
 
     @CreationTimestamp

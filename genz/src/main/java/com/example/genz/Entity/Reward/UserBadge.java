@@ -1,12 +1,10 @@
 package com.example.genz.Entity.Reward;
 
 import com.example.genz.Entity.Auth.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -14,11 +12,20 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_badges")
+@Table(
+    name = "user_badges",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_user_badge",
+            columnNames = {"user_id", "badge_id"}
+        )
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserBadge {
 
     @Id
@@ -28,6 +35,7 @@ public class UserBadge {
     private UUID id;
 
     @NotNull
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
