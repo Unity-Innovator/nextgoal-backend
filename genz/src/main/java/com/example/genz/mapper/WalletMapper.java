@@ -1,15 +1,15 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.WalletDTO.DepositResponse;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Goal.GoalMember;
-import com.example.genz.Entity.Transaction.GoalContribution;
-import com.example.genz.Entity.Transaction.WalletTransaction;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.TransactionStatus;
-import com.example.genz.Enums.TransactionType;
+import com.example.genz.dto.WalletDTO.DepositResponse;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Goal.GoalMember;
+import com.example.genz.entity.Transaction.GoalContribution;
+import com.example.genz.entity.Transaction.WalletTransaction;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.TransactionStatus;
+import com.example.genz.enums.TransactionType;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

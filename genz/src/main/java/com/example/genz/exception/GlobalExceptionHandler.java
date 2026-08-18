@@ -1,5 +1,8 @@
 package com.example.genz.exception;
 
+import com.example.genz.community.chat.exception.ChatBadRequestException;
+import com.example.genz.community.chat.exception.ChatConflictException;
+import com.example.genz.community.chat.exception.ChatNotFoundException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -53,6 +56,27 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> AccessDeniedHandler(AccessDeniedException ex){
         ErrorResponse error=new ErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN.value(), LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(ChatNotFoundException.class)
+    public ResponseEntity<ErrorResponse> chatNotFoundHandler(ChatNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(ChatBadRequestException.class)
+    public ResponseEntity<ErrorResponse> chatBadRequestHandler(ChatBadRequestException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(ChatConflictException.class)
+    public ResponseEntity<ErrorResponse> chatConflictHandler(ChatConflictException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @Order(Ordered.LOWEST_PRECEDENCE)

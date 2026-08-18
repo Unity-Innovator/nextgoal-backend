@@ -1,10 +1,10 @@
-package com.example.genz.DTO.GoalDTO;
+package com.example.genz.dto.GoalDTO;
 
-import com.example.genz.Enums.CompletionStatus;
-import com.example.genz.Enums.GoalCategory;
-import com.example.genz.Enums.GoalStatus;
-import com.example.genz.Enums.GoalType;
-import com.example.genz.Enums.MemberRole;
+import com.example.genz.enums.CompletionStatus;
+import com.example.genz.enums.GoalCategory;
+import com.example.genz.enums.GoalStatus;
+import com.example.genz.enums.GoalType;
+import com.example.genz.enums.MemberRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

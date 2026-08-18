@@ -1,7 +1,7 @@
-package com.example.genz.Service.InvitationService;
+package com.example.genz.service.InvitationService;
 
-import com.example.genz.DTO.InvitationDTO.CreateInvitationRequest;
-import com.example.genz.DTO.InvitationDTO.InvitationResponse;
+import com.example.genz.dto.InvitationDTO.CreateInvitationRequest;
+import com.example.genz.dto.InvitationDTO.InvitationResponse;
 
 import java.util.List;
 import java.util.UUID;

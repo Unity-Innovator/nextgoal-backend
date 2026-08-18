@@ -1,9 +1,10 @@
-package com.example.genz.Entity.Transaction;
+package com.example.genz.entity.Transaction;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.TransactionStatus;
-import com.example.genz.Enums.TransactionType;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.TransactionStatus;
+import com.example.genz.enums.TransactionType;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

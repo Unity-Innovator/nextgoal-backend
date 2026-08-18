@@ -1,10 +1,10 @@
-package com.example.genz.Service.RewardService.evaluator;
+package com.example.genz.service.RewardService.evaluator;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Reward.Badge;
-import com.example.genz.Enums.BadgeRequirementType;
-import com.example.genz.Enums.GoalStatus;
-import com.example.genz.Repository.GoalRepository.GoalRepository;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Reward.Badge;
+import com.example.genz.enums.BadgeRequirementType;
+import com.example.genz.enums.GoalStatus;
+import com.example.genz.repository.GoalRepository.GoalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

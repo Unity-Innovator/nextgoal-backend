@@ -1,8 +1,11 @@
-package com.example.genz.Entity.Wallet;
+package com.example.genz.entity.Wallet;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Enums.Currency;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Transaction.GroupWalletTransaction;
+import com.example.genz.entity.Transaction.WithdrawalRequest;
+import com.example.genz.enums.Currency;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,9 +14,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
-
-import com.example.genz.Entity.Transaction.WithdrawalRequest;
-import com.example.genz.Entity.Transaction.GroupWalletTransaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

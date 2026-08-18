@@ -1,8 +1,8 @@
-package com.example.genz.Repository.RewardRepository;
+package com.example.genz.repository.RewardRepository;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Reward.XpTransaction;
-import com.example.genz.Enums.ActivityType;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Reward.XpTransaction;
+import com.example.genz.enums.ActivityType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

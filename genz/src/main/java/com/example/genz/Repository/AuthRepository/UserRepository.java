@@ -1,7 +1,8 @@
-package com.example.genz.Repository.AuthRepository;
+package com.example.genz.repository.AuthRepository;
 
-import com.example.genz.Entity.Auth.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.genz.entity.Auth.User;
 
 import java.util.Optional;
 import java.util.UUID;

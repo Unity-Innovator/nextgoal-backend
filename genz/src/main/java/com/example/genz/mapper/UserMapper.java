@@ -1,10 +1,10 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.AuthDTO.LoginResponse;
-import com.example.genz.DTO.AuthDTO.RegisterRequest;
-import com.example.genz.DTO.AuthDTO.RegisterResponse;
-import com.example.genz.DTO.AuthDTO.UserResponse;
-import com.example.genz.Entity.Auth.User;
+import com.example.genz.dto.AuthDTO.LoginResponse;
+import com.example.genz.dto.AuthDTO.RegisterRequest;
+import com.example.genz.dto.AuthDTO.RegisterResponse;
+import com.example.genz.dto.AuthDTO.UserResponse;
+import com.example.genz.entity.Auth.User;
 import org.springframework.stereotype.Component;
 
 @Component

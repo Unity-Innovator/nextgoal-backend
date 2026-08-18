@@ -1,4 +1,4 @@
-package com.example.genz.DTO.RewardDTO;
+package com.example.genz.dto.RewardDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

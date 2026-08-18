@@ -1,7 +1,7 @@
-package com.example.genz.Repository.InvitationRepository;
+package com.example.genz.repository.InvitationRepository;
 
-import com.example.genz.Entity.Invitation.GoalInvitation;
-import com.example.genz.Enums.InvitationStatus;
+import com.example.genz.entity.Invitation.GoalInvitation;
+import com.example.genz.enums.InvitationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

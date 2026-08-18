@@ -1,12 +1,12 @@
-package com.example.genz.Service.NotificationService;
+package com.example.genz.service.NotificationService;
 
-import com.example.genz.DTO.NotificationDTO.NotificationResponse;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Notification.Notification;
-import com.example.genz.Enums.NotificationType;
+import com.example.genz.dto.NotificationDTO.NotificationResponse;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Notification.Notification;
+import com.example.genz.enums.NotificationType;
 
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Transaction.GoalContribution;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Transaction.GoalContribution;
 
 import java.util.List;
 import java.util.UUID;

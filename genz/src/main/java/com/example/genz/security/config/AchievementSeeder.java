@@ -1,10 +1,10 @@
 package com.example.genz.security.config;
 
-import com.example.genz.Entity.Reward.Badge;
-import com.example.genz.Enums.BadgeCategory;
-import com.example.genz.Enums.BadgeRarity;
-import com.example.genz.Enums.BadgeRequirementType;
-import com.example.genz.Repository.RewardRepository.BadgeRepository;
+import com.example.genz.entity.Reward.Badge;
+import com.example.genz.enums.BadgeCategory;
+import com.example.genz.enums.BadgeRarity;
+import com.example.genz.enums.BadgeRequirementType;
+import com.example.genz.repository.RewardRepository.BadgeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

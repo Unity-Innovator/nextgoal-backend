@@ -1,8 +1,8 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.DailyChallengeDTO.UserDailyChallengeResponse;
-import com.example.genz.Entity.DailyChallenge.DailyChallenge;
-import com.example.genz.Entity.DailyChallenge.UserDailyChallenge;
+import com.example.genz.dto.DailyChallengeDTO.UserDailyChallengeResponse;
+import com.example.genz.entity.DailyChallenge.DailyChallenge;
+import com.example.genz.entity.DailyChallenge.UserDailyChallenge;
 import org.springframework.stereotype.Component;
 
 @Component

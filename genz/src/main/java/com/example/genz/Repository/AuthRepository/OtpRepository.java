@@ -1,7 +1,8 @@
-package com.example.genz.Repository.AuthRepository;
+package com.example.genz.repository.AuthRepository;
 
-import com.example.genz.Entity.Auth.Otp;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.genz.entity.Auth.Otp;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

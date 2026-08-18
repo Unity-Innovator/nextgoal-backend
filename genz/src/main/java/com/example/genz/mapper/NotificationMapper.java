@@ -1,9 +1,9 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.NotificationDTO.NotificationResponse;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Notification.Notification;
-import com.example.genz.Enums.NotificationType;
+import com.example.genz.dto.NotificationDTO.NotificationResponse;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Notification.Notification;
+import com.example.genz.enums.NotificationType;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

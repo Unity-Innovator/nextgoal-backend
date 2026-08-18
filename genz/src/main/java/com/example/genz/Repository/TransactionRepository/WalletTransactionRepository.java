@@ -1,7 +1,8 @@
-package com.example.genz.Repository.TransactionRepository;
+package com.example.genz.repository.TransactionRepository;
 
-import com.example.genz.Entity.Transaction.WalletTransaction;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.genz.entity.Transaction.WalletTransaction;
 
 import java.util.UUID;
 

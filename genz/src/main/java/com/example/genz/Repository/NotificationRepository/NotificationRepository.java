@@ -1,6 +1,6 @@
-package com.example.genz.Repository.NotificationRepository;
+package com.example.genz.repository.NotificationRepository;
 
-import com.example.genz.Entity.Notification.Notification;
+import com.example.genz.entity.Notification.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

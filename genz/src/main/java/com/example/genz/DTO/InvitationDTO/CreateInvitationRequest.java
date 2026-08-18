@@ -1,4 +1,4 @@
-package com.example.genz.DTO.InvitationDTO;
+package com.example.genz.dto.InvitationDTO;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

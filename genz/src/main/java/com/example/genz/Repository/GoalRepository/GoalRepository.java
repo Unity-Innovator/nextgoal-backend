@@ -1,8 +1,8 @@
-package com.example.genz.Repository.GoalRepository;
+package com.example.genz.repository.GoalRepository;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Enums.GoalStatus;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.enums.GoalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

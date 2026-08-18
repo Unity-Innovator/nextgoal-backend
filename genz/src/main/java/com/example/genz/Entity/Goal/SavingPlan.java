@@ -1,7 +1,7 @@
-package com.example.genz.Entity.Goal;
+package com.example.genz.entity.Goal;
 
-import com.example.genz.Enums.ContributionFrequency;
-import com.example.genz.Enums.SavingPlanStatus;
+import com.example.genz.enums.ContributionFrequency;
+import com.example.genz.enums.SavingPlanStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

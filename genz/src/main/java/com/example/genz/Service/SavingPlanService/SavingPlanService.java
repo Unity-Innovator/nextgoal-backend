@@ -1,4 +1,4 @@
-package com.example.genz.Service.SavingPlanService;
+package com.example.genz.service.SavingPlanService;
 
 public interface SavingPlanService {
 

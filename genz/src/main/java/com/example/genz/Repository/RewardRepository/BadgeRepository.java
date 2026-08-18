@@ -1,8 +1,8 @@
-package com.example.genz.Repository.RewardRepository;
+package com.example.genz.repository.RewardRepository;
 
-import com.example.genz.Entity.Reward.Badge;
-import com.example.genz.Enums.BadgeCategory;
-import com.example.genz.Enums.BadgeRequirementType;
+import com.example.genz.entity.Reward.Badge;
+import com.example.genz.enums.BadgeCategory;
+import com.example.genz.enums.BadgeRequirementType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

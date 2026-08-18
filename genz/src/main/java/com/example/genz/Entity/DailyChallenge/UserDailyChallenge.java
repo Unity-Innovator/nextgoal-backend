@@ -1,7 +1,8 @@
-package com.example.genz.Entity.DailyChallenge;
+package com.example.genz.entity.DailyChallenge;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.ChallengeStatus;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.ChallengeStatus;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

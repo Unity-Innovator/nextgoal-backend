@@ -1,4 +1,4 @@
-package com.example.genz.Service.SavingPlanService;
+package com.example.genz.service.SavingPlanService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

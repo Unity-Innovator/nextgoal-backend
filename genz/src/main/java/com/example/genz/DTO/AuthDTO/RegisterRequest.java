@@ -1,14 +1,14 @@
-package com.example.genz.DTO.AuthDTO;
+package com.example.genz.dto.AuthDTO;
 
-import com.example.genz.Enums.Gender;
+import java.time.LocalDate;
+
+import com.example.genz.enums.Gender;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
-
-
-import java.time.LocalDate;
 
 @Getter @Setter
 public class RegisterRequest {

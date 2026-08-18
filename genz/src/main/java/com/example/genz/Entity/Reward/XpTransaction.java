@@ -1,7 +1,7 @@
-package com.example.genz.Entity.Reward;
+package com.example.genz.entity.Reward;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.ActivityType;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.ActivityType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

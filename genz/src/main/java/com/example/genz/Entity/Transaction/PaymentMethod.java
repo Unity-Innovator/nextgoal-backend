@@ -1,9 +1,10 @@
-package com.example.genz.Entity.Transaction;
+package com.example.genz.entity.Transaction;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.PaymentMethodStatus;
-import com.example.genz.Enums.PaymentMethodType;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.PaymentMethodStatus;
+import com.example.genz.enums.PaymentMethodType;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
