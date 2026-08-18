@@ -1,4 +1,4 @@
-package com.example.genz.DTO.AuthDTO;
+package com.example.genz.dto.AuthDTO;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

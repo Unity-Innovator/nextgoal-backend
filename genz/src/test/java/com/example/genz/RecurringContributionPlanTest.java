@@ -1,27 +1,19 @@
 package com.example.genz;
 
-import com.example.genz.DTO.GoalDTO.CreateGoalRequest;
-import com.example.genz.DTO.GoalDTO.GoalResponse;
-import com.example.genz.DTO.GoalDTO.ContributionPlanStatusResponse;
-import com.example.genz.DTO.WalletDTO.DepositRequest;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Goal.SavingPlan;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.ContributionFrequency;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.GoalCategory;
-import com.example.genz.Enums.GoalStatus;
-import com.example.genz.Enums.GoalType;
-import com.example.genz.Enums.PeriodStatus;
-import com.example.genz.Enums.SavingPlanStatus;
-import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.Repository.GoalRepository.GoalMemberRepository;
-import com.example.genz.Repository.GoalRepository.GoalRepository;
-import com.example.genz.Repository.GoalRepository.SavingPlanRepository;
-import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
-import com.example.genz.Service.GoalService.GoalService;
-import com.example.genz.Service.WalletService.WalletService;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+// import com.example.genz.entity.Goal.SavingPlan;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.ContributionFrequency;
+import com.example.genz.enums.GoalStatus;
+import com.example.genz.enums.GoalType;
+import com.example.genz.enums.SavingPlanStatus;
+import com.example.genz.repository.AuthRepository.UserRepository;
+import com.example.genz.repository.GoalRepository.GoalMemberRepository;
+import com.example.genz.repository.GoalRepository.GoalRepository;
+import com.example.genz.repository.GoalRepository.SavingPlanRepository;
+import com.example.genz.repository.QrCodeRepository.GoalWalletRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,12 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+
+import com.example.genz.entity.Goal.SavingPlan;
 
 @ExtendWith(MockitoExtension.class)
 class RecurringContributionPlanTest {

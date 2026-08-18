@@ -1,7 +1,7 @@
-package com.example.genz.Entity.Notification;
+package com.example.genz.entity.Notification;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.NotificationType;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.NotificationType;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

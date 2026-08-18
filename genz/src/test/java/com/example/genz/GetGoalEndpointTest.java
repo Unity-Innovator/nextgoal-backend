@@ -1,20 +1,20 @@
 package com.example.genz;
 
-import com.example.genz.DTO.GoalDTO.GoalResponse;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Goal.GoalMember;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.GoalCategory;
-import com.example.genz.Enums.GoalStatus;
-import com.example.genz.Enums.GoalType;
-import com.example.genz.Enums.MemberRole;
-import com.example.genz.Enums.MemberStatus;
-import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.Repository.GoalRepository.GoalMemberRepository;
-import com.example.genz.Repository.GoalRepository.GoalRepository;
-import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
-import com.example.genz.Service.GoalService.GoalServiceImpl;
+import com.example.genz.dto.GoalDTO.GoalResponse;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Goal.GoalMember;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.GoalCategory;
+import com.example.genz.enums.GoalStatus;
+import com.example.genz.enums.GoalType;
+import com.example.genz.enums.MemberRole;
+import com.example.genz.enums.MemberStatus;
+import com.example.genz.repository.AuthRepository.UserRepository;
+import com.example.genz.repository.GoalRepository.GoalMemberRepository;
+import com.example.genz.repository.GoalRepository.GoalRepository;
+import com.example.genz.repository.QrCodeRepository.GoalWalletRepository;
+import com.example.genz.service.GoalService.GoalServiceImpl;
 import com.example.genz.exception.ResourceNoteFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,10 +54,10 @@ class GetGoalEndpointTest {
     private GoalWalletRepository goalWalletRepository;
 
     @Mock
-    private com.example.genz.Repository.GoalRepository.SavingPlanRepository savingPlanRepository;
+    private com.example.genz.repository.GoalRepository.SavingPlanRepository savingPlanRepository;
 
     @Mock
-    private com.example.genz.Repository.GoalRepository.GoalContributionRepository goalContributionRepository;
+    private com.example.genz.repository.GoalRepository.GoalContributionRepository goalContributionRepository;
 
     @Spy
     private GoalMapper goalMapper = new GoalMapper();

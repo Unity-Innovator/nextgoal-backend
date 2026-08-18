@@ -1,15 +1,15 @@
-package com.example.genz.Service.AuthService;
+package com.example.genz.service.AuthService;
 
 import com.example.genz.config.OtpProperties;
+import com.example.genz.dto.AuthDTO.LoginResponse;
+import com.example.genz.dto.AuthDTO.SendOtpRequest;
+import com.example.genz.dto.AuthDTO.UserResponse;
+import com.example.genz.dto.AuthDTO.VerifyOtpRequest;
+import com.example.genz.entity.Auth.Otp;
+import com.example.genz.entity.Auth.User;
 import com.example.genz.exception.OtpException;
-import com.example.genz.DTO.AuthDTO.LoginResponse;
-import com.example.genz.DTO.AuthDTO.SendOtpRequest;
-import com.example.genz.DTO.AuthDTO.UserResponse;
-import com.example.genz.DTO.AuthDTO.VerifyOtpRequest;
-import com.example.genz.Entity.Auth.Otp;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Repository.AuthRepository.OtpRepository;
-import com.example.genz.Repository.AuthRepository.UserRepository;
+import com.example.genz.repository.AuthRepository.OtpRepository;
+import com.example.genz.repository.AuthRepository.UserRepository;
 import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

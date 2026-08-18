@@ -1,6 +1,6 @@
-package com.example.genz.DTO.RewardDTO;
+package com.example.genz.dto.RewardDTO;
 
-import com.example.genz.Enums.ActivityType;
+import com.example.genz.enums.ActivityType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

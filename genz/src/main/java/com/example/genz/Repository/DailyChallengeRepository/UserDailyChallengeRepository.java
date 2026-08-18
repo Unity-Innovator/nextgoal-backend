@@ -1,7 +1,7 @@
-package com.example.genz.Repository.DailyChallengeRepository;
+package com.example.genz.repository.DailyChallengeRepository;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.DailyChallenge.UserDailyChallenge;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.DailyChallenge.UserDailyChallenge;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,6 +1,6 @@
-package com.example.genz.DTO.GoalDTO;
+package com.example.genz.dto.GoalDTO;
 
-import com.example.genz.Enums.ContributionFrequency;
+import com.example.genz.enums.ContributionFrequency;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.FutureOrPresent;
 import lombok.Getter;

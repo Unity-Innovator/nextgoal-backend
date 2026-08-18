@@ -1,7 +1,7 @@
-package com.example.genz.Service.DailyChallengeService;
+package com.example.genz.service.DailyChallengeService;
 
-import com.example.genz.DTO.DailyChallengeDTO.UserDailyChallengeResponse;
-import com.example.genz.Entity.Auth.User;
+import com.example.genz.dto.DailyChallengeDTO.UserDailyChallengeResponse;
+import com.example.genz.entity.Auth.User;
 
 import java.util.Optional;
 import java.util.UUID;

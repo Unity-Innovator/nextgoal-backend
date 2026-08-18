@@ -1,8 +1,8 @@
-package com.example.genz.DTO.RewardDTO;
+package com.example.genz.dto.RewardDTO;
 
-import com.example.genz.Enums.BadgeCategory;
-import com.example.genz.Enums.BadgeRarity;
-import com.example.genz.Enums.BadgeRequirementType;
+import com.example.genz.enums.BadgeCategory;
+import com.example.genz.enums.BadgeRarity;
+import com.example.genz.enums.BadgeRequirementType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

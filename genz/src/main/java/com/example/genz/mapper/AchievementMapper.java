@@ -1,11 +1,11 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.RewardDTO.AchievementResponse;
-import com.example.genz.DTO.RewardDTO.UserRewardSummaryResponse;
-import com.example.genz.DTO.RewardDTO.XpTransactionResponse;
-import com.example.genz.Entity.Reward.Badge;
-import com.example.genz.Entity.Reward.UserReward;
-import com.example.genz.Entity.Reward.XpTransaction;
+import com.example.genz.dto.RewardDTO.AchievementResponse;
+import com.example.genz.dto.RewardDTO.UserRewardSummaryResponse;
+import com.example.genz.dto.RewardDTO.XpTransactionResponse;
+import com.example.genz.entity.Reward.Badge;
+import com.example.genz.entity.Reward.UserReward;
+import com.example.genz.entity.Reward.XpTransaction;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package com.example.genz.DTO.NotificationDTO;
+package com.example.genz.dto.NotificationDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,10 +1,11 @@
-package com.example.genz.DTO.AuthDTO;
-
-import com.example.genz.Enums.Gender;
-import lombok.Builder;
+package com.example.genz.dto.AuthDTO;
 
 import java.time.LocalDate;
 import java.util.UUID;
+
+import com.example.genz.enums.Gender;
+
+import lombok.Builder;
 
 
 @Builder

@@ -1,8 +1,8 @@
-package com.example.genz.DTO.GoalDTO;
+package com.example.genz.dto.GoalDTO;
 
-import com.example.genz.Enums.ContributionFrequency;
-import com.example.genz.Enums.PeriodStatus;
-import com.example.genz.Enums.SavingPlanStatus;
+import com.example.genz.enums.ContributionFrequency;
+import com.example.genz.enums.PeriodStatus;
+import com.example.genz.enums.SavingPlanStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

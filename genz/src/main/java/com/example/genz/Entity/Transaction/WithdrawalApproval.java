@@ -1,7 +1,8 @@
-package com.example.genz.Entity.Transaction;
+package com.example.genz.entity.Transaction;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.ApprovalDecision;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.ApprovalDecision;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

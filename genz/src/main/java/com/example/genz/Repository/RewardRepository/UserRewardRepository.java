@@ -1,7 +1,7 @@
-package com.example.genz.Repository.RewardRepository;
+package com.example.genz.repository.RewardRepository;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Reward.UserReward;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Reward.UserReward;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

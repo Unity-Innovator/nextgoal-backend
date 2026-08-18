@@ -1,4 +1,4 @@
-package com.example.genz.DTO.WalletDTO;
+package com.example.genz.dto.WalletDTO;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;

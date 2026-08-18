@@ -1,13 +1,13 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.GoalDTO.ContributionPlanStatusResponse;
-import com.example.genz.DTO.GoalDTO.CreateGoalRequest;
-import com.example.genz.DTO.GoalDTO.SavingPlanResponse;
-import com.example.genz.DTO.GoalDTO.UpdateSavingPlanRequest;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Goal.SavingPlan;
-import com.example.genz.Enums.PeriodStatus;
-import com.example.genz.Enums.SavingPlanStatus;
+import com.example.genz.dto.GoalDTO.ContributionPlanStatusResponse;
+import com.example.genz.dto.GoalDTO.CreateGoalRequest;
+import com.example.genz.dto.GoalDTO.SavingPlanResponse;
+import com.example.genz.dto.GoalDTO.UpdateSavingPlanRequest;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Goal.SavingPlan;
+import com.example.genz.enums.PeriodStatus;
+import com.example.genz.enums.SavingPlanStatus;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

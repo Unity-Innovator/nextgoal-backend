@@ -1,7 +1,7 @@
-package com.example.genz.DTO.DailyChallengeDTO;
+package com.example.genz.dto.DailyChallengeDTO;
 
-import com.example.genz.Enums.ChallengeStatus;
-import com.example.genz.Enums.ChallengeType;
+import com.example.genz.enums.ChallengeStatus;
+import com.example.genz.enums.ChallengeType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

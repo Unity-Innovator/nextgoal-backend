@@ -1,10 +1,10 @@
 package com.example.genz.mapper;
 
-import com.example.genz.DTO.InvitationDTO.InvitationResponse;
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Entity.Goal.Goal;
-import com.example.genz.Entity.Invitation.GoalInvitation;
-import com.example.genz.Enums.InvitationStatus;
+import com.example.genz.dto.InvitationDTO.InvitationResponse;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Goal.Goal;
+import com.example.genz.entity.Invitation.GoalInvitation;
+import com.example.genz.enums.InvitationStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

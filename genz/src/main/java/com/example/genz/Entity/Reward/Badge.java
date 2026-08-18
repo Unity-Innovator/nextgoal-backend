@@ -1,8 +1,8 @@
-package com.example.genz.Entity.Reward;
+package com.example.genz.entity.Reward;
 
-import com.example.genz.Enums.BadgeCategory;
-import com.example.genz.Enums.BadgeRarity;
-import com.example.genz.Enums.BadgeRequirementType;
+import com.example.genz.enums.BadgeCategory;
+import com.example.genz.enums.BadgeRarity;
+import com.example.genz.enums.BadgeRequirementType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,4 @@
-package com.example.genz.DTO.InvitationDTO;
+package com.example.genz.dto.InvitationDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

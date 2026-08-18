@@ -1,7 +1,8 @@
-package com.example.genz.Entity.Learning;
+package com.example.genz.entity.Learning;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.AnswerChoice;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.enums.AnswerChoice;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

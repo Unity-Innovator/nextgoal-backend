@@ -1,10 +1,11 @@
-package com.example.genz.Entity.Transaction;
+package com.example.genz.entity.Transaction;
 
-import com.example.genz.Entity.Goal.GoalMember;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.GroupTransactionStatus;
-import com.example.genz.Enums.GroupTransactionType;
+import com.example.genz.entity.Goal.GoalMember;
+import com.example.genz.entity.Wallet.GrouplWallet;
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.GroupTransactionStatus;
+import com.example.genz.enums.GroupTransactionType;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

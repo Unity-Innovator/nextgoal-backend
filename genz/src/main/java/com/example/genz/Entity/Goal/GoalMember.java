@@ -1,15 +1,15 @@
-package com.example.genz.Entity.Goal;
+package com.example.genz.entity.Goal;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.example.genz.Entity.Transaction.GoalContribution;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Enums.MemberRole;
-import com.example.genz.Enums.MemberStatus;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Transaction.GoalContribution;
+import com.example.genz.enums.MemberRole;
+import com.example.genz.enums.MemberStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

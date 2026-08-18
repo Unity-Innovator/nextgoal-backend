@@ -1,11 +1,11 @@
-package com.example.genz.Service.QrCodeService;
+package com.example.genz.service.QrCodeService;
 
-import com.example.genz.Entity.Auth.User;
-import com.example.genz.Repository.AuthRepository.UserRepository;
-import com.example.genz.DTO.QrCodeDTO.GoalWalletRequest;
-import com.example.genz.Entity.Wallet.GrouplWallet;
-import com.example.genz.Repository.QrCodeRepository.GoalWalletRepository;
+import com.example.genz.dto.QrCodeDTO.GoalWalletRequest;
+import com.example.genz.entity.Auth.User;
+import com.example.genz.entity.Wallet.GrouplWallet;
 import com.example.genz.exception.ResourceNoteFoundException;
+import com.example.genz.repository.AuthRepository.UserRepository;
+import com.example.genz.repository.QrCodeRepository.GoalWalletRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;

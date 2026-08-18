@@ -1,9 +1,9 @@
-package com.example.genz.DTO.GoalDTO;
+package com.example.genz.dto.GoalDTO;
 
-import com.example.genz.Enums.ContributionFrequency;
-import com.example.genz.Enums.Currency;
-import com.example.genz.Enums.GoalCategory;
-import com.example.genz.Enums.GoalType;
+import com.example.genz.enums.ContributionFrequency;
+import com.example.genz.enums.Currency;
+import com.example.genz.enums.GoalCategory;
+import com.example.genz.enums.GoalType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
