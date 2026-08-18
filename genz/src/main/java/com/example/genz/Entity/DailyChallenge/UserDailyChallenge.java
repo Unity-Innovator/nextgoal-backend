@@ -11,16 +11,21 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+import lombok.Builder;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "user_daily_challenges")
+@Table(name = "user_daily_challenges", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_user_daily_challenge", columnNames = {"user_id", "challenge_date"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserDailyChallenge {
 
     @Id

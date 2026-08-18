@@ -62,6 +62,10 @@ public class Goal {
     @Column(nullable = false)
     private GoalStatus status = GoalStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "goal_type")
+    private com.example.genz.enums.GoalType goalType = com.example.genz.enums.GoalType.FLEXIBLE;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
@@ -84,4 +88,7 @@ public class Goal {
 
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WithdrawalRequest> withdrawalRequests;
+
+    @OneToOne(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private SavingPlan savingPlan;
 }

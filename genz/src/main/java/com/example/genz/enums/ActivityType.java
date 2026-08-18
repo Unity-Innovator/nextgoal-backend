@@ -6,5 +6,6 @@ public enum ActivityType {
     EXPENSE_LOG,
     CONTRIBUTION,
     DAILY_CHALLENGE,
-    STREAK_BONUS
+    STREAK_BONUS,
+    ACHIEVEMENT_REWARD
 }

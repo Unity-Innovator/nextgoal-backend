@@ -1,9 +1,9 @@
 package com.example.genz.repository.GoalRepository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.example.genz.entity.Auth.User;
 import com.example.genz.entity.Goal.Goal;
+import com.example.genz.enums.GoalStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,4 +16,8 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
     Optional<Goal> findByIdAndOwner(UUID id, User owner);
 
     boolean existsByGoalNameAndOwner(String goalName, User owner);
+
+    long countByOwner(User owner);
+
+    long countByOwnerAndStatus(User owner, GoalStatus status);
 }

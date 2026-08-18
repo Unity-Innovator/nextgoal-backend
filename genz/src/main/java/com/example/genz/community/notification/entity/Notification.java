@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Entity
-@Table(name = "notifications")
+@Entity(name = "CommunityNotification")
+@Table(name = "community_notifications")
 @Getter
 @Setter
 @NoArgsConstructor

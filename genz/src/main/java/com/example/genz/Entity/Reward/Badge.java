@@ -1,17 +1,17 @@
 package com.example.genz.entity.Reward;
 
+import com.example.genz.enums.BadgeCategory;
+import com.example.genz.enums.BadgeRarity;
+import com.example.genz.enums.BadgeRequirementType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
-import com.example.genz.enums.BadgeRequirementType;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +21,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Badge {
 
     @Id
@@ -42,12 +43,31 @@ public class Badge {
 
     @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false)
+    private BadgeCategory category;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "requirement_type", nullable = false)
     private BadgeRequirementType requirementType;
 
     @Column(name = "requirement_value")
     private Integer requirementValue;
 
+    @Column(name = "xp_reward", nullable = false)
+    private Integer xpReward;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rarity", nullable = false)
+    private BadgeRarity rarity;
+
+    @Builder.Default
+    @Column(name = "active", nullable = false)
+    private Boolean active = true;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "badge", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserBadge> userBadges;
+    @Builder.Default
+    private List<UserBadge> userBadges = new ArrayList<>();
 }

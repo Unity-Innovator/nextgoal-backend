@@ -7,7 +7,11 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:channangan}
     password: ${SPRING_DATASOURCE_PASSWORD:root@123}
 
+  sql:
+    init:
+      mode: always
   jpa:
+    defer-datasource-initialization: true
     database: POSTGRESQL
     hibernate:
       ddl-auto: update
