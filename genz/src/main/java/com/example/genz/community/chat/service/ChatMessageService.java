@@ -16,7 +16,7 @@ import com.example.genz.community.chat.mapper.ChatMapper;
 import com.example.genz.community.chat.repository.ChatConversationRepository;
 import com.example.genz.community.chat.repository.ChatMessageReceiptRepository;
 import com.example.genz.community.chat.repository.ChatMessageRepository;
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;

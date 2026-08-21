@@ -8,8 +8,8 @@ import com.example.genz.community.chat.repository.ChatConversationMemberReposito
 import com.example.genz.community.chat.repository.ChatConversationRepository;
 import com.example.genz.community.friendship.repository.FriendshipRepository;
 import com.example.genz.community.friendship.repository.UserBlockRepository;
-import com.example.genz.entity.Auth.User;
-import com.example.genz.repository.AuthRepository.UserRepository;
+import com.example.genz.auth.entity.User;
+import com.example.genz.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;

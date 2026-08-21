@@ -1,0 +1,79 @@
+package com.example.genz.transaction.entity;
+
+import com.example.genz.goal.entity.GoalMember;
+import com.example.genz.wallet.entity.GrouplWallet;
+import com.example.genz.transaction.enums.Currency;
+import com.example.genz.transaction.enums.GroupTransactionStatus;
+import com.example.genz.transaction.enums.GroupTransactionType;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "group_wallet_transactions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class GroupWalletTransaction {
+
+    @Id
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "group_wallet_transaction_id", columnDefinition = "uuid", updatable = false, nullable = false)
+    private UUID id;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_wallet_id", nullable = false)
+    private GrouplWallet groupWallet;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "goal_member_id", nullable = false)
+    private GoalMember goalMember;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "withdrawal_request_id")
+    private WithdrawalRequest withdrawalRequest;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", nullable = false)
+    private GroupTransactionType transactionType;
+
+    @NotNull
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal amount;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Currency currency;
+
+    @NotNull
+    @Column(name = "balance_before", nullable = false, precision = 19, scale = 4)
+    private BigDecimal balanceBefore;
+
+    @NotNull
+    @Column(name = "balance_after", nullable = false, precision = 19, scale = 4)
+    private BigDecimal balanceAfter;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GroupTransactionStatus status;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+}
