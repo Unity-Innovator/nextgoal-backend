@@ -17,7 +17,7 @@ import com.example.genz.community.chat.service.ConversationService;
 import com.example.genz.community.chat.service.DeliveryReceiptResult;
 import com.example.genz.community.chat.service.MessageSendResult;
 import com.example.genz.community.chat.service.ReadReceiptResult;
-import com.example.genz.exception.ApiResponse;
+import com.example.genz.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

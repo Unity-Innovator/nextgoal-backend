@@ -1,7 +1,7 @@
 package com.example.genz.community.friendship.entity;
 
 import com.example.genz.community.friendship.enums.FriendRequestStatus;
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

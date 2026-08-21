@@ -1,0 +1,12 @@
+package com.example.genz.reward.enums;
+
+public enum BadgeCategory {
+    GETTING_STARTED,
+    SAVING_STREAKS,
+    SAVINGS_MILESTONES,
+    GOALS_ACHIEVED,
+    COMMUNITY_SOCIAL,
+    WALLET_TRANSACTIONS,
+    ENGAGEMENT_APP_USAGE,
+    SPECIAL_SEASONAL
+}

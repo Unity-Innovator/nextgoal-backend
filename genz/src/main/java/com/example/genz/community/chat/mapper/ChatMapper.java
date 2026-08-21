@@ -15,7 +15,7 @@ import com.example.genz.community.chat.entity.ChatMessageReceipt;
 import com.example.genz.community.chat.enums.ConversationMemberStatus;
 import com.example.genz.community.chat.enums.ConversationType;
 import com.example.genz.community.chat.enums.MessageStatus;
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
