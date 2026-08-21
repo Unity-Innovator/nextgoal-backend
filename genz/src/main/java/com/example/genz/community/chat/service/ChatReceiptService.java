@@ -8,7 +8,7 @@ import com.example.genz.community.chat.exception.ChatBadRequestException;
 import com.example.genz.community.chat.repository.ChatConversationMemberRepository;
 import com.example.genz.community.chat.repository.ChatMessageReceiptRepository;
 import com.example.genz.community.chat.repository.ChatMessageRepository;
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

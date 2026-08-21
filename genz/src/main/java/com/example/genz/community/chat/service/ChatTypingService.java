@@ -1,7 +1,7 @@
 package com.example.genz.community.chat.service;
 
 import com.example.genz.community.chat.dto.TypingEvent;
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

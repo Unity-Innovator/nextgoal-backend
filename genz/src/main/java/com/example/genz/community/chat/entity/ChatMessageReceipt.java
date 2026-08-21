@@ -1,6 +1,6 @@
 package com.example.genz.community.chat.entity;
 
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

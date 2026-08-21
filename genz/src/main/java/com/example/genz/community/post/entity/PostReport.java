@@ -2,7 +2,7 @@ package com.example.genz.community.post.entity;
 
 import com.example.genz.community.post.enums.ReportReason;
 import com.example.genz.community.post.enums.ReportStatus;
-import com.example.genz.entity.Auth.User;
+import com.example.genz.auth.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

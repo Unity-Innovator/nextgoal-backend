@@ -1,5 +1,8 @@
 # Gen_Z_Mobile_App_Backend
 
+The Spring Boot service is in [`genz`](genz). Its Java code follows a
+feature-first structure documented in [`genz/ARCHITECTURE.md`](genz/ARCHITECTURE.md).
+
 
 
 ## Getting started
