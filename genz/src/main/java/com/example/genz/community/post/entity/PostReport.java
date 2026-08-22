@@ -70,6 +70,9 @@ public class PostReport {
     @Column(name = "reviewed_at")
     private Instant reviewedAt;
 
+    @Column(name = "moderation_note", length = 1000)
+    private String moderationNote;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

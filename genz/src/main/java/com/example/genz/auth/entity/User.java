@@ -11,11 +11,13 @@ import com.example.genz.transaction.entity.PaymentMethod;
 import com.example.genz.transaction.entity.WalletTransaction;
 import com.example.genz.wallet.entity.GrouplWallet;
 import com.example.genz.auth.enums.Gender;
+import com.example.genz.auth.enums.UserRole;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
@@ -60,6 +62,11 @@ public class User implements UserDetails {
     @Column(name = "status", nullable = false)
     private String status;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20, columnDefinition = "varchar(20) default 'USER'")
+    private UserRole role = UserRole.USER;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -99,6 +106,9 @@ public class User implements UserDetails {
     @PrePersist
 
     public void onCreate() {
+        if (this.role == null) {
+            this.role = UserRole.USER;
+        }
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -110,7 +120,8 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        UserRole assignedRole = role == null ? UserRole.USER : role;
+        return List.of(new SimpleGrantedAuthority("ROLE_" + assignedRole.name()));
     }
 
     @Override

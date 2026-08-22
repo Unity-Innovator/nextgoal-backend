@@ -14,3 +14,4 @@ ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS user_daily
 ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS uk_user_challenge_date;
 ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS uk_user_daily_challenge;
 ALTER TABLE IF EXISTS user_daily_challenges ADD CONSTRAINT uk_user_daily_challenge UNIQUE (user_id, challenge_date);
+ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS users_role_check;
