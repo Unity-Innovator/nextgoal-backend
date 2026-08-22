@@ -8,6 +8,9 @@ then use this document for the exhaustive endpoint and payload contract.
 TypeScript blocks below are compact schema notation for the wire format, not a
 recommendation for the mobile implementation.
 
+For an ordered Alice/Bob/Charlie HTTPie test workflow, use the
+[community API manual testing runbook](community-api-testing.md).
+
 ## 1. Connection and authentication
 
 Local development URLs:
