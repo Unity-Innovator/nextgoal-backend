@@ -3,6 +3,15 @@
 The Spring Boot service is in [`genz`](genz). Its Java code follows a
 feature-first structure documented in [`genz/ARCHITECTURE.md`](genz/ARCHITECTURE.md).
 
+<<<<<<< HEAD
+Flutter integration for feeds, friendships, engagement, chat, notifications,
+and moderation is documented in
+[`genz/docs/community-flutter-integration.md`](genz/docs/community-flutter-integration.md).
+The exhaustive backend contract is in
+[`genz/docs/community-frontend-api.md`](genz/docs/community-frontend-api.md).
+
+=======
+>>>>>>> origin/dev
 
 
 ## Getting started

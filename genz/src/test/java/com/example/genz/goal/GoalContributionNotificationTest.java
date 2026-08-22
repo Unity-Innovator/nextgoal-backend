@@ -1,48 +1,53 @@
 package com.example.genz.goal;
 
-import com.example.genz.wallet.dto.DepositRequest;
-import com.example.genz.auth.entity.User;
-import com.example.genz.goal.entity.Goal;
-import com.example.genz.goal.entity.GoalMember;
-import com.example.genz.notification.entity.Notification;
-import com.example.genz.transaction.entity.GoalContribution;
-import com.example.genz.wallet.entity.GrouplWallet;
-import com.example.genz.goal.enums.MemberRole;
-import com.example.genz.goal.enums.MemberStatus;
-import com.example.genz.notification.enums.NotificationType;
-import com.example.genz.auth.repository.UserRepository;
-import com.example.genz.goal.repository.GoalContributionRepository;
-import com.example.genz.goal.repository.GoalMemberRepository;
-import com.example.genz.goal.repository.GoalRepository;
-import com.example.genz.goal.repository.SavingPlanRepository;
-import com.example.genz.notification.repository.NotificationRepository;
-import com.example.genz.wallet.repository.GoalWalletRepository;
-import com.example.genz.transaction.repository.WalletTransactionRepository;
-import com.example.genz.notification.service.NotificationServiceImpl;
-import com.example.genz.wallet.service.WalletServiceImpl;
-import com.example.genz.wallet.mapper.WalletMapper;
-import com.example.genz.common.exception.BadRequestException;
-import com.example.genz.common.exception.ResourceNoteFoundException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
-import com.example.genz.notification.mapper.NotificationMapper;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.genz.auth.entity.User;
+import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.common.exception.BadRequestException;
+import com.example.genz.common.exception.ResourceNoteFoundException;
+import com.example.genz.goal.entity.Goal;
+import com.example.genz.goal.entity.GoalMember;
+import com.example.genz.goal.enums.MemberRole;
+import com.example.genz.goal.enums.MemberStatus;
+import com.example.genz.goal.repository.GoalContributionRepository;
+import com.example.genz.goal.repository.GoalMemberRepository;
+import com.example.genz.goal.repository.GoalRepository;
+import com.example.genz.goal.repository.SavingPlanRepository;
+import com.example.genz.notification.entity.Notification;
+import com.example.genz.notification.enums.NotificationType;
+import com.example.genz.notification.mapper.NotificationMapper;
+import com.example.genz.notification.repository.NotificationRepository;
+import com.example.genz.notification.service.NotificationServiceImpl;
+import com.example.genz.transaction.entity.GoalContribution;
+import com.example.genz.transaction.repository.WalletTransactionRepository;
+import com.example.genz.wallet.dto.DepositRequest;
+import com.example.genz.wallet.entity.GrouplWallet;
+import com.example.genz.wallet.mapper.WalletMapper;
+import com.example.genz.wallet.repository.GoalWalletRepository;
+import com.example.genz.wallet.service.WalletServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class GoalContributionNotificationTest {
@@ -54,7 +59,7 @@ class GoalContributionNotificationTest {
     @Mock
     private GoalMemberRepository goalMemberRepository;
     @Spy
-    private NotificationMapper notificationMapper = new NotificationMapper();
+    private final NotificationMapper notificationMapper = new NotificationMapper();
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
