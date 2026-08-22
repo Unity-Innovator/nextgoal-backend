@@ -5,6 +5,9 @@ import com.example.genz.auth.exception.OtpException;
 import com.example.genz.community.chat.exception.ChatBadRequestException;
 import com.example.genz.community.chat.exception.ChatConflictException;
 import com.example.genz.community.chat.exception.ChatNotFoundException;
+import com.example.genz.community.friendship.exception.FriendshipBadRequestException;
+import com.example.genz.community.friendship.exception.FriendshipConflictException;
+import com.example.genz.community.friendship.exception.FriendshipNotFoundException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -77,6 +80,27 @@ public class GlobalExceptionHandler {
     @Order(Ordered.HIGHEST_PRECEDENCE)
     @ExceptionHandler(ChatConflictException.class)
     public ResponseEntity<ErrorResponse> chatConflictHandler(ChatConflictException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(FriendshipNotFoundException.class)
+    public ResponseEntity<ErrorResponse> friendshipNotFoundHandler(FriendshipNotFoundException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(FriendshipBadRequestException.class)
+    public ResponseEntity<ErrorResponse> friendshipBadRequestHandler(FriendshipBadRequestException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(FriendshipConflictException.class)
+    public ResponseEntity<ErrorResponse> friendshipConflictHandler(FriendshipConflictException ex) {
         ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value(), LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
