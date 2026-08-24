@@ -16,6 +16,7 @@ import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
+import com.example.genz.auth.dto.VerifyPinRequest;
 import com.example.genz.common.api.ApiResponse;
 import com.example.genz.auth.service.AuthService;
 import com.example.genz.auth.service.OtpService;
@@ -51,6 +52,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         LoginResponse response = otpService.verifyOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
+    }
+
+    @PostMapping("/verify-pin")
+    public ResponseEntity<ApiResponse<LoginResponse>> verifyPin(@Valid @RequestBody VerifyPinRequest request) {
+        LoginResponse response = authService.verifyPin(request);
+        return ResponseEntity.ok(ApiResponse.success("PIN verified successfully", response));
     }
 
     @GetMapping("/check")

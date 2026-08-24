@@ -4,6 +4,7 @@ import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.User;
+import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.common.exception.ResourceNoteFoundException;
 import com.example.genz.auth.repository.UserRepository;
 
@@ -72,5 +73,22 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
         return user != null;
+    }
+
+    @Override
+    public LoginResponse verifyPin(VerifyPinRequest request) {
+        User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
+                .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
+
+        if (user.getPinHash() == null || !passwordEncoder.matches(request.getPin(), user.getPinHash())) {
+            throw new BadRequestException("Invalid PIN");
+        }
+
+        String phoneNumber = user.getPhoneNumber();
+        String jwt = jwtUtil.generateAccessToken(phoneNumber);
+        String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
+
+        UserResponse userResponse = userMapper.toUserResponse(user);
+        return userMapper.toLoginResponse(jwt, refreshToken, userResponse);
     }
 }
