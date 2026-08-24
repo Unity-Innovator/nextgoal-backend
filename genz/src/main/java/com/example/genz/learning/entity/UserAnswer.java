@@ -6,6 +6,7 @@ import com.example.genz.learning.enums.AnswerChoice;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserAnswer {
 
     @Id
@@ -33,6 +35,10 @@ public class UserAnswer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quiz_attempt_id")
+    private QuizAttempt quizAttempt;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)

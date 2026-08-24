@@ -67,6 +67,17 @@ public class User implements UserDetails {
     @Column(name = "role", nullable = false, length = 20, columnDefinition = "varchar(20) default 'USER'")
     private UserRole role = UserRole.USER;
 
+    @Builder.Default
+    @Column(name = "energy")
+    private Integer energy = 100;
+
+    @Builder.Default
+    @Column(name = "total_xp")
+    private Integer totalXp = 0;
+
+    @Column(name = "energy_reset_date")
+    private LocalDate energyResetDate;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
