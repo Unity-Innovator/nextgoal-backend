@@ -7,6 +7,7 @@ import com.example.genz.community.post.enums.PostVisibility;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserSettings {
 
     @Id
@@ -55,6 +57,10 @@ public class UserSettings {
 
     @Column(name = "ai_tips", nullable = false)
     private Boolean aiTips;
+
+    @Builder.Default
+    @Column(name = "daily_challenge_enabled", nullable = false)
+    private Boolean dailyChallengeEnabled = true;
 
     @Column(name = "face_id_enabled", nullable = false)
     private Boolean faceIdEnabled;
@@ -97,4 +103,11 @@ public class UserSettings {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void onCreate() {
+        if (this.dailyChallengeEnabled == null) {
+            this.dailyChallengeEnabled = true;
+        }
+    }
 }
