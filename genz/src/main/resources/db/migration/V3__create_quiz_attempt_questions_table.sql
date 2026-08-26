@@ -63,12 +63,26 @@ CREATE TABLE IF NOT EXISTS user_answers (
     answered_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- user_answers predates quiz_attempts in legacy databases. CREATE TABLE IF NOT
+-- EXISTS does not add the association when the table is already present.
+ALTER TABLE user_answers
+    ADD COLUMN IF NOT EXISTS quiz_attempt_id UUID
+        REFERENCES quiz_attempts(quiz_attempt_id) ON DELETE CASCADE;
+
 -- 6. Quiz Attempt Questions Join Table
 CREATE TABLE IF NOT EXISTS quiz_attempt_questions (
     quiz_attempt_id UUID NOT NULL REFERENCES quiz_attempts(quiz_attempt_id) ON DELETE CASCADE,
     question_id UUID NOT NULL REFERENCES lesson_questions(question_id) ON DELETE CASCADE,
     PRIMARY KEY (quiz_attempt_id, question_id)
 );
+
+-- Also tolerate a join table that Hibernate created only partially.
+ALTER TABLE quiz_attempt_questions
+    ADD COLUMN IF NOT EXISTS quiz_attempt_id UUID
+        REFERENCES quiz_attempts(quiz_attempt_id) ON DELETE CASCADE;
+ALTER TABLE quiz_attempt_questions
+    ADD COLUMN IF NOT EXISTS question_id UUID
+        REFERENCES lesson_questions(question_id) ON DELETE CASCADE;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS ix_lesson_questions_lesson_id ON lesson_questions(lesson_id);
