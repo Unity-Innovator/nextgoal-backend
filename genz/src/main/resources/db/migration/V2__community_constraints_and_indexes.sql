@@ -5,6 +5,13 @@
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'USER';
 
+-- Some legacy databases were created before post sharing was enabled. In
+-- production Hibernate only validates the schema, so Flyway must materialize
+-- the counter before the constraint below can reference it. The default also
+-- backfills existing posts and keeps the column non-null.
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS share_count INTEGER NOT NULL DEFAULT 0;
+
 DO $$
 BEGIN
     IF NOT EXISTS (
