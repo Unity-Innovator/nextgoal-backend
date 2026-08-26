@@ -5,12 +5,69 @@
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'USER';
 
--- Some legacy databases were created before post sharing was enabled. In
--- production Hibernate only validates the schema, so Flyway must materialize
--- the counter before the constraint below can reference it. The default also
--- backfills existing posts and keeps the column non-null.
+-- Hibernate used to update these tables incrementally, so legacy databases can
+-- contain only part of the current community schema. Production uses
+-- ddl-auto=validate. Materialize every non-key column used by the current post
+-- entities and by the constraints/indexes below before Hibernate validates it.
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS goal_id UUID REFERENCES goals(goal_id);
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS shared_post_id UUID REFERENCES posts(post_id);
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS post_type VARCHAR(30) NOT NULL DEFAULT 'LIFE_UPDATE';
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS content TEXT;
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS visibility VARCHAR(20) NOT NULL DEFAULT 'PUBLIC';
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS like_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS comment_count INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE posts
     ADD COLUMN IF NOT EXISTS share_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
+ALTER TABLE posts
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS parent_comment_id UUID REFERENCES post_comments(comment_id);
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS like_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS reply_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
+ALTER TABLE post_comments
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE post_likes
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
+
+ALTER TABLE post_reports
+    ADD COLUMN IF NOT EXISTS details TEXT;
+ALTER TABLE post_reports
+    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'PENDING';
+ALTER TABLE post_reports
+    ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(user_id) ON DELETE SET NULL;
+ALTER TABLE post_reports
+    ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE post_reports
+    ADD COLUMN IF NOT EXISTS moderation_note VARCHAR(1000);
+ALTER TABLE post_reports
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
 
 DO $$
 BEGIN
@@ -21,9 +78,6 @@ BEGIN
         ALTER TABLE users ADD CONSTRAINT ck_users_role CHECK (role IN ('USER', 'ADMIN'));
     END IF;
 END $$;
-
-ALTER TABLE post_reports
-    ADD COLUMN IF NOT EXISTS moderation_note VARCHAR(1000);
 
 CREATE TABLE IF NOT EXISTS comment_reports (
     report_id UUID PRIMARY KEY,
