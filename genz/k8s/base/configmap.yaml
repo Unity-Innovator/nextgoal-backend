@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nextgoal-config
-data:
-  SPRING_PROFILES_ACTIVE: "dev"

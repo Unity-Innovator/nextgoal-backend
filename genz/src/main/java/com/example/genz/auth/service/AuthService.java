@@ -9,6 +9,7 @@ import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
+import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.VerifyPinRequest;
 
 public interface AuthService {
@@ -16,5 +17,6 @@ public interface AuthService {
     RegisterResponse register(@Valid @RequestBody RegisterRequest request);
     Boolean checkUser(@RequestParam String phoneNumber);
     LoginResponse verifyPin(VerifyPinRequest request);
+    LoginResponse refresh(RefreshTokenRequest request);
 }
 

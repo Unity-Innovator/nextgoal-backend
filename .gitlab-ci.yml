@@ -7,6 +7,10 @@ variables:
   APP_DIR: genz
   MAVEN_USER_HOME: "$CI_PROJECT_DIR/.m2"
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  BACKEND_IMAGE: "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
+  DEPLOY_ENV_FILE: "/etc/default/nextgoal-env"
+  DEPLOY_BACKUP_DIR: "/var/backups/nextgoal"
+  DEPLOY_COMPOSE_PROJECT: "nextgoal"
 
 cache:
   key:
@@ -21,7 +25,7 @@ test:
   script:
     - cd "$APP_DIR"
     - chmod +x mvnw
-    - ./mvnw -B test
+    - ./mvnw --batch-mode clean verify
   artifacts:
     when: always
     reports:
@@ -42,36 +46,110 @@ build_image:
     - name: docker:27.5.1-dind
       alias: docker
   needs:
-    - test
+    - job: test
+      artifacts: false
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
   script:
-    - cd "$APP_DIR"
-    - docker build --pull --tag "genz-backend:$CI_COMMIT_SHA" .
+    - docker build --pull --label "org.opencontainers.image.revision=$CI_COMMIT_SHA" --tag "$BACKEND_IMAGE" "$APP_DIR"
+    - docker push "$BACKEND_IMAGE"
+  after_script:
+    - docker logout "$CI_REGISTRY" >/dev/null 2>&1 || true
 
 deploy_ubuntu:
   stage: deploy
   tags:
     - ubuntu-deploy
   needs:
-    - build_image
+    - job: build_image
+      artifacts: false
+  variables:
+    # A fresh checkout prevents obsolete/untracked Java sources from leaking
+    # into the Docker build context on the long-lived deployment runner.
+    GIT_STRATEGY: clone
   script:
-    - cd "$CI_PROJECT_DIR/genz"
-    - >-
-      docker compose
-      --project-name nextgoal
-      --env-file /etc/default/nextgoal-env
-      -f docker-compose.prod.yaml
-      up -d --build backend
-    - >-
-      docker compose
-      --project-name nextgoal
-      --env-file /etc/default/nextgoal-env
-      -f docker-compose.prod.yaml
-      ps
+    - |
+      set -euo pipefail
+      umask 077
+
+      test -r "$DEPLOY_ENV_FILE"
+      test -d "$DEPLOY_BACKUP_DIR"
+      test -w "$DEPLOY_BACKUP_DIR"
+
+      export DOCKER_CONFIG="$CI_PROJECT_DIR/.docker-auth"
+      mkdir -p "$DOCKER_CONFIG"
+      TEMP_BACKUP=""
+      cleanup() {
+        if [ -n "$TEMP_BACKUP" ]; then
+          rm -f "$TEMP_BACKUP"
+        fi
+        rm -rf "$DOCKER_CONFIG"
+      }
+      trap cleanup EXIT
+
+      echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+
+      cd "$CI_PROJECT_DIR/$APP_DIR"
+
+      compose() {
+        docker compose \
+          --project-name "$DEPLOY_COMPOSE_PROJECT" \
+          --env-file "$DEPLOY_ENV_FILE" \
+          -f docker-compose.prod.yaml \
+          "$@"
+      }
+
+      compose config --quiet
+
+      PREVIOUS_BACKEND_IMAGE="$(docker inspect --format '{{.Config.Image}}' nextgoal-backend 2>/dev/null || true)"
+
+      if docker ps --format '{{.Names}}' | grep -Fxq 'nextgoal-db'; then
+        BACKUP_FILE="$DEPLOY_BACKUP_DIR/nextgoal-${CI_COMMIT_SHORT_SHA}-$(date -u +%Y%m%dT%H%M%SZ).dump"
+        TEMP_BACKUP="${BACKUP_FILE}.tmp"
+        docker exec nextgoal-db sh -c 'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$TEMP_BACKUP"
+        test -s "$TEMP_BACKUP"
+        mv "$TEMP_BACKUP" "$BACKUP_FILE"
+        TEMP_BACKUP=""
+        echo "PostgreSQL backup created: $BACKUP_FILE"
+      else
+        echo "No running nextgoal-db container; skipping the pre-deploy backup for the first deployment."
+      fi
+
+      compose pull backend
+      compose up -d --no-build backend
+
+      DEPLOYMENT_READY=false
+      for attempt in $(seq 1 60); do
+        if curl -fsS http://127.0.0.1:8080/actuator/health/readiness | grep -q '"status":"UP"'; then
+          DEPLOYMENT_READY=true
+          break
+        fi
+        sleep 2
+      done
+
+      if [ "$DEPLOYMENT_READY" != "true" ]; then
+        echo "Deployment did not become ready."
+        compose ps || true
+        compose logs --tail=200 backend || true
+
+        if [ -n "$PREVIOUS_BACKEND_IMAGE" ]; then
+          echo "Rolling the backend container back to $PREVIOUS_BACKEND_IMAGE"
+          export BACKEND_IMAGE="$PREVIOUS_BACKEND_IMAGE"
+          compose up -d --no-build backend || true
+        fi
+
+        exit 1
+      fi
+
+      compose ps
+      echo "Deployed $BACKEND_IMAGE"
   environment:
     name: production/ubuntu
   resource_group: production-ubuntu
+  interruptible: false
+  timeout: 15m
   rules:
-    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: manual
-      allow_failure: true
+      allow_failure: false
     - when: never

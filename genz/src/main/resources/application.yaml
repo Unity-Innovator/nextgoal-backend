@@ -4,8 +4,8 @@ spring:
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nextgoal}
-    username: ${SPRING_DATASOURCE_USERNAME:channangan}
-    password: ${SPRING_DATASOURCE_PASSWORD:root@123}
+    username: ${SPRING_DATASOURCE_USERNAME:nextgoal}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
 
   sql:
     init:
@@ -29,6 +29,7 @@ otp:
   max-attempts: 5
   resend-cooldown-seconds: 60
   length: 6
+  console-delivery-enabled: ${OTP_CONSOLE_DELIVERY_ENABLED:false}
 
 jwt:
   secret: ${JWT_SECRET}
@@ -36,6 +37,10 @@ jwt:
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 app:
+  seed:
+    test-user-enabled: ${TEST_USER_SEED_ENABLED:false}
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*}
   websocket:
     allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*}
 
@@ -44,6 +49,7 @@ management:
     health:
       probes:
         enabled: true
+  endpoints:
     web:
       exposure:
         include: "health,info"

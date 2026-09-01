@@ -39,22 +39,32 @@ public class UserMapper {
                 .build();
     }
 
-    public LoginResponse toLoginResponse(String accessToken, String refreshToken, UserResponse userResponse) {
+    public LoginResponse toLoginResponse(
+            String accessToken,
+            String refreshToken,
+            long expiresIn,
+            UserResponse userResponse
+    ) {
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(900L)
+                .expiresIn(expiresIn)
                 .user(userResponse)
                 .build();
     }
 
-    public RegisterResponse toRegisterResponse(String accessToken, String refreshToken, UserResponse userResponse) {
+    public RegisterResponse toRegisterResponse(
+            String accessToken,
+            String refreshToken,
+            long expiresIn,
+            UserResponse userResponse
+    ) {
         return new RegisterResponse(
                 accessToken,
                 refreshToken,
                 "Bearer",
-                900L,
+                expiresIn,
                 userResponse
         );
     }

@@ -11,6 +11,7 @@ import com.example.genz.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
 
         UserResponse userResponse = userMapper.toUserResponse(user);
-        return userMapper.toLoginResponse(jwt, refreshToken, userResponse);
+        return userMapper.toLoginResponse(jwt, refreshToken, jwtUtil.getAccessExpirationSeconds(), userResponse);
     }
 
     @Override
@@ -48,11 +49,11 @@ public class AuthServiceImpl implements AuthService {
         final String fullName = request.getFirstName() + " " + request.getLastName();
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("Passwords do not match");
+            throw new BadRequestException("Passwords do not match");
         }
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
-            throw new RuntimeException("Phone number already exists");
+            throw new BadRequestException("Phone number already exists");
         }
 
         String passwordHash = passwordEncoder.encode(request.getPassword());
@@ -65,7 +66,12 @@ public class AuthServiceImpl implements AuthService {
         final String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
 
         UserResponse userResponse = userMapper.toUserResponse(user);
-        return userMapper.toRegisterResponse(accessToken, refreshToken, userResponse);
+        return userMapper.toRegisterResponse(
+                accessToken,
+                refreshToken,
+                jwtUtil.getAccessExpirationSeconds(),
+                userResponse
+        );
     }
 
     @Override
@@ -80,6 +86,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
 
+        ensureActive(user);
+
         if (user.getPinHash() == null || !passwordEncoder.matches(request.getPin(), user.getPinHash())) {
             throw new BadRequestException("Invalid PIN");
         }
@@ -89,6 +97,38 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
 
         UserResponse userResponse = userMapper.toUserResponse(user);
-        return userMapper.toLoginResponse(jwt, refreshToken, userResponse);
+        return userMapper.toLoginResponse(jwt, refreshToken, jwtUtil.getAccessExpirationSeconds(), userResponse);
+    }
+
+    @Override
+    public LoginResponse refresh(RefreshTokenRequest request) {
+        try {
+            String phoneNumber = jwtUtil.extractPhoneNumber(request.refreshToken());
+            User user = userRepository.findByPhoneNumber(phoneNumber)
+                    .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
+            if (!jwtUtil.validateRefreshToken(request.refreshToken(), user)) {
+                throw new BadRequestException("Invalid refresh token");
+            }
+
+            String accessToken = jwtUtil.generateAccessToken(phoneNumber);
+            String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
+            return userMapper.toLoginResponse(
+                    accessToken,
+                    refreshToken,
+                    jwtUtil.getAccessExpirationSeconds(),
+                    userMapper.toUserResponse(user)
+            );
+        } catch (RuntimeException ex) {
+            if (ex instanceof BadRequestException badRequestException) {
+                throw badRequestException;
+            }
+            throw new BadRequestException("Invalid refresh token");
+        }
+    }
+
+    private void ensureActive(UserDetails user) {
+        if (!user.isEnabled()) {
+            throw new BadRequestException("Account is not active");
+        }
     }
 }

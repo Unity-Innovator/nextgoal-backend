@@ -241,7 +241,7 @@ class GoalContributionNotificationTest {
         outsider.setPhoneNumber("0999999999");
 
         when(userRepository.findByPhoneNumber(outsider.getPhoneNumber())).thenReturn(Optional.of(outsider));
-        when(goalRepository.findById(goal.getId())).thenReturn(Optional.of(goal));
+        when(goalRepository.findByIdForUpdate(goal.getId())).thenReturn(Optional.of(goal));
         when(goalMemberRepository.existsByGoalIdAndUserId(goal.getId(), outsider.getId())).thenReturn(false);
 
         DepositRequest request = new DepositRequest(goal.getId(), BigDecimal.valueOf(100));
@@ -294,7 +294,7 @@ class GoalContributionNotificationTest {
     @DisplayName("7. Contribution fails -> no notifications created")
     void testContributionFails_NoNotificationCreated() {
         when(userRepository.findByPhoneNumber(memberAlex.getPhoneNumber())).thenReturn(Optional.of(memberAlex));
-        when(goalRepository.findById(goal.getId())).thenReturn(Optional.empty());
+        when(goalRepository.findByIdForUpdate(goal.getId())).thenReturn(Optional.empty());
 
         DepositRequest request = new DepositRequest(goal.getId(), BigDecimal.valueOf(100));
 
@@ -306,7 +306,7 @@ class GoalContributionNotificationTest {
     @DisplayName("8. Wallet update fails -> no notifications created")
     void testWalletUpdateFails_NoNotificationCreated() {
         when(userRepository.findByPhoneNumber(memberAlex.getPhoneNumber())).thenReturn(Optional.of(memberAlex));
-        when(goalRepository.findById(goal.getId())).thenReturn(Optional.of(goal));
+        when(goalRepository.findByIdForUpdate(goal.getId())).thenReturn(Optional.of(goal));
         when(goalMemberRepository.existsByGoalIdAndUserId(goal.getId(), memberAlex.getId())).thenReturn(true);
         when(goalWalletRepository.findByGoal(goal)).thenReturn(Optional.empty());
 

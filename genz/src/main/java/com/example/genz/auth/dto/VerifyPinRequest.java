@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 public class VerifyPinRequest {
 
     @NotBlank(message = "Phone number is required")
+    @jakarta.validation.constraints.Size(max = 30)
     private String phoneNumber;
 
     @NotBlank(message = "PIN is required")
