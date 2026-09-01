@@ -14,6 +14,7 @@ import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
+import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyPinRequest;
@@ -58,6 +59,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> verifyPin(@Valid @RequestBody VerifyPinRequest request) {
         LoginResponse response = authService.verifyPin(request);
         return ResponseEntity.ok(ApiResponse.success("PIN verified successfully", response));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<LoginResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authService.refresh(request)));
     }
 
     @GetMapping("/check")

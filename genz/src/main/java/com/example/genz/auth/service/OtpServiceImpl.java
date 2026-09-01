@@ -12,16 +12,19 @@ import com.example.genz.auth.repository.OtpRepository;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OtpServiceImpl implements OtpService {
 
     private final OtpRepository otpRepository;
@@ -33,6 +36,10 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     public void sendOtp(SendOtpRequest request) {
         String phoneNumber = request.getPhoneNumber();
+
+        if (!otpProperties.isConsoleDeliveryEnabled()) {
+            throw new OtpException("OTP delivery is not configured");
+        }
 
         checkRateLimit(phoneNumber);
 
@@ -92,6 +99,10 @@ public class OtpServiceImpl implements OtpService {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new OtpException("No account found. Please register first."));
 
+        if (!user.isEnabled()) {
+            throw new OtpException("Account is not active");
+        }
+
         String accessToken = jwtUtil.generateAccessToken(phoneNumber);
         String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
 
@@ -105,7 +116,7 @@ public class OtpServiceImpl implements OtpService {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(900L)
+                .expiresIn(jwtUtil.getAccessExpirationSeconds())
                 .user(userResponse)
                 .build();
     }
@@ -138,7 +149,7 @@ public class OtpServiceImpl implements OtpService {
     private String hashOtp(String otp) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(otp.getBytes());
+            byte[] hash = digest.digest(otp.getBytes(StandardCharsets.UTF_8));
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
@@ -154,9 +165,12 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private void logOtp(String phoneNumber, String otp) {
-        System.out.println("========================================");
-        System.out.println("OTP for " + phoneNumber + ": " + otp);
-        System.out.println("========================================");
+        log.warn("Development OTP for phone ending in {}: {}", maskedPhoneSuffix(phoneNumber), otp);
+    }
+
+    private String maskedPhoneSuffix(String phoneNumber) {
+        int suffixStart = Math.max(0, phoneNumber.length() - 4);
+        return phoneNumber.substring(suffixStart);
     }
 
 }

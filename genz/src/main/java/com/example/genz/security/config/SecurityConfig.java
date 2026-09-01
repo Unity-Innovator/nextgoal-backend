@@ -30,12 +30,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/community/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/saving-plans/run").hasRole("ADMIN")
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api/auth/**",
-                                "/actuator/**",
+                                "/actuator/health",
+                                "/actuator/health/**",
                                 "/ws",
                                 "/ws/**",
                                 "/ws-raw",

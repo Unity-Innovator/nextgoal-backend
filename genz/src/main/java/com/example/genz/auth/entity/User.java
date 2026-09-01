@@ -144,4 +144,9 @@ public class User implements UserDetails {
     public String getUsername() {
         return this.phoneNumber;
     }
+
+    @Override
+    public boolean isEnabled() {
+        return "ACTIVE".equalsIgnoreCase(this.status);
+    }
 }

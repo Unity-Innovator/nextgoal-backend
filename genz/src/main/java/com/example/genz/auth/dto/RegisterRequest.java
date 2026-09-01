@@ -7,21 +7,26 @@ import com.example.genz.auth.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
 public class RegisterRequest {
     @NotBlank(message = "First name is required")
+    @Size(max = 100, message = "First name must be at most 100 characters")
     private String firstName;
 
     @NotBlank(message = "Last name if required")
+    @Size(max = 100, message = "Last name must be at most 100 characters")
     private String lastName;
 
     @NotBlank(message = "Phone number is required")
+    @Size(max = 30, message = "Phone number must be at most 30 characters")
     private String phoneNumber;
 
     @NotBlank(message = "Password is required")
+    @Size(max = 72, message = "Password must be at most 72 characters")
     @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$",
             message = "Password must be at least 8 characters and include uppercase, lowercase, and a number"
@@ -29,6 +34,7 @@ public class RegisterRequest {
     private String password;
 
     @NotBlank(message = "Confirm password is required")
+    @Size(max = 72, message = "Confirm password must be at most 72 characters")
     private String confirmPassword;
 
     @NotNull(message = "Gender is required")

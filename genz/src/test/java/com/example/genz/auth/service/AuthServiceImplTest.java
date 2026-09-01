@@ -56,6 +56,7 @@ class AuthServiceImplTest {
                 .phoneNumber(phoneNumber)
                 .pinHash(encodedPin)
                 .fullName("John Doe")
+                .status("ACTIVE")
                 .build();
 
         UserResponse userResponse = UserResponse.builder()
@@ -76,8 +77,9 @@ class AuthServiceImplTest {
         when(passwordEncoder.matches(rawPin, encodedPin)).thenReturn(true);
         when(jwtUtil.generateAccessToken(phoneNumber)).thenReturn("mock-access-token");
         when(jwtUtil.generateRefreshToken(phoneNumber)).thenReturn("mock-refresh-token");
+        when(jwtUtil.getAccessExpirationSeconds()).thenReturn(900L);
         when(userMapper.toUserResponse(user)).thenReturn(userResponse);
-        when(userMapper.toLoginResponse("mock-access-token", "mock-refresh-token", userResponse))
+        when(userMapper.toLoginResponse("mock-access-token", "mock-refresh-token", 900L, userResponse))
                 .thenReturn(expectedLoginResponse);
 
         LoginResponse response = authService.verifyPin(request);
@@ -104,6 +106,7 @@ class AuthServiceImplTest {
                 .id(UUID.randomUUID())
                 .phoneNumber(phoneNumber)
                 .pinHash(encodedPin)
+                .status("ACTIVE")
                 .build();
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));

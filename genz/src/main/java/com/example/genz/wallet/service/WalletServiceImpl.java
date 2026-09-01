@@ -55,7 +55,9 @@ public class WalletServiceImpl implements WalletService {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
 
-        Goal goal = goalRepository.findById(request.getGoalId())
+        // Serialize balance-changing operations for the same goal. Without the
+        // row lock, concurrent deposits can overwrite each other's totals.
+        Goal goal = goalRepository.findByIdForUpdate(request.getGoalId())
                 .orElseThrow(() -> new ResourceNoteFoundException("Goal not found with ID: " + request.getGoalId()));
 
         boolean isOwner = goal.getOwner() != null && goal.getOwner().getId().equals(user.getId());

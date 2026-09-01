@@ -6,6 +6,7 @@ import com.example.genz.auth.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 
 @Configuration
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.seed.test-user-enabled", havingValue = "true")
 public class DataSeeder {
 
     private final UserRepository userRepository;

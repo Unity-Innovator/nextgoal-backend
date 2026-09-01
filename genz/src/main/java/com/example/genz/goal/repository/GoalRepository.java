@@ -4,6 +4,10 @@ import com.example.genz.auth.entity.User;
 import com.example.genz.goal.entity.Goal;
 import com.example.genz.goal.enums.GoalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +18,10 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
     List<Goal> findByOwnerOrderByCreatedAtDesc(User owner);
 
     Optional<Goal> findByIdAndOwner(UUID id, User owner);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select goal from Goal goal where goal.id = :goalId")
+    Optional<Goal> findByIdForUpdate(@Param("goalId") UUID goalId);
 
     boolean existsByGoalNameAndOwner(String goalName, User owner);
 
