@@ -1,35 +1,26 @@
 services:
   db:
-    image: ${POSTGRES_IMAGE:?POSTGRES_IMAGE must be an immutable PostgreSQL image tag or digest}
+    image: postgres:17
     container_name: nextgoal-db
     restart: unless-stopped
-    mem_limit: 1g
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-nextgoal}
-      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
-      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - nextgoal-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
-      retries: 12
-      start_period: 10s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
+      retries: 5
 
   backend:
-    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must identify the GitLab commit image}
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: nextgoal-backend
     restart: unless-stopped
-    mem_limit: 768m
-    stop_grace_period: 40s
-    security_opt:
-      - no-new-privileges:true
     depends_on:
       db:
         condition: service_healthy
@@ -41,20 +32,8 @@ services:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:?Set the exact HTTPS frontend origin}
-      WEBSOCKET_ALLOWED_ORIGIN_PATTERNS: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:?Set the exact HTTPS frontend origin}
     ports:
-      # Only the host reverse proxy should reach Spring Boot directly.
-      - "127.0.0.1:8080:8080"
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
+      - "8080:8080"
 
 volumes:
   nextgoal-db-data:
-    # Requiring the real volume name prevents a Compose project-name change
-    # from silently creating an empty production database.
-    external: true
-    name: ${POSTGRES_VOLUME_NAME:?Set POSTGRES_VOLUME_NAME to the existing PostgreSQL volume}
