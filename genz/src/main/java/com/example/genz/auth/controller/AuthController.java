@@ -16,6 +16,7 @@ import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
+import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyPinRequest;
 import com.example.genz.common.api.ApiResponse;
@@ -23,6 +24,7 @@ import com.example.genz.auth.service.AuthService;
 import com.example.genz.auth.service.OtpService;
 
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -56,8 +58,12 @@ public class AuthController {
     }
 
     @PostMapping("/verify-pin")
-    public ResponseEntity<ApiResponse<LoginResponse>> verifyPin(@Valid @RequestBody VerifyPinRequest request) {
-        LoginResponse response = authService.verifyPin(request);
+    public ResponseEntity<ApiResponse<StepUpTokenResponse>> verifyPin(
+            @Valid @RequestBody VerifyPinRequest request,
+            Authentication authentication
+    ) {
+        String phoneNumber = authentication.getName();
+        StepUpTokenResponse response = authService.verifyPin(request, phoneNumber);
         return ResponseEntity.ok(ApiResponse.success("PIN verified successfully", response));
     }
 
