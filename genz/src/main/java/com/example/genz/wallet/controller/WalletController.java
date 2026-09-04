@@ -8,6 +8,7 @@ import com.example.genz.wallet.dto.DepositResponse;
 
 
 
+import com.example.genz.security.annotation.RequireStepUp;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ public class WalletController {
 
     private final WalletService walletService;
 
+    @RequireStepUp
     @PostMapping("/deposit")
     public ResponseEntity<DepositResponse> deposit(
             @Valid @RequestBody DepositRequest request,

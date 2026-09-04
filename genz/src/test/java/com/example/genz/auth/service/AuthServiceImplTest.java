@@ -1,13 +1,11 @@
 package com.example.genz.auth.service;
 
-import com.example.genz.auth.dto.LoginResponse;
-import com.example.genz.auth.dto.UserResponse;
+import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.common.exception.BadRequestException;
-import com.example.genz.common.exception.ResourceNoteFoundException;
 import com.example.genz.security.jwt.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +35,9 @@ class AuthServiceImplTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private PinAttemptService pinAttemptService;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -47,7 +48,6 @@ class AuthServiceImplTest {
         String encodedPin = "encoded_123456";
 
         VerifyPinRequest request = VerifyPinRequest.builder()
-                .phoneNumber(phoneNumber)
                 .pin(rawPin)
                 .build();
 
@@ -59,46 +59,31 @@ class AuthServiceImplTest {
                 .status("ACTIVE")
                 .build();
 
-        UserResponse userResponse = UserResponse.builder()
-                .id(user.getId())
-                .phoneNumber(phoneNumber)
-                .fullName("John Doe")
-                .build();
-
-        LoginResponse expectedLoginResponse = LoginResponse.builder()
-                .accessToken("mock-access-token")
-                .refreshToken("mock-refresh-token")
-                .tokenType("Bearer")
-                .expiresIn(900L)
-                .user(userResponse)
-                .build();
-
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(rawPin, encodedPin)).thenReturn(true);
-        when(jwtUtil.generateAccessToken(phoneNumber)).thenReturn("mock-access-token");
-        when(jwtUtil.generateRefreshToken(phoneNumber)).thenReturn("mock-refresh-token");
-        when(jwtUtil.getAccessExpirationSeconds()).thenReturn(900L);
-        when(userMapper.toUserResponse(user)).thenReturn(userResponse);
-        when(userMapper.toLoginResponse("mock-access-token", "mock-refresh-token", 900L, userResponse))
-                .thenReturn(expectedLoginResponse);
+        when(jwtUtil.generateStepUpToken(phoneNumber, JwtUtil.FINANCIAL_TRANSACTION_SCOPE)).thenReturn("mock-step-up-token");
+        when(jwtUtil.getStepUpExpirationSeconds()).thenReturn(300L);
 
-        LoginResponse response = authService.verifyPin(request);
+        StepUpTokenResponse response = authService.verifyPin(request, phoneNumber);
 
         assertNotNull(response);
-        assertEquals("mock-access-token", response.accessToken());
-        assertEquals("mock-refresh-token", response.refreshToken());
+        assertEquals("mock-step-up-token", response.stepUpToken());
+        assertEquals(300L, response.expiresIn());
+        assertEquals("Step-Up", response.tokenType());
+
+        verify(pinAttemptService).checkAttempts(phoneNumber);
         verify(userRepository).findByPhoneNumber(phoneNumber);
         verify(passwordEncoder).matches(rawPin, encodedPin);
+        verify(pinAttemptService).resetAttempts(phoneNumber);
     }
 
     @Test
-    void verifyPin_InvalidPin_ThrowsBadRequestException() {
+    void verifyPin_InvalidPin_ThrowsBadRequestExceptionAndRecordsAttempt() {
         String phoneNumber = "0123456789";
         String rawPin = "123456";
         String encodedPin = "encoded_123456";
 
         VerifyPinRequest request = VerifyPinRequest.builder()
-                .phoneNumber(phoneNumber)
                 .pin(rawPin)
                 .build();
 
@@ -112,20 +97,76 @@ class AuthServiceImplTest {
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(rawPin, encodedPin)).thenReturn(false);
 
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request));
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
         assertEquals("Invalid PIN", exception.getMessage());
+        verify(pinAttemptService).recordFailedAttempt(phoneNumber);
+        verify(pinAttemptService, never()).resetAttempts(anyString());
     }
 
     @Test
-    void verifyPin_UserNotFound_ThrowsResourceNoteFoundException() {
+    void verifyPin_NoPinConfigured_ThrowsBadRequestException() {
+        String phoneNumber = "0123456789";
+        VerifyPinRequest request = VerifyPinRequest.builder()
+                .pin("123456")
+                .build();
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .pinHash(null)
+                .status("ACTIVE")
+                .build();
+
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
+        assertEquals("User does not have a PIN configured", exception.getMessage());
+    }
+
+    @Test
+    void verifyPin_InactiveAccount_ThrowsBadRequestException() {
+        String phoneNumber = "0123456789";
+        VerifyPinRequest request = VerifyPinRequest.builder()
+                .pin("123456")
+                .build();
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .pinHash("encoded_pin")
+                .status("INACTIVE")
+                .build();
+
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
+        assertEquals("Account is not active", exception.getMessage());
+    }
+
+    @Test
+    void verifyPin_LockedOut_ThrowsBadRequestException() {
+        String phoneNumber = "0123456789";
+        VerifyPinRequest request = VerifyPinRequest.builder()
+                .pin("123456")
+                .build();
+
+        doThrow(new BadRequestException("Too many failed PIN attempts. Please try again later."))
+                .when(pinAttemptService).checkAttempts(phoneNumber);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
+        assertTrue(exception.getMessage().contains("Too many failed PIN attempts"));
+    }
+
+    @Test
+    void verifyPin_UserNotFound_ThrowsBadRequestException() {
         String phoneNumber = "0000000000";
         VerifyPinRequest request = VerifyPinRequest.builder()
-                .phoneNumber(phoneNumber)
                 .pin("123456")
                 .build();
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNoteFoundException.class, () -> authService.verifyPin(request));
+        assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
     }
 }
+

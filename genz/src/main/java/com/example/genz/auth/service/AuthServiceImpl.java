@@ -25,6 +25,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final PinAttemptService pinAttemptService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -82,22 +83,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public LoginResponse verifyPin(VerifyPinRequest request) {
-        User user = userRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
+    public StepUpTokenResponse verifyPin(VerifyPinRequest request, String phoneNumber) {
+        pinAttemptService.checkAttempts(phoneNumber);
+
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new BadRequestException("User not found"));
 
         ensureActive(user);
 
-        if (user.getPinHash() == null || !passwordEncoder.matches(request.getPin(), user.getPinHash())) {
+        if (user.getPinHash() == null) {
+            throw new BadRequestException("User does not have a PIN configured");
+        }
+
+        if (!passwordEncoder.matches(request.getPin(), user.getPinHash())) {
+            pinAttemptService.recordFailedAttempt(phoneNumber);
             throw new BadRequestException("Invalid PIN");
         }
 
-        String phoneNumber = user.getPhoneNumber();
-        String jwt = jwtUtil.generateAccessToken(phoneNumber);
-        String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
+        pinAttemptService.resetAttempts(phoneNumber);
 
-        UserResponse userResponse = userMapper.toUserResponse(user);
-        return userMapper.toLoginResponse(jwt, refreshToken, jwtUtil.getAccessExpirationSeconds(), userResponse);
+        String stepUpToken = jwtUtil.generateStepUpToken(phoneNumber, JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        return StepUpTokenResponse.builder()
+                .stepUpToken(stepUpToken)
+                .expiresIn(jwtUtil.getStepUpExpirationSeconds())
+                .tokenType("Step-Up")
+                .build();
     }
 
     @Override

@@ -56,6 +56,59 @@ class JwtUtilTest {
     void reportsConfiguredAccessLifetimeInSeconds() {
         JwtUtil jwtUtil = new JwtUtil(SECRET, 90_000, 120_000);
         assertEquals(90, jwtUtil.getAccessExpirationSeconds());
+        assertEquals(300, jwtUtil.getStepUpExpirationSeconds());
+    }
+
+    @Test
+    void stepUpTokenValidatesCorrectlyAndCannotBeUsedAsAccessToken() {
+        JwtUtil jwtUtil = new JwtUtil(SECRET, 60_000, 120_000, 300_000);
+        UserDetails user = activeUser("0123456789");
+
+        String stepUpToken = jwtUtil.generateStepUpToken(user.getUsername(), JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        // Validates as step-up token
+        assertTrue(jwtUtil.validateStepUpToken(stepUpToken, user.getUsername(), JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
+
+        // CANNOT be used as normal access token
+        assertFalse(jwtUtil.validateToken(stepUpToken, user));
+
+        // CANNOT be used as refresh token
+        assertFalse(jwtUtil.validateRefreshToken(stepUpToken, user));
+    }
+
+    @Test
+    void accessTokenCannotBeUsedAsStepUpToken() {
+        JwtUtil jwtUtil = new JwtUtil(SECRET, 60_000, 120_000, 300_000);
+        UserDetails user = activeUser("0123456789");
+
+        String accessToken = jwtUtil.generateAccessToken(user.getUsername());
+        assertFalse(jwtUtil.validateStepUpToken(accessToken, user.getUsername(), JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
+    }
+
+    @Test
+    void stepUpTokenRejectsWrongUserOrWrongScope() {
+        JwtUtil jwtUtil = new JwtUtil(SECRET, 60_000, 120_000, 300_000);
+
+        String stepUpToken = jwtUtil.generateStepUpToken("0123456789", JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        // Wrong user
+        assertFalse(jwtUtil.validateStepUpToken(stepUpToken, "0987654321", JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
+
+        // Wrong scope
+        assertFalse(jwtUtil.validateStepUpToken(stepUpToken, "0123456789", "OTHER_SCOPE"));
+    }
+
+    @Test
+    void stepUpTokenRejectsNullOrBlankOrInvalidSignature() {
+        JwtUtil jwtUtil = new JwtUtil(SECRET, 60_000, 120_000, 300_000);
+        JwtUtil anotherJwtUtil = new JwtUtil("98765432109876543210987654321098", 60_000, 120_000, 300_000);
+
+        String foreignToken = anotherJwtUtil.generateStepUpToken("0123456789", JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        assertFalse(jwtUtil.validateStepUpToken(null, "0123456789", JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
+        assertFalse(jwtUtil.validateStepUpToken("", "0123456789", JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
+        assertFalse(jwtUtil.validateStepUpToken("invalid-token", "0123456789", JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
+        assertFalse(jwtUtil.validateStepUpToken(foreignToken, "0123456789", JwtUtil.FINANCIAL_TRANSACTION_SCOPE));
     }
 
     private UserDetails activeUser(String username) {
