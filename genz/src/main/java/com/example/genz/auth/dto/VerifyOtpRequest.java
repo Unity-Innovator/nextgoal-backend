@@ -1,6 +1,8 @@
 package com.example.genz.auth.dto;
 
+import com.example.genz.auth.enums.OtpPurpose;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -14,4 +16,7 @@ public class VerifyOtpRequest {
     @NotBlank
     @Pattern(regexp = "^\\d{6}$", message = "OTP must be exactly 6 digits")
     private String otp;
+
+    @NotNull(message = "Purpose is required")
+    private OtpPurpose purpose;
 }

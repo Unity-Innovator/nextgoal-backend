@@ -10,7 +10,7 @@ import com.example.genz.auth.dto.VerifyPinRequest;
 
 public interface AuthService {
     LoginResponse login(LoginRequest user);
-    void register(RegisterRequest request);
+    LoginResponse register(RegisterRequest request);
     Boolean checkUser(String phoneNumber);
     StepUpTokenResponse verifyPin(VerifyPinRequest request, String phoneNumber);
     LoginResponse refresh(RefreshTokenRequest request);

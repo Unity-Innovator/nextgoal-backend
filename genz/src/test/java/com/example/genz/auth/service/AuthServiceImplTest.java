@@ -7,12 +7,13 @@ import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
-import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.Gender;
+import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.mapper.UserMapper;
-import com.example.genz.auth.repository.PasswordResetTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.security.jwt.JwtUtil;
@@ -40,7 +41,7 @@ class AuthServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private PasswordResetTokenRepository passwordResetTokenRepository;
+    private VerificationTokenRepository verificationTokenRepository;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -109,14 +110,27 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void registerCreatesPendingUserAndSendsEmailOtpUsingPhoneNumber() {
+    void register_Success_ValidatesVerificationTokenAndActivatesUser() {
         RegisterRequest request = registrationRequest();
+        String rawToken = request.getVerificationToken();
+        String tokenHash = TokenHashUtil.sha256Hex(rawToken);
+
+        VerificationToken verificationToken = VerificationToken.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(request.getPhoneNumber())
+                .purpose(OtpPurpose.REGISTRATION)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+
         User mappedUser = User.builder()
                 .phoneNumber(request.getPhoneNumber())
                 .email("person@example.com")
                 .status("ACTIVE")
                 .build();
 
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(verificationToken));
         when(passwordEncoder.encode(request.getPassword())).thenReturn("password-hash");
         when(passwordEncoder.encode(request.getPin())).thenReturn("pin-hash");
         when(userMapper.toEntity(
@@ -125,16 +139,100 @@ class AuthServiceImplTest {
                 "pin-hash",
                 "Test Person"
         )).thenReturn(mappedUser);
+        when(userRepository.save(any(User.class))).thenReturn(mappedUser);
+        when(jwtUtil.generateAccessToken(request.getPhoneNumber())).thenReturn("access-token");
+        when(jwtUtil.generateRefreshToken(request.getPhoneNumber())).thenReturn("refresh-token");
+        when(jwtUtil.getAccessExpirationSeconds()).thenReturn(900L);
+        UserResponse userResponse = UserResponse.builder().phoneNumber(request.getPhoneNumber()).build();
+        LoginResponse expectedResponse = LoginResponse.builder()
+                .accessToken("access-token")
+                .refreshToken("refresh-token")
+                .expiresIn(900L)
+                .user(userResponse)
+                .build();
+        when(userMapper.toUserResponse(mappedUser)).thenReturn(userResponse);
+        when(userMapper.toLoginResponse("access-token", "refresh-token", 900L, userResponse)).thenReturn(expectedResponse);
 
-        authService.register(request);
+        LoginResponse response = authService.register(request);
 
+        assertNotNull(response);
+        assertEquals(expectedResponse, response);
         assertEquals("person@example.com", request.getEmail());
-        assertEquals("PENDING", mappedUser.getStatus());
+        assertEquals("ACTIVE", mappedUser.getStatus());
+        assertTrue(verificationToken.isUsed());
+        assertEquals(mappedUser, verificationToken.getUser());
+
         verify(userRepository).existsByPhoneNumber(request.getPhoneNumber());
         verify(userRepository).existsByEmailIgnoreCase("person@example.com");
+        verify(verificationTokenRepository).findByTokenHash(tokenHash);
+        verify(verificationTokenRepository).save(verificationToken);
         verify(userRepository).save(mappedUser);
-        verify(otpService).sendRegistrationOtp(request.getPhoneNumber());
-        verifyNoInteractions(jwtUtil);
+        verify(jwtUtil).generateAccessToken(request.getPhoneNumber());
+        verify(jwtUtil).generateRefreshToken(request.getPhoneNumber());
+        verifyNoInteractions(otpService);
+    }
+
+    @Test
+    void register_WrongPurposeToken_ThrowsBadRequestException() {
+        RegisterRequest request = registrationRequest();
+        String tokenHash = TokenHashUtil.sha256Hex(request.getVerificationToken());
+
+        VerificationToken verificationToken = VerificationToken.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(request.getPhoneNumber())
+                .purpose(OtpPurpose.PASSWORD_RESET)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(verificationToken));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.register(request));
+        assertEquals("Invalid verification token purpose", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_ExpiredVerificationToken_ThrowsBadRequestException() {
+        RegisterRequest request = registrationRequest();
+        String tokenHash = TokenHashUtil.sha256Hex(request.getVerificationToken());
+
+        VerificationToken verificationToken = VerificationToken.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(request.getPhoneNumber())
+                .purpose(OtpPurpose.REGISTRATION)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .used(false)
+                .build();
+
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(verificationToken));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.register(request));
+        assertEquals("Invalid or expired verification token", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_MismatchedPhoneNumber_ThrowsBadRequestException() {
+        RegisterRequest request = registrationRequest();
+        String tokenHash = TokenHashUtil.sha256Hex(request.getVerificationToken());
+
+        VerificationToken verificationToken = VerificationToken.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber("0999999999")
+                .purpose(OtpPurpose.REGISTRATION)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(verificationToken));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.register(request));
+        assertEquals("Verification token does not match phone number", ex.getMessage());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -156,15 +254,17 @@ class AuthServiceImplTest {
                 .status("ACTIVE")
                 .build();
 
-        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+        VerificationToken resetTokenEntity = VerificationToken.builder()
                 .id(UUID.randomUUID())
+                .phoneNumber("0123456789")
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .user(user)
                 .tokenHash(tokenHash)
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .used(false)
                 .build();
 
-        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
         when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
 
         Void result = authService.resetPassword(request);
@@ -174,8 +274,34 @@ class AuthServiceImplTest {
         assertEquals(encodedNewPassword, user.getPasswordHash());
 
         verify(userRepository).save(user);
-        verify(passwordResetTokenRepository).save(resetTokenEntity);
+        verify(verificationTokenRepository).save(resetTokenEntity);
         verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
+    void resetPassword_WrongPurposeToken_ThrowsBadRequestException() {
+        String rawResetToken = "test-reg-token-value-12345";
+        String tokenHash = TokenHashUtil.sha256Hex(rawResetToken);
+
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .resetToken(rawResetToken)
+                .newPassword("NewSecurePassword123!")
+                .build();
+
+        VerificationToken resetTokenEntity = VerificationToken.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber("0123456789")
+                .purpose(OtpPurpose.REGISTRATION)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertEquals("Invalid verification token purpose", ex.getMessage());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -188,14 +314,16 @@ class AuthServiceImplTest {
                 .newPassword("NewPassword123!")
                 .build();
 
-        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+        VerificationToken resetTokenEntity = VerificationToken.builder()
                 .id(UUID.randomUUID())
+                .phoneNumber("0123456789")
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .tokenHash(tokenHash)
                 .expiresAt(LocalDateTime.now().minusMinutes(1))
                 .used(false)
                 .build();
 
-        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
 
         BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
         assertEquals("Invalid or expired reset token", ex.getMessage());
@@ -212,14 +340,16 @@ class AuthServiceImplTest {
                 .newPassword("NewPassword123!")
                 .build();
 
-        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+        VerificationToken resetTokenEntity = VerificationToken.builder()
                 .id(UUID.randomUUID())
+                .phoneNumber("0123456789")
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .tokenHash(tokenHash)
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .used(true)
                 .build();
 
-        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
 
         BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
         assertEquals("Invalid or expired reset token", ex.getMessage());
@@ -236,7 +366,7 @@ class AuthServiceImplTest {
                 .newPassword("NewPassword123!")
                 .build();
 
-        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.empty());
+        when(verificationTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.empty());
 
         BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
         assertEquals("Invalid or expired reset token", ex.getMessage());
@@ -248,6 +378,7 @@ class AuthServiceImplTest {
         String phoneNumber = "0123456789";
         String rawPin = "123456";
         String encodedPin = "encoded_123456";
+        String stepUpToken = "mocked-step-up-jwt";
 
         VerifyPinRequest request = VerifyPinRequest.builder()
                 .pin(rawPin)
@@ -256,33 +387,32 @@ class AuthServiceImplTest {
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .phoneNumber(phoneNumber)
-                .pinHash(encodedPin)
                 .fullName("John Doe")
                 .status("ACTIVE")
+                .pinHash(encodedPin)
                 .build();
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(rawPin, encodedPin)).thenReturn(true);
-        when(jwtUtil.generateStepUpToken(phoneNumber, JwtUtil.FINANCIAL_TRANSACTION_SCOPE)).thenReturn("mock-step-up-token");
+        when(jwtUtil.generateStepUpToken(phoneNumber, JwtUtil.FINANCIAL_TRANSACTION_SCOPE)).thenReturn(stepUpToken);
         when(jwtUtil.getStepUpExpirationSeconds()).thenReturn(300L);
 
         StepUpTokenResponse response = authService.verifyPin(request, phoneNumber);
 
         assertNotNull(response);
-        assertEquals("mock-step-up-token", response.stepUpToken());
+        assertEquals(stepUpToken, response.stepUpToken());
         assertEquals(300L, response.expiresIn());
         assertEquals("Step-Up", response.tokenType());
 
         verify(pinAttemptService).checkAttempts(phoneNumber);
-        verify(userRepository).findByPhoneNumber(phoneNumber);
-        verify(passwordEncoder).matches(rawPin, encodedPin);
         verify(pinAttemptService).resetAttempts(phoneNumber);
+        verify(pinAttemptService, never()).recordFailedAttempt(anyString());
     }
 
     @Test
-    void verifyPin_InvalidPin_ThrowsBadRequestExceptionAndRecordsAttempt() {
+    void verifyPin_InvalidPin_RecordsAttemptAndThrowsException() {
         String phoneNumber = "0123456789";
-        String rawPin = "123456";
+        String rawPin = "000000";
         String encodedPin = "encoded_123456";
 
         VerifyPinRequest request = VerifyPinRequest.builder()
@@ -292,8 +422,9 @@ class AuthServiceImplTest {
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .phoneNumber(phoneNumber)
-                .pinHash(encodedPin)
+                .fullName("John Doe")
                 .status("ACTIVE")
+                .pinHash(encodedPin)
                 .build();
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
@@ -301,12 +432,14 @@ class AuthServiceImplTest {
 
         BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
         assertEquals("Invalid PIN", exception.getMessage());
+
+        verify(pinAttemptService).checkAttempts(phoneNumber);
         verify(pinAttemptService).recordFailedAttempt(phoneNumber);
         verify(pinAttemptService, never()).resetAttempts(anyString());
     }
 
     @Test
-    void verifyPin_NoPinConfigured_ThrowsBadRequestException() {
+    void verifyPin_UserHasNoPin_ThrowsBadRequestException() {
         String phoneNumber = "0123456789";
         VerifyPinRequest request = VerifyPinRequest.builder()
                 .pin("123456")
@@ -315,18 +448,23 @@ class AuthServiceImplTest {
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .phoneNumber(phoneNumber)
-                .pinHash(null)
+                .fullName("John Doe")
                 .status("ACTIVE")
+                .pinHash(null)
                 .build();
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
 
         BadRequestException exception = assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
         assertEquals("User does not have a PIN configured", exception.getMessage());
+
+        verify(pinAttemptService).checkAttempts(phoneNumber);
+        verify(pinAttemptService, never()).recordFailedAttempt(anyString());
+        verify(pinAttemptService, never()).resetAttempts(anyString());
     }
 
     @Test
-    void verifyPin_InactiveAccount_ThrowsBadRequestException() {
+    void verifyPin_UserDisabled_ThrowsBadRequestException() {
         String phoneNumber = "0123456789";
         VerifyPinRequest request = VerifyPinRequest.builder()
                 .pin("123456")
@@ -335,8 +473,9 @@ class AuthServiceImplTest {
         User user = User.builder()
                 .id(UUID.randomUUID())
                 .phoneNumber(phoneNumber)
-                .pinHash("encoded_pin")
-                .status("INACTIVE")
+                .fullName("John Doe")
+                .status("SUSPENDED")
+                .pinHash("encoded_123456")
                 .build();
 
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
@@ -346,7 +485,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void verifyPin_LockedOut_ThrowsBadRequestException() {
+    void verifyPin_TooManyAttempts_ThrowsBadRequestException() {
         String phoneNumber = "0123456789";
         VerifyPinRequest request = VerifyPinRequest.builder()
                 .pin("123456")
@@ -382,6 +521,7 @@ class AuthServiceImplTest {
         request.setGender(Gender.OTHER);
         request.setDateOfBirth(LocalDate.of(2000, 1, 1));
         request.setPin("123456");
+        request.setVerificationToken("sample-valid-verification-token");
         return request;
     }
 }

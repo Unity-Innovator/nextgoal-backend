@@ -52,4 +52,8 @@ public class RegisterRequest {
     @NotBlank(message = "PIN is required")
     @Pattern(regexp = "^\\d{6}$", message = "PIN must be exactly 6 digits")
     private String pin;
+
+    @NotBlank(message = "Verification token is required")
+    @com.fasterxml.jackson.annotation.JsonAlias({"token", "resetToken"})
+    private String verificationToken;
 }

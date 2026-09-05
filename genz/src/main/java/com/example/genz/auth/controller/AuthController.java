@@ -12,10 +12,10 @@ import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
-import com.example.genz.auth.dto.ResetTokenResponse;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
+import com.example.genz.auth.dto.VerifyOtpResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
 import com.example.genz.common.api.ApiResponse;
 import com.example.genz.auth.service.AuthService;
@@ -40,11 +40,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
-        authService.register(request);
-        return ResponseEntity.accepted().body(
-                ApiResponse.success("Registration started. OTP sent to your email", null)
-        );
+    public ResponseEntity<ApiResponse<LoginResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        LoginResponse response = authService.register(request);
+        return ResponseEntity.ok(ApiResponse.success("User registered successfully", response));
     }
 
     @PostMapping("/send-otp")
@@ -54,14 +52,8 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        otpService.verifyOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", null));
-    }
-
-    @PostMapping("/verify-reset-otp")
-    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyResetOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        ResetTokenResponse response = otpService.verifyResetOtp(request);
+    public ResponseEntity<ApiResponse<VerifyOtpResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        VerifyOtpResponse response = otpService.verifyOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
     }
 
