@@ -18,5 +18,6 @@ public class ResetPasswordRequest {
     private String newPassword;
 
     @NotBlank(message = "Reset token is required")
+    @com.fasterxml.jackson.annotation.JsonAlias({"verificationToken", "token"})
     private String resetToken;
 }

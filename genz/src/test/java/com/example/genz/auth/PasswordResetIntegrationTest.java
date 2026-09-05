@@ -1,16 +1,19 @@
 package com.example.genz.auth;
+
 import com.example.genz.auth.dto.LoginRequest;
+import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.entity.Otp;
-import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.Gender;
+import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.enums.UserRole;
 import com.example.genz.auth.repository.OtpRepository;
-import com.example.genz.auth.repository.PasswordResetTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,7 +63,7 @@ class PasswordResetIntegrationTest {
     private OtpRepository otpRepository;
 
     @Autowired
-    private PasswordResetTokenRepository passwordResetTokenRepository;
+    private VerificationTokenRepository verificationTokenRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -77,6 +80,7 @@ class PasswordResetIntegrationTest {
         testUser = userRepository.save(User.builder()
                 .fullName("Reset Test User")
                 .phoneNumber(phoneNumber)
+                .email("reset_user@example.com")
                 .dateOfBirth(LocalDate.of(2000, 1, 1))
                 .gender(Gender.MALE)
                 .passwordHash(passwordEncoder.encode(initialPassword))
@@ -89,11 +93,12 @@ class PasswordResetIntegrationTest {
     }
 
     @Test
-    @DisplayName("Registration OTP verification returns data: null and does not return JWT")
-    void registrationOtpVerification_ReturnsNullData_NoJwt() throws Exception {
+    @DisplayName("OTP verification with REGISTRATION purpose returns short-lived verification token")
+    void otpVerification_ReturnsVerificationToken() throws Exception {
         String rawOtp = "654321";
         Otp otpEntity = Otp.builder()
                 .phoneNumber(phoneNumber)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .otpHash(TokenHashUtil.sha256Hex(rawOtp))
                 .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .attempts(0)
@@ -104,6 +109,7 @@ class PasswordResetIntegrationTest {
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
         verifyOtpRequest.setPhoneNumber(phoneNumber);
         verifyOtpRequest.setOtp(rawOtp);
+        verifyOtpRequest.setPurpose(OtpPurpose.PASSWORD_RESET);
 
         mockMvc.perform(post("/api/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -111,11 +117,11 @@ class PasswordResetIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("OTP verified successfully"))
-                .andExpect(jsonPath("$.data").doesNotExist());
+                .andExpect(jsonPath("$.data.verificationToken").isNotEmpty());
     }
 
     @Test
-    @DisplayName("Complete flow: send OTP -> verify reset OTP -> reset password -> login with new password")
+    @DisplayName("Complete flow: send OTP -> verify OTP with PASSWORD_RESET -> reset password -> login with new password")
     void fullPasswordResetFlow_Success() throws Exception {
         // 1. Send OTP
         SendOtpRequest sendOtpRequest = new SendOtpRequest();
@@ -131,28 +137,29 @@ class PasswordResetIntegrationTest {
         String rawOtp = "123456";
         Otp otpEntity = otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber)
                 .orElseThrow();
-        // Override hash with known OTP for test determinism
         otpEntity.setOtpHash(TokenHashUtil.sha256Hex(rawOtp));
         otpRepository.save(otpEntity);
 
-        // 2. Verify Reset OTP
+        // 2. Verify OTP with PASSWORD_RESET purpose
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
         verifyOtpRequest.setPhoneNumber(phoneNumber);
         verifyOtpRequest.setOtp(rawOtp);
+        verifyOtpRequest.setPurpose(OtpPurpose.PASSWORD_RESET);
 
-        MvcResult verifyResult = mockMvc.perform(post("/api/auth/verify-reset-otp")
+        MvcResult verifyResult = mockMvc.perform(post("/api/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("OTP verified successfully"))
-                .andExpect(jsonPath("$.data.resetToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.verificationToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.resetToken").doesNotExist())
                 .andExpect(jsonPath("$.data.accessToken").doesNotExist())
                 .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
                 .andReturn();
 
         JsonNode verifyNode = objectMapper.readTree(verifyResult.getResponse().getContentAsString());
-        String resetToken = verifyNode.path("data").path("resetToken").asText();
+        String resetToken = verifyNode.path("data").path("verificationToken").asText();
         assertNotNull(resetToken);
         assertFalse(resetToken.isBlank());
 
@@ -204,8 +211,149 @@ class PasswordResetIntegrationTest {
     }
 
     @Test
-    @DisplayName("Verify reset OTP with invalid OTP is rejected")
-    void verifyResetOtp_InvalidOtp_Rejected() throws Exception {
+    @DisplayName("Complete registration flow: send OTP -> verify OTP with REGISTRATION -> register with token -> login")
+    void fullRegistrationFlow_Success() throws Exception {
+        String newPhoneNumber = "0899887766";
+        String email = "new_user@example.com";
+        String password = "StrongPassword123!";
+
+        // 1. Send OTP
+        SendOtpRequest sendOtpRequest = new SendOtpRequest();
+        sendOtpRequest.setPhoneNumber(newPhoneNumber);
+
+        mockMvc.perform(post("/api/auth/send-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sendOtpRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        String rawOtp = "654321";
+        Otp otpEntity = otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(newPhoneNumber)
+                .orElseThrow();
+        otpEntity.setOtpHash(TokenHashUtil.sha256Hex(rawOtp));
+        otpRepository.save(otpEntity);
+
+        // 2. Verify OTP with REGISTRATION purpose
+        VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
+        verifyOtpRequest.setPhoneNumber(newPhoneNumber);
+        verifyOtpRequest.setOtp(rawOtp);
+        verifyOtpRequest.setPurpose(OtpPurpose.REGISTRATION);
+
+        MvcResult verifyResult = mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(verifyOtpRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.verificationToken").isNotEmpty())
+                .andReturn();
+
+        JsonNode verifyNode = objectMapper.readTree(verifyResult.getResponse().getContentAsString());
+        String verificationToken = verifyNode.path("data").path("verificationToken").asText();
+
+        // 3. Register with verification token
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setFirstName("New");
+        registerRequest.setLastName("Member");
+        registerRequest.setPhoneNumber(newPhoneNumber);
+        registerRequest.setEmail(email);
+        registerRequest.setPassword(password);
+        registerRequest.setConfirmPassword(password);
+        registerRequest.setGender(Gender.MALE);
+        registerRequest.setDateOfBirth(LocalDate.of(2001, 5, 20));
+        registerRequest.setPin("654321");
+        registerRequest.setVerificationToken(verificationToken);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("User registered successfully"))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.user.phoneNumber").value(newPhoneNumber));
+
+        // 4. Token Reuse Rejected
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isBadRequest());
+
+        // 5. Login immediately works
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setPhoneNumber(newPhoneNumber);
+        loginRequest.setPassword(password);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("Security: Registration token cannot be used to reset password")
+    void registrationProof_CannotResetPassword() throws Exception {
+        String rawToken = "reg-only-token";
+        VerificationToken regToken = VerificationToken.builder()
+                .phoneNumber(phoneNumber)
+                .user(testUser)
+                .purpose(OtpPurpose.REGISTRATION)
+                .tokenHash(TokenHashUtil.sha256Hex(rawToken))
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .used(false)
+                .build();
+        verificationTokenRepository.save(regToken);
+
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .resetToken(rawToken)
+                .newPassword("HackedPassword123!")
+                .build();
+
+        mockMvc.perform(post("/api/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid verification token purpose"));
+    }
+
+    @Test
+    @DisplayName("Security: Password reset token cannot be used to register an account")
+    void passwordResetProof_CannotRegisterAccount() throws Exception {
+        String rawToken = "pwd-reset-only-token";
+        String unusedPhone = "0977665544";
+        VerificationToken resetToken = VerificationToken.builder()
+                .phoneNumber(unusedPhone)
+                .purpose(OtpPurpose.PASSWORD_RESET)
+                .tokenHash(TokenHashUtil.sha256Hex(rawToken))
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .used(false)
+                .build();
+        verificationTokenRepository.save(resetToken);
+
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setFirstName("Hacker");
+        registerRequest.setLastName("User");
+        registerRequest.setPhoneNumber(unusedPhone);
+        registerRequest.setEmail("hacker@example.com");
+        registerRequest.setPassword("SecretPass123!");
+        registerRequest.setConfirmPassword("SecretPass123!");
+        registerRequest.setGender(Gender.OTHER);
+        registerRequest.setDateOfBirth(LocalDate.of(1995, 1, 1));
+        registerRequest.setPin("123456");
+        registerRequest.setVerificationToken(rawToken);
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid verification token purpose"));
+    }
+
+    @Test
+    @DisplayName("Verify OTP with invalid OTP is rejected")
+    void verifyOtp_InvalidOtp_Rejected() throws Exception {
         Otp otpEntity = Otp.builder()
                 .phoneNumber(phoneNumber)
                 .otpHash(TokenHashUtil.sha256Hex("123456"))
@@ -218,8 +366,9 @@ class PasswordResetIntegrationTest {
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
         verifyOtpRequest.setPhoneNumber(phoneNumber);
         verifyOtpRequest.setOtp("000000");
+        verifyOtpRequest.setPurpose(OtpPurpose.REGISTRATION);
 
-        mockMvc.perform(post("/api/auth/verify-reset-otp")
+        mockMvc.perform(post("/api/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isBadRequest())
@@ -227,16 +376,32 @@ class PasswordResetIntegrationTest {
     }
 
     @Test
+    @DisplayName("Verify OTP with missing purpose is rejected")
+    void verifyOtp_MissingPurpose_Rejected() throws Exception {
+        VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
+        verifyOtpRequest.setPhoneNumber(phoneNumber);
+        verifyOtpRequest.setOtp("123456");
+        verifyOtpRequest.setPurpose(null);
+
+        mockMvc.perform(post("/api/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(verifyOtpRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("Reset password with expired reset token is rejected")
     void resetPassword_ExpiredToken_Rejected() throws Exception {
         String rawToken = "expired-token-sample";
-        PasswordResetToken expiredToken = PasswordResetToken.builder()
+        VerificationToken expiredToken = VerificationToken.builder()
+                .phoneNumber(phoneNumber)
                 .user(testUser)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .tokenHash(TokenHashUtil.sha256Hex(rawToken))
                 .expiresAt(LocalDateTime.now().minusMinutes(2))
                 .used(false)
                 .build();
-        passwordResetTokenRepository.save(expiredToken);
+        verificationTokenRepository.save(expiredToken);
 
         ResetPasswordRequest request = ResetPasswordRequest.builder()
                 .resetToken(rawToken)

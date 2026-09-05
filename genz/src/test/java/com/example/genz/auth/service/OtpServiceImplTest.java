@@ -1,17 +1,17 @@
 package com.example.genz.auth.service;
 
 import com.example.genz.auth.config.OtpProperties;
-import com.example.genz.auth.dto.ResetTokenResponse;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
+import com.example.genz.auth.dto.VerifyOtpResponse;
 import com.example.genz.auth.entity.Otp;
-import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.exception.OtpException;
 import com.example.genz.auth.repository.OtpRepository;
-import com.example.genz.auth.repository.PasswordResetTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class OtpServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private PasswordResetTokenRepository passwordResetTokenRepository;
+    private VerificationTokenRepository verificationTokenRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -62,7 +62,7 @@ class OtpServiceImplTest {
         service = new OtpServiceImpl(
                 otpRepository,
                 userRepository,
-                passwordResetTokenRepository,
+                verificationTokenRepository,
                 properties,
                 passwordEncoder,
                 emailOtpSender
@@ -75,7 +75,7 @@ class OtpServiceImplTest {
         service = new OtpServiceImpl(
                 otpRepository,
                 userRepository,
-                passwordResetTokenRepository,
+                verificationTokenRepository,
                 properties,
                 passwordEncoder,
                 null
@@ -86,11 +86,22 @@ class OtpServiceImplTest {
         OtpException exception = assertThrows(OtpException.class, () -> service.sendOtp(request));
 
         assertEquals("OTP delivery is not configured", exception.getMessage());
-        verifyNoInteractions(otpRepository, userRepository, passwordResetTokenRepository);
+        verifyNoInteractions(otpRepository, userRepository, verificationTokenRepository);
     }
 
     @Test
-    void verifyOtp_Registration_Success_DoesNotGenerateTokens() {
+    void verifyOtp_MissingPurpose_ThrowsOtpException() {
+        VerifyOtpRequest request = new VerifyOtpRequest();
+        request.setPhoneNumber("0123456789");
+        request.setOtp("123456");
+        request.setPurpose(null);
+
+        OtpException exception = assertThrows(OtpException.class, () -> service.verifyOtp(request));
+        assertEquals("Purpose is required", exception.getMessage());
+    }
+
+    @Test
+    void verifyOtp_Registration_Success_GeneratesRegistrationVerificationToken() {
         String phoneNumber = "0123456789";
         String rawOtp = "123456";
         String otpHash = TokenHashUtil.sha256Hex(rawOtp);
@@ -98,6 +109,7 @@ class OtpServiceImplTest {
         VerifyOtpRequest request = new VerifyOtpRequest();
         request.setPhoneNumber(phoneNumber);
         request.setOtp(rawOtp);
+        request.setPurpose(OtpPurpose.REGISTRATION);
 
         Otp otpEntity = Otp.builder()
                 .id(UUID.randomUUID())
@@ -108,28 +120,32 @@ class OtpServiceImplTest {
                 .used(false)
                 .build();
 
-        User user = User.builder()
-                .id(UUID.randomUUID())
-                .phoneNumber(phoneNumber)
-                .fullName("Test User")
-                .status("PENDING")
-                .build();
-
         when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
                 .thenReturn(Optional.of(otpEntity));
-        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
+        when(verificationTokenRepository.findByPhoneNumberAndUsedFalse(phoneNumber)).thenReturn(List.of());
 
-        assertDoesNotThrow(() -> service.verifyOtp(request));
+        VerifyOtpResponse response = service.verifyOtp(request);
 
+        assertNotNull(response);
+        assertNotNull(response.getVerificationToken());
+        assertFalse(response.getVerificationToken().isBlank());
         assertTrue(otpEntity.isUsed());
-        assertEquals("ACTIVE", user.getStatus());
         verify(otpRepository).save(otpEntity);
-        verify(userRepository).save(user);
-        verifyNoInteractions(passwordResetTokenRepository);
+
+        ArgumentCaptor<VerificationToken> tokenCaptor = ArgumentCaptor.forClass(VerificationToken.class);
+        verify(verificationTokenRepository).save(tokenCaptor.capture());
+        VerificationToken savedToken = tokenCaptor.getValue();
+        assertEquals(phoneNumber, savedToken.getPhoneNumber());
+        assertEquals(OtpPurpose.REGISTRATION, savedToken.getPurpose());
+        assertNull(savedToken.getUser());
+        assertEquals(TokenHashUtil.sha256Hex(response.getVerificationToken()), savedToken.getTokenHash());
+        assertFalse(savedToken.isUsed());
+        assertTrue(savedToken.getExpiresAt().isAfter(LocalDateTime.now()));
     }
 
     @Test
-    void verifyResetOtp_Success_ReturnsResetTokenAndInvalidatesPreviousTokens() {
+    void verifyOtp_PasswordReset_Success_ReturnsPasswordResetTokenAndInvalidatesPreviousTokens() {
         String phoneNumber = "0123456789";
         String rawOtp = "123456";
         String otpHash = TokenHashUtil.sha256Hex(rawOtp);
@@ -137,6 +153,7 @@ class OtpServiceImplTest {
         VerifyOtpRequest request = new VerifyOtpRequest();
         request.setPhoneNumber(phoneNumber);
         request.setOtp(rawOtp);
+        request.setPurpose(OtpPurpose.PASSWORD_RESET);
 
         Otp otpEntity = Otp.builder()
                 .id(UUID.randomUUID())
@@ -154,8 +171,10 @@ class OtpServiceImplTest {
                 .status("ACTIVE")
                 .build();
 
-        PasswordResetToken previousToken = PasswordResetToken.builder()
+        VerificationToken previousToken = VerificationToken.builder()
                 .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .purpose(OtpPurpose.PASSWORD_RESET)
                 .user(user)
                 .tokenHash("old-hash")
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
@@ -165,97 +184,42 @@ class OtpServiceImplTest {
         when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
                 .thenReturn(Optional.of(otpEntity));
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
-        when(passwordResetTokenRepository.findByUserAndUsedFalse(user)).thenReturn(List.of(previousToken));
+        when(verificationTokenRepository.findByPhoneNumberAndUsedFalse(phoneNumber)).thenReturn(List.of(previousToken));
 
-        ResetTokenResponse response = service.verifyResetOtp(request);
+        VerifyOtpResponse response = service.verifyOtp(request);
 
         assertNotNull(response);
-        assertNotNull(response.getResetToken());
-        assertFalse(response.getResetToken().isBlank());
+        assertNotNull(response.getVerificationToken());
 
         // OTP should be marked as used
         assertTrue(otpEntity.isUsed());
         verify(otpRepository).save(otpEntity);
 
-        // Previous reset token should be invalidated
+        // Previous token should be invalidated
         assertTrue(previousToken.isUsed());
-        verify(passwordResetTokenRepository).save(previousToken);
+        verify(verificationTokenRepository).save(previousToken);
 
-        // New reset token saved
-        ArgumentCaptor<PasswordResetToken> tokenCaptor = ArgumentCaptor.forClass(PasswordResetToken.class);
-        verify(passwordResetTokenRepository, times(2)).save(tokenCaptor.capture());
-        PasswordResetToken savedToken = tokenCaptor.getAllValues().get(tokenCaptor.getAllValues().size() - 1);
+        // New token saved
+        ArgumentCaptor<VerificationToken> tokenCaptor = ArgumentCaptor.forClass(VerificationToken.class);
+        verify(verificationTokenRepository, times(2)).save(tokenCaptor.capture());
+        VerificationToken savedToken = tokenCaptor.getAllValues().get(tokenCaptor.getAllValues().size() - 1);
         assertEquals(user, savedToken.getUser());
-        assertEquals(TokenHashUtil.sha256Hex(response.getResetToken()), savedToken.getTokenHash());
+        assertEquals(phoneNumber, savedToken.getPhoneNumber());
+        assertEquals(OtpPurpose.PASSWORD_RESET, savedToken.getPurpose());
+        assertEquals(TokenHashUtil.sha256Hex(response.getVerificationToken()), savedToken.getTokenHash());
         assertFalse(savedToken.isUsed());
         assertTrue(savedToken.getExpiresAt().isAfter(LocalDateTime.now()));
     }
 
     @Test
-    void verifyResetOtp_InvalidOtp_ThrowsOtpExceptionAndIncrementsAttempts() {
-        String phoneNumber = "0123456789";
-        String correctOtp = "123456";
-        String enteredOtp = "654321";
-
-        VerifyOtpRequest request = new VerifyOtpRequest();
-        request.setPhoneNumber(phoneNumber);
-        request.setOtp(enteredOtp);
-
-        Otp otpEntity = Otp.builder()
-                .id(UUID.randomUUID())
-                .phoneNumber(phoneNumber)
-                .otpHash(TokenHashUtil.sha256Hex(correctOtp))
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
-                .attempts(0)
-                .used(false)
-                .build();
-
-        when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
-                .thenReturn(Optional.of(otpEntity));
-
-        OtpException exception = assertThrows(OtpException.class, () -> service.verifyResetOtp(request));
-        assertEquals("Invalid OTP", exception.getMessage());
-        assertEquals(1, otpEntity.getAttempts());
-        assertFalse(otpEntity.isUsed());
-        verify(otpRepository).save(otpEntity);
-        verifyNoInteractions(passwordResetTokenRepository, userRepository);
-    }
-
-    @Test
-    void verifyResetOtp_ExpiredOtp_ThrowsOtpExceptionAndMarksUsed() {
+    void verifyOtp_PasswordReset_UserNotFound_ThrowsOtpException() {
         String phoneNumber = "0123456789";
         String rawOtp = "123456";
 
         VerifyOtpRequest request = new VerifyOtpRequest();
         request.setPhoneNumber(phoneNumber);
         request.setOtp(rawOtp);
-
-        Otp otpEntity = Otp.builder()
-                .id(UUID.randomUUID())
-                .phoneNumber(phoneNumber)
-                .otpHash(TokenHashUtil.sha256Hex(rawOtp))
-                .expiresAt(LocalDateTime.now().minusMinutes(1))
-                .attempts(0)
-                .used(false)
-                .build();
-
-        when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
-                .thenReturn(Optional.of(otpEntity));
-
-        OtpException exception = assertThrows(OtpException.class, () -> service.verifyResetOtp(request));
-        assertEquals("OTP has expired", exception.getMessage());
-        assertTrue(otpEntity.isUsed());
-        verify(otpRepository).save(otpEntity);
-    }
-
-    @Test
-    void verifyResetOtp_UserNotFound_ThrowsOtpException() {
-        String phoneNumber = "0123456789";
-        String rawOtp = "123456";
-
-        VerifyOtpRequest request = new VerifyOtpRequest();
-        request.setPhoneNumber(phoneNumber);
-        request.setOtp(rawOtp);
+        request.setPurpose(OtpPurpose.PASSWORD_RESET);
 
         Otp otpEntity = Otp.builder()
                 .id(UUID.randomUUID())
@@ -270,7 +234,100 @@ class OtpServiceImplTest {
                 .thenReturn(Optional.of(otpEntity));
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
 
-        OtpException exception = assertThrows(OtpException.class, () -> service.verifyResetOtp(request));
+        OtpException exception = assertThrows(OtpException.class, () -> service.verifyOtp(request));
         assertEquals("No account found. Please register first.", exception.getMessage());
+    }
+
+    @Test
+    void verifyOtp_InvalidOtp_ThrowsOtpExceptionAndIncrementsAttempts() {
+        String phoneNumber = "0123456789";
+        String correctOtp = "123456";
+        String enteredOtp = "654321";
+
+        VerifyOtpRequest request = new VerifyOtpRequest();
+        request.setPhoneNumber(phoneNumber);
+        request.setOtp(enteredOtp);
+        request.setPurpose(OtpPurpose.REGISTRATION);
+
+        Otp otpEntity = Otp.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .otpHash(TokenHashUtil.sha256Hex(correctOtp))
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .attempts(0)
+                .used(false)
+                .build();
+
+        when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
+                .thenReturn(Optional.of(otpEntity));
+
+        OtpException exception = assertThrows(OtpException.class, () -> service.verifyOtp(request));
+        assertEquals("Invalid OTP", exception.getMessage());
+        assertEquals(1, otpEntity.getAttempts());
+        assertFalse(otpEntity.isUsed());
+        verify(otpRepository).save(otpEntity);
+        verifyNoInteractions(verificationTokenRepository, userRepository);
+    }
+
+    @Test
+    void verifyOtp_ExpiredOtp_ThrowsOtpExceptionAndMarksUsed() {
+        String phoneNumber = "0123456789";
+        String rawOtp = "123456";
+
+        VerifyOtpRequest request = new VerifyOtpRequest();
+        request.setPhoneNumber(phoneNumber);
+        request.setOtp(rawOtp);
+        request.setPurpose(OtpPurpose.REGISTRATION);
+
+        Otp otpEntity = Otp.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .otpHash(TokenHashUtil.sha256Hex(rawOtp))
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .attempts(0)
+                .used(false)
+                .build();
+
+        when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
+                .thenReturn(Optional.of(otpEntity));
+
+        OtpException exception = assertThrows(OtpException.class, () -> service.verifyOtp(request));
+        assertEquals("OTP has expired", exception.getMessage());
+        assertTrue(otpEntity.isUsed());
+        verify(otpRepository).save(otpEntity);
+        verifyNoInteractions(verificationTokenRepository);
+    }
+
+    @Test
+    void verifyOtp_InactiveUser_ThrowsOtpException() {
+        String phoneNumber = "0123456789";
+        String rawOtp = "123456";
+
+        VerifyOtpRequest request = new VerifyOtpRequest();
+        request.setPhoneNumber(phoneNumber);
+        request.setOtp(rawOtp);
+        request.setPurpose(OtpPurpose.PASSWORD_RESET);
+
+        Otp otpEntity = Otp.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .otpHash(TokenHashUtil.sha256Hex(rawOtp))
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .attempts(0)
+                .used(false)
+                .build();
+
+        User disabledUser = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .status("SUSPENDED")
+                .build();
+
+        when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
+                .thenReturn(Optional.of(otpEntity));
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(disabledUser));
+
+        OtpException exception = assertThrows(OtpException.class, () -> service.verifyOtp(request));
+        assertEquals("Account is not active", exception.getMessage());
     }
 }

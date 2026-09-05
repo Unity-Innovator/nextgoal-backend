@@ -3,9 +3,9 @@ package com.example.genz.auth.service;
 import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.dto.*;
-import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
-import com.example.genz.auth.repository.PasswordResetTokenRepository;
+import com.example.genz.auth.entity.VerificationToken;
+import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
@@ -27,7 +27,7 @@ import java.util.Locale;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
@@ -54,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void register(RegisterRequest request) {
+    public LoginResponse register(RegisterRequest request) {
         final String fullName = request.getFirstName() + " " + request.getLastName();
         final String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
@@ -70,16 +70,45 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Email already exists");
         }
 
+        if (request.getVerificationToken() == null || request.getVerificationToken().isBlank()) {
+            throw new BadRequestException("Verification token is required");
+        }
+
+        String tokenHash = TokenHashUtil.sha256Hex(request.getVerificationToken());
+        VerificationToken verificationToken = verificationTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new BadRequestException("Invalid or expired verification token"));
+
+        if (verificationToken.isUsed() || verificationToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Invalid or expired verification token");
+        }
+
+        if (verificationToken.getPurpose() != com.example.genz.auth.enums.OtpPurpose.REGISTRATION) {
+            throw new BadRequestException("Invalid verification token purpose");
+        }
+
+        if (!request.getPhoneNumber().equals(verificationToken.getPhoneNumber())) {
+            throw new BadRequestException("Verification token does not match phone number");
+        }
+
         request.setEmail(normalizedEmail);
 
         String passwordHash = passwordEncoder.encode(request.getPassword());
         String pinHash = passwordEncoder.encode(request.getPin());
 
         User user = userMapper.toEntity(request, passwordHash, pinHash, fullName);
-        user.setStatus("PENDING");
-        userRepository.save(user);
+        user.setStatus("ACTIVE");
+        User savedUser = userRepository.save(user);
 
-        otpService.sendRegistrationOtp(user.getPhoneNumber());
+        verificationToken.setUser(savedUser);
+        verificationToken.setUsed(true);
+        verificationTokenRepository.save(verificationToken);
+
+        String phoneNumber = savedUser.getPhoneNumber();
+        String jwt = jwtUtil.generateAccessToken(phoneNumber);
+        String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
+
+        UserResponse userResponse = userMapper.toUserResponse(savedUser);
+        return userMapper.toLoginResponse(jwt, refreshToken, jwtUtil.getAccessExpirationSeconds(), userResponse);
     }
 
     @Override
@@ -152,15 +181,24 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String tokenHash = TokenHashUtil.sha256Hex(request.getResetToken());
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
+        VerificationToken resetToken = verificationTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new BadRequestException("Invalid or expired reset token"));
 
         if (resetToken.isUsed() || resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Invalid or expired reset token");
         }
 
+        if (resetToken.getPurpose() != com.example.genz.auth.enums.OtpPurpose.PASSWORD_RESET) {
+            throw new BadRequestException("Invalid verification token purpose");
+        }
+
         User user = resetToken.getUser();
-        if (user == null || !user.isEnabled()) {
+        if (user == null) {
+            user = userRepository.findByPhoneNumber(resetToken.getPhoneNumber())
+                    .orElseThrow(() -> new BadRequestException("Account not found"));
+        }
+
+        if (!user.isEnabled()) {
             throw new BadRequestException("Account is not active");
         }
 
@@ -169,7 +207,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         resetToken.setUsed(true);
-        passwordResetTokenRepository.save(resetToken);
+        verificationTokenRepository.save(resetToken);
 
         return null;
     }
