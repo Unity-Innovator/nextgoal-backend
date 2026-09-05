@@ -7,6 +7,7 @@ import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
+import com.example.genz.auth.dto.ResetPasswordRequest;
 
 public interface AuthService {
     LoginResponse login(LoginRequest user);
@@ -14,6 +15,7 @@ public interface AuthService {
     Boolean checkUser(String phoneNumber);
     StepUpTokenResponse verifyPin(VerifyPinRequest request, String phoneNumber);
     LoginResponse refresh(RefreshTokenRequest request);
+    Void resetPassword(ResetPasswordRequest request);
 }
 
 

@@ -1,26 +1,26 @@
 package com.example.genz.auth.service;
 
 import com.example.genz.auth.config.OtpProperties;
-import com.example.genz.auth.dto.LoginResponse;
+import com.example.genz.auth.dto.ResetTokenResponse;
 import com.example.genz.auth.dto.SendOtpRequest;
-import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.entity.Otp;
+import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.exception.OtpException;
 import com.example.genz.auth.repository.OtpRepository;
+import com.example.genz.auth.repository.PasswordResetTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
-import com.example.genz.security.jwt.JwtUtil;
+import com.example.genz.auth.util.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +29,8 @@ public class OtpServiceImpl implements OtpService {
 
     private final OtpRepository otpRepository;
     private final UserRepository userRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final OtpProperties otpProperties;
-    private final JwtUtil jwtUtil;
 
     @Override
     @Transactional
@@ -62,10 +62,43 @@ public class OtpServiceImpl implements OtpService {
 
     @Override
     @Transactional
-    public LoginResponse verifyOtp(VerifyOtpRequest request) {
-        String phoneNumber = request.getPhoneNumber();
-        String otp = request.getOtp();
+    public void verifyOtp(VerifyOtpRequest request) {
+        validateAndConsumeOtp(request.getPhoneNumber(), request.getOtp());
+    }
 
+    @Override
+    @Transactional
+    public ResetTokenResponse verifyResetOtp(VerifyOtpRequest request) {
+        User user = validateAndConsumeOtp(request.getPhoneNumber(), request.getOtp());
+
+        // Invalidate previous active reset tokens for this user
+        List<PasswordResetToken> activeTokens = passwordResetTokenRepository.findByUserAndUsedFalse(user);
+        for (PasswordResetToken activeToken : activeTokens) {
+            activeToken.setUsed(true);
+            passwordResetTokenRepository.save(activeToken);
+        }
+
+        byte[] randomBytes = new byte[32];
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(randomBytes);
+        String resetToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+
+        String tokenHash = TokenHashUtil.sha256Hex(resetToken);
+
+        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+        passwordResetTokenRepository.save(resetTokenEntity);
+
+        return ResetTokenResponse.builder()
+                .resetToken(resetToken)
+                .build();
+    }
+
+    private User validateAndConsumeOtp(String phoneNumber, String otp) {
         Otp otpEntity = otpRepository
                 .findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber)
                 .orElseThrow(() -> new OtpException("No OTP found for this phone number"));
@@ -103,22 +136,7 @@ public class OtpServiceImpl implements OtpService {
             throw new OtpException("Account is not active");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(phoneNumber);
-        String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
-
-        UserResponse userResponse = UserResponse.builder()
-                .id(user.getId())
-                .fullName(user.getFullName())
-                .phoneNumber(user.getPhoneNumber())
-                .build();
-
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(jwtUtil.getAccessExpirationSeconds())
-                .user(userResponse)
-                .build();
+        return user;
     }
 
     private void checkRateLimit(String phoneNumber) {
@@ -147,21 +165,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     private String hashOtp(String otp) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(otp.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
-        }
+        return TokenHashUtil.sha256Hex(otp);
     }
 
     private void logOtp(String phoneNumber, String otp) {

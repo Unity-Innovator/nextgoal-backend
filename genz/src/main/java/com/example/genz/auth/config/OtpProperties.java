@@ -12,5 +12,5 @@ public class OtpProperties {
     private int maxAttempts = 5;
     private int resendCooldownSeconds = 60;
     private int length = 6;
-    private boolean consoleDeliveryEnabled = false;
+    private boolean consoleDeliveryEnabled = true;
 }

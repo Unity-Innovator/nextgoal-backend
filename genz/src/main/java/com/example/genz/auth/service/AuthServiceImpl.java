@@ -1,13 +1,15 @@
 package com.example.genz.auth.service;
 
-import com.example.genz.auth.mapper.UserMapper;
-import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.dto.*;
+import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.mapper.UserMapper;
+import com.example.genz.auth.repository.PasswordResetTokenRepository;
+import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.common.exception.ResourceNoteFoundException;
-import com.example.genz.auth.repository.UserRepository;
-
+import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,11 +18,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
@@ -101,7 +106,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         pinAttemptService.resetAttempts(phoneNumber);
-
         String stepUpToken = jwtUtil.generateStepUpToken(phoneNumber, JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
 
         return StepUpTokenResponse.builder()
@@ -141,5 +145,35 @@ public class AuthServiceImpl implements AuthService {
         if (!user.isEnabled()) {
             throw new BadRequestException("Account is not active");
         }
+    }
+
+    @Override
+    @Transactional
+    public Void resetPassword(ResetPasswordRequest request) {
+        if (request.getResetToken() == null || request.getResetToken().isBlank()) {
+            throw new BadRequestException("Invalid or expired reset token");
+        }
+
+        String tokenHash = TokenHashUtil.sha256Hex(request.getResetToken());
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new BadRequestException("Invalid or expired reset token"));
+
+        if (resetToken.isUsed() || resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Invalid or expired reset token");
+        }
+
+        User user = resetToken.getUser();
+        if (user == null || !user.isEnabled()) {
+            throw new BadRequestException("Account is not active");
+        }
+
+        String newPasswordHash = passwordEncoder.encode(request.getNewPassword());
+        user.setPasswordHash(newPasswordHash);
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+
+        return null;
     }
 }

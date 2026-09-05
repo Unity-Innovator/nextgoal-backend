@@ -50,7 +50,7 @@ springdoc:
     enabled: true
 
 otp:
-  console-delivery-enabled: false
+  console-delivery-enabled: ${OTP_CONSOLE_DELIVERY_ENABLED:true}
 
 app:
   seed:

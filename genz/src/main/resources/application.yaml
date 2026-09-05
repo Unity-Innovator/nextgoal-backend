@@ -29,7 +29,7 @@ otp:
   max-attempts: 5
   resend-cooldown-seconds: 60
   length: 6
-  console-delivery-enabled: ${OTP_CONSOLE_DELIVERY_ENABLED:false}
+  console-delivery-enabled: ${OTP_CONSOLE_DELIVERY_ENABLED:true}
 
 jwt:
   secret: ${JWT_SECRET}

@@ -1,6 +1,5 @@
 package com.example.genz.auth.controller;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +14,8 @@ import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.RefreshTokenRequest;
+import com.example.genz.auth.dto.ResetPasswordRequest;
+import com.example.genz.auth.dto.ResetTokenResponse;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
@@ -52,8 +53,14 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<LoginResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        LoginResponse response = otpService.verifyOtp(request);
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        otpService.verifyOtp(request);
+        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", null));
+    }
+
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyResetOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        ResetTokenResponse response = otpService.verifyResetOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
     }
 
@@ -76,4 +83,10 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Boolean>> checkUser(@RequestParam String phoneNumber){
         return ResponseEntity.ok(ApiResponse.success("Success", authService.checkUser(phoneNumber)));
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request){
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully", authService.resetPassword(request)));
+    }
+
 }
