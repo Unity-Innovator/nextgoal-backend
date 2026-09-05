@@ -3,13 +3,30 @@ package com.example.genz.auth.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.genz.auth.entity.Otp;
+import com.example.genz.auth.enums.OtpPurpose;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface OtpRepository extends JpaRepository<Otp, UUID> {
-    Optional<Otp> findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(String phoneNumber);
+    Optional<Otp> findFirstByPhoneNumberAndPurposeAndUsedFalseOrderByCreatedAtDesc(
+            String phoneNumber,
+            OtpPurpose purpose
+    );
 
-    long countByPhoneNumberAndCreatedAtAfter(String phoneNumber, LocalDateTime after);
+    Optional<Otp> findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(
+            String phoneNumber
+    );
+
+    long countByPhoneNumberAndPurposeAndCreatedAtAfter(
+            String phoneNumber,
+            OtpPurpose purpose,
+            LocalDateTime after
+    );
+
+    long countByPhoneNumberAndCreatedAtAfter(
+            String phoneNumber,
+            LocalDateTime after
+    );
 }

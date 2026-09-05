@@ -1,5 +1,6 @@
 package com.example.genz.auth.entity;
 
+import com.example.genz.auth.enums.OtpPurpose;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -24,6 +25,11 @@ public class Otp {
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purpose", length = 30)
+    @Builder.Default
+    private OtpPurpose purpose = OtpPurpose.REGISTRATION;
+
     @Column(name = "otp_hash", nullable = false)
     private String otpHash;
 
@@ -41,6 +47,11 @@ public class Otp {
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.purpose == null) {
+            this.purpose = OtpPurpose.REGISTRATION;
+        }
     }
 }

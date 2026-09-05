@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.example.genz.auth.enums.Gender;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -24,6 +25,11 @@ public class RegisterRequest {
     @NotBlank(message = "Phone number is required")
     @Size(max = 30, message = "Phone number must be at most 30 characters")
     private String phoneNumber;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email is invalid")
+    @Size(max = 254)
+    private String email;
 
     @NotBlank(message = "Password is required")
     @Size(max = 72, message = "Password must be at most 72 characters")

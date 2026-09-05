@@ -1,4 +1,5 @@
 package com.example.genz.auth.controller;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,10 +8,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
-import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.ResetTokenResponse;
@@ -28,6 +29,7 @@ import org.springframework.security.core.Authentication;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
     @Autowired
     private AuthService authService;
 
@@ -40,8 +42,11 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("success", authService.register(request)));
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.accepted().body(
+                ApiResponse.success("Registration started. OTP sent to your email", null)
+        );
     }
 
     @PostMapping("/send-otp")
@@ -60,6 +65,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyResetOtp(@Valid @RequestBody VerifyOtpRequest request) {
         ResetTokenResponse response = otpService.verifyResetOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully", null));
     }
 
     @PostMapping("/verify-pin")
@@ -81,10 +92,4 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Boolean>> checkUser(@RequestParam String phoneNumber){
         return ResponseEntity.ok(ApiResponse.success("Success", authService.checkUser(phoneNumber)));
     }
-
-    @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request){
-        return ResponseEntity.ok(ApiResponse.success("Password reset successfully", authService.resetPassword(request)));
-    }
-
 }

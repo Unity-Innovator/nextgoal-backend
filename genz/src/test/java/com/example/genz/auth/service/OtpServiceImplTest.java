@@ -7,6 +7,7 @@ import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.entity.Otp;
 import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.exception.OtpException;
 import com.example.genz.auth.repository.OtpRepository;
 import com.example.genz.auth.repository.PasswordResetTokenRepository;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,6 +41,12 @@ class OtpServiceImplTest {
     @Mock
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private EmailOtpSender emailOtpSender;
+
     private OtpProperties properties;
     private OtpServiceImpl service;
 
@@ -55,13 +63,23 @@ class OtpServiceImplTest {
                 otpRepository,
                 userRepository,
                 passwordResetTokenRepository,
-                properties
+                properties,
+                passwordEncoder,
+                emailOtpSender
         );
     }
 
     @Test
     void productionSafeDefaultDoesNotPersistOrLogAnUndeliverableOtp() {
         properties.setConsoleDeliveryEnabled(false);
+        service = new OtpServiceImpl(
+                otpRepository,
+                userRepository,
+                passwordResetTokenRepository,
+                properties,
+                passwordEncoder,
+                null
+        );
         SendOtpRequest request = new SendOtpRequest();
         request.setPhoneNumber("0123456789");
 
@@ -94,7 +112,7 @@ class OtpServiceImplTest {
                 .id(UUID.randomUUID())
                 .phoneNumber(phoneNumber)
                 .fullName("Test User")
-                .status("ACTIVE")
+                .status("PENDING")
                 .build();
 
         when(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber))
@@ -104,7 +122,9 @@ class OtpServiceImplTest {
         assertDoesNotThrow(() -> service.verifyOtp(request));
 
         assertTrue(otpEntity.isUsed());
+        assertEquals("ACTIVE", user.getStatus());
         verify(otpRepository).save(otpEntity);
+        verify(userRepository).save(user);
         verifyNoInteractions(passwordResetTokenRepository);
     }
 

@@ -1,15 +1,16 @@
 package com.example.genz.auth.service;
 
+import com.example.genz.auth.mapper.UserMapper;
+import com.example.genz.security.jwt.JwtUtil;
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
-import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.auth.repository.PasswordResetTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.common.exception.ResourceNoteFoundException;
-import com.example.genz.security.jwt.JwtUtil;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final PinAttemptService pinAttemptService;
+    private final OtpService otpService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -51,8 +54,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public RegisterResponse register(RegisterRequest request) {
+    public void register(RegisterRequest request) {
         final String fullName = request.getFirstName() + " " + request.getLastName();
+        final String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("Passwords do not match");
@@ -62,22 +66,20 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Phone number already exists");
         }
 
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        request.setEmail(normalizedEmail);
+
         String passwordHash = passwordEncoder.encode(request.getPassword());
         String pinHash = passwordEncoder.encode(request.getPin());
 
         User user = userMapper.toEntity(request, passwordHash, pinHash, fullName);
-        user = userRepository.save(user);
+        user.setStatus("PENDING");
+        userRepository.save(user);
 
-        final String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
-        final String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
-
-        UserResponse userResponse = userMapper.toUserResponse(user);
-        return userMapper.toRegisterResponse(
-                accessToken,
-                refreshToken,
-                jwtUtil.getAccessExpirationSeconds(),
-                userResponse
-        );
+        otpService.sendRegistrationOtp(user.getPhoneNumber());
     }
 
     @Override
@@ -106,6 +108,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         pinAttemptService.resetAttempts(phoneNumber);
+
         String stepUpToken = jwtUtil.generateStepUpToken(phoneNumber, JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
 
         return StepUpTokenResponse.builder()
@@ -141,12 +144,6 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private void ensureActive(UserDetails user) {
-        if (!user.isEnabled()) {
-            throw new BadRequestException("Account is not active");
-        }
-    }
-
     @Override
     @Transactional
     public Void resetPassword(ResetPasswordRequest request) {
@@ -175,5 +172,11 @@ public class AuthServiceImpl implements AuthService {
         passwordResetTokenRepository.save(resetToken);
 
         return null;
+    }
+
+    private void ensureActive(UserDetails user) {
+        if (!user.isEnabled()) {
+            throw new BadRequestException("Account is not active");
+        }
     }
 }

@@ -2,6 +2,19 @@ spring:
   application:
     name: genz
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_APP_PASSWORD:}
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.starttls.required]": true
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nextgoal}
     username: ${SPRING_DATASOURCE_USERNAME:nextgoal}
@@ -29,7 +42,6 @@ otp:
   max-attempts: 5
   resend-cooldown-seconds: 60
   length: 6
-  console-delivery-enabled: ${OTP_CONSOLE_DELIVERY_ENABLED:true}
 
 jwt:
   secret: ${JWT_SECRET}
