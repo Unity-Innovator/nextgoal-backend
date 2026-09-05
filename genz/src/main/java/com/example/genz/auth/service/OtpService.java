@@ -1,12 +1,13 @@
 package com.example.genz.auth.service;
 
-import com.example.genz.auth.dto.RegisterResponse;
-import com.example.genz.auth.dto.ResetPasswordRequest;
+import com.example.genz.auth.dto.ResetTokenResponse;
+import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 
 public interface OtpService {
+    void sendOtp(SendOtpRequest request);
     void sendRegistrationOtp(String phoneNumber);
-    RegisterResponse verifyRegistrationOtp(VerifyOtpRequest request);
     void sendPasswordResetOtp(String phoneNumber);
-    void resetPassword(ResetPasswordRequest request);
+    void verifyOtp(VerifyOtpRequest request);
+    ResetTokenResponse verifyResetOtp(VerifyOtpRequest request);
 }

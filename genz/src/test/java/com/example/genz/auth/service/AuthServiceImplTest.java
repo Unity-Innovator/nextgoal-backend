@@ -1,12 +1,19 @@
 package com.example.genz.auth.service;
 
+import com.example.genz.auth.dto.LoginRequest;
+import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
+import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
+import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
+import com.example.genz.auth.entity.PasswordResetToken;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.enums.Gender;
 import com.example.genz.auth.mapper.UserMapper;
+import com.example.genz.auth.repository.PasswordResetTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.security.jwt.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -14,9 +21,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +38,12 @@ class AuthServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
 
     @Mock
     private JwtUtil jwtUtil;
@@ -46,6 +62,51 @@ class AuthServiceImplTest {
 
     @InjectMocks
     private AuthServiceImpl authService;
+
+    @Test
+    void login_Success_ReturnsAccessAndRefreshToken() {
+        String phoneNumber = "0123456789";
+        String password = "Password123!";
+        LoginRequest request = new LoginRequest();
+        request.setPhoneNumber(phoneNumber);
+        request.setPassword(password);
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .fullName("John Doe")
+                .status("ACTIVE")
+                .build();
+
+        UserResponse userResponse = UserResponse.builder()
+                .id(user.getId())
+                .fullName("John Doe")
+                .phoneNumber(phoneNumber)
+                .build();
+
+        LoginResponse expectedResponse = LoginResponse.builder()
+                .accessToken("access-token-jwt")
+                .refreshToken("refresh-token-jwt")
+                .tokenType("Bearer")
+                .expiresIn(900L)
+                .user(userResponse)
+                .build();
+
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
+        when(jwtUtil.generateAccessToken(phoneNumber)).thenReturn("access-token-jwt");
+        when(jwtUtil.generateRefreshToken(phoneNumber)).thenReturn("refresh-token-jwt");
+        when(jwtUtil.getAccessExpirationSeconds()).thenReturn(900L);
+        when(userMapper.toUserResponse(user)).thenReturn(userResponse);
+        when(userMapper.toLoginResponse("access-token-jwt", "refresh-token-jwt", 900L, userResponse))
+                .thenReturn(expectedResponse);
+
+        LoginResponse result = authService.login(request);
+
+        assertNotNull(result);
+        assertEquals("access-token-jwt", result.accessToken());
+        assertEquals("refresh-token-jwt", result.refreshToken());
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
 
     @Test
     void registerCreatesPendingUserAndSendsEmailOtpUsingPhoneNumber() {
@@ -74,6 +135,112 @@ class AuthServiceImplTest {
         verify(userRepository).save(mappedUser);
         verify(otpService).sendRegistrationOtp(request.getPhoneNumber());
         verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
+    void resetPassword_Success_UpdatesPasswordAndMarksTokenUsed() {
+        String rawResetToken = "test-raw-reset-token-value-12345";
+        String tokenHash = TokenHashUtil.sha256Hex(rawResetToken);
+        String newPassword = "NewSecurePassword123!";
+        String encodedNewPassword = "bcrypt-encoded-new-password";
+
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .resetToken(rawResetToken)
+                .newPassword(newPassword)
+                .build();
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber("0123456789")
+                .passwordHash("old-password-hash")
+                .status("ACTIVE")
+                .build();
+
+        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(false)
+                .build();
+
+        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
+
+        Void result = authService.resetPassword(request);
+
+        assertNull(result);
+        assertTrue(resetTokenEntity.isUsed());
+        assertEquals(encodedNewPassword, user.getPasswordHash());
+
+        verify(userRepository).save(user);
+        verify(passwordResetTokenRepository).save(resetTokenEntity);
+        verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
+    void resetPassword_ExpiredToken_ThrowsBadRequestException() {
+        String rawResetToken = "test-expired-token";
+        String tokenHash = TokenHashUtil.sha256Hex(rawResetToken);
+
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .resetToken(rawResetToken)
+                .newPassword("NewPassword123!")
+                .build();
+
+        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+                .id(UUID.randomUUID())
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .used(false)
+                .build();
+
+        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertEquals("Invalid or expired reset token", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_AlreadyUsedToken_ThrowsBadRequestException() {
+        String rawResetToken = "test-used-token";
+        String tokenHash = TokenHashUtil.sha256Hex(rawResetToken);
+
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .resetToken(rawResetToken)
+                .newPassword("NewPassword123!")
+                .build();
+
+        PasswordResetToken resetTokenEntity = PasswordResetToken.builder()
+                .id(UUID.randomUUID())
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .used(true)
+                .build();
+
+        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(resetTokenEntity));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertEquals("Invalid or expired reset token", ex.getMessage());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_InvalidToken_ThrowsBadRequestException() {
+        String rawResetToken = "non-existent-token";
+        String tokenHash = TokenHashUtil.sha256Hex(rawResetToken);
+
+        ResetPasswordRequest request = ResetPasswordRequest.builder()
+                .resetToken(rawResetToken)
+                .newPassword("NewPassword123!")
+                .build();
+
+        when(passwordResetTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.empty());
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.resetPassword(request));
+        assertEquals("Invalid or expired reset token", ex.getMessage());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -218,4 +385,3 @@ class AuthServiceImplTest {
         return request;
     }
 }
-

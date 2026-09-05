@@ -1,6 +1,4 @@
 package com.example.genz.auth.controller;
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,13 +7,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
-import com.example.genz.auth.dto.RegisterResponse;
-import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.RefreshTokenRequest;
+import com.example.genz.auth.dto.ResetPasswordRequest;
+import com.example.genz.auth.dto.ResetTokenResponse;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
@@ -30,6 +27,7 @@ import org.springframework.security.core.Authentication;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
     @Autowired
     private AuthService authService;
 
@@ -49,34 +47,27 @@ public class AuthController {
         );
     }
 
-    @PostMapping("/register/resend-otp")
-    public ResponseEntity<ApiResponse<Void>> resendRegistrationOtp(
-            @Valid @RequestBody SendOtpRequest request
-    ) {
-        otpService.sendRegistrationOtp(request.getPhoneNumber());
-        return ResponseEntity.ok(ApiResponse.success("OTP sent to your email", null));
+    @PostMapping("/send-otp")
+    public ResponseEntity<ApiResponse<Void>> sendOtp(@Valid @RequestBody SendOtpRequest request) {
+        otpService.sendOtp(request);
+        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
     }
 
-    @PostMapping("/register/verify-otp")
-    public ResponseEntity<ApiResponse<RegisterResponse>> verifyRegistrationOtp(
-            @Valid @RequestBody VerifyOtpRequest request
-    ) {
-        RegisterResponse response = otpService.verifyRegistrationOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("Registration verified successfully", response));
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        otpService.verifyOtp(request);
+        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", null));
     }
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody SendOtpRequest request) {
-        otpService.sendPasswordResetOtp(request.getPhoneNumber());
-        return ResponseEntity.ok(ApiResponse.success(
-                "If the account exists, an OTP was sent to its email address",
-                null
-        ));
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<ApiResponse<ResetTokenResponse>> verifyResetOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        ResetTokenResponse response = otpService.verifyResetOtp(request);
+        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        otpService.resetPassword(request);
+        authService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success("Password reset successfully", null));
     }
 

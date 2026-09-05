@@ -26,8 +26,9 @@ public class Otp {
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "purpose", nullable = false, length = 30)
-    private OtpPurpose purpose;
+    @Column(name = "purpose", length = 30)
+    @Builder.Default
+    private OtpPurpose purpose = OtpPurpose.REGISTRATION;
 
     @Column(name = "otp_hash", nullable = false)
     private String otpHash;
@@ -46,6 +47,11 @@ public class Otp {
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.purpose == null) {
+            this.purpose = OtpPurpose.REGISTRATION;
+        }
     }
 }

@@ -15,9 +15,18 @@ public interface OtpRepository extends JpaRepository<Otp, UUID> {
             OtpPurpose purpose
     );
 
+    Optional<Otp> findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(
+            String phoneNumber
+    );
+
     long countByPhoneNumberAndPurposeAndCreatedAtAfter(
             String phoneNumber,
             OtpPurpose purpose,
+            LocalDateTime after
+    );
+
+    long countByPhoneNumberAndCreatedAtAfter(
+            String phoneNumber,
             LocalDateTime after
     );
 }
