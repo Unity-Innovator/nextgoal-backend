@@ -5,6 +5,9 @@ import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.entity.User;
+
+import java.util.Locale;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,6 +21,7 @@ public class UserMapper {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
+                .email(user.getEmail())
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
                 .status(user.getStatus())
@@ -31,11 +35,11 @@ public class UserMapper {
         return User.builder()
                 .fullName(fullName)
                 .phoneNumber(request.getPhoneNumber())
+                .email(request.getEmail().trim().toLowerCase(Locale.ROOT))
                 .passwordHash(passwordHash)
                 .pinHash(pinHash)
                 .gender(request.getGender())
                 .dateOfBirth(request.getDateOfBirth())
-                .status("ACTIVE")
                 .build();
     }
 

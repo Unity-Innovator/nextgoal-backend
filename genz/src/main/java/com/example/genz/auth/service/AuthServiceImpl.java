@@ -16,6 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -26,6 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final PinAttemptService pinAttemptService;
+    private final OtpService otpService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -46,8 +49,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public RegisterResponse register(RegisterRequest request) {
+    public void register(RegisterRequest request) {
         final String fullName = request.getFirstName() + " " + request.getLastName();
+        final String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("Passwords do not match");
@@ -57,22 +61,20 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Phone number already exists");
         }
 
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        request.setEmail(normalizedEmail);
+
         String passwordHash = passwordEncoder.encode(request.getPassword());
         String pinHash = passwordEncoder.encode(request.getPin());
 
         User user = userMapper.toEntity(request, passwordHash, pinHash, fullName);
-        user = userRepository.save(user);
+        user.setStatus("PENDING");
+        userRepository.save(user);
 
-        final String accessToken = jwtUtil.generateAccessToken(user.getPhoneNumber());
-        final String refreshToken = jwtUtil.generateRefreshToken(user.getPhoneNumber());
-
-        UserResponse userResponse = userMapper.toUserResponse(user);
-        return userMapper.toRegisterResponse(
-                accessToken,
-                refreshToken,
-                jwtUtil.getAccessExpirationSeconds(),
-                userResponse
-        );
+        otpService.sendRegistrationOtp(user.getPhoneNumber());
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.example.genz.auth.entity;
 
+import com.example.genz.auth.enums.OtpPurpose;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -23,6 +24,10 @@ public class Otp {
 
     @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purpose", nullable = false, length = 30)
+    private OtpPurpose purpose;
 
     @Column(name = "otp_hash", nullable = false)
     private String otpHash;
