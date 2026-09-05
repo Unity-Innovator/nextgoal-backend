@@ -27,6 +27,8 @@ services:
       db:
         condition: service_healthy
     environment:
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}

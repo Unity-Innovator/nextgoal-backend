@@ -14,6 +14,7 @@ import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
+import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
@@ -41,20 +42,42 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("success", authService.register(request)));
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.accepted().body(
+                ApiResponse.success("Registration started. OTP sent to your email", null)
+        );
     }
 
-    @PostMapping("/send-otp")
-    public ResponseEntity<ApiResponse<Void>> sendOtp(@Valid @RequestBody SendOtpRequest request) {
-        otpService.sendOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
+    @PostMapping("/register/resend-otp")
+    public ResponseEntity<ApiResponse<Void>> resendRegistrationOtp(
+            @Valid @RequestBody SendOtpRequest request
+    ) {
+        otpService.sendRegistrationOtp(request.getPhoneNumber());
+        return ResponseEntity.ok(ApiResponse.success("OTP sent to your email", null));
     }
 
-    @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<LoginResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        LoginResponse response = otpService.verifyOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));
+    @PostMapping("/register/verify-otp")
+    public ResponseEntity<ApiResponse<RegisterResponse>> verifyRegistrationOtp(
+            @Valid @RequestBody VerifyOtpRequest request
+    ) {
+        RegisterResponse response = otpService.verifyRegistrationOtp(request);
+        return ResponseEntity.ok(ApiResponse.success("Registration verified successfully", response));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody SendOtpRequest request) {
+        otpService.sendPasswordResetOtp(request.getPhoneNumber());
+        return ResponseEntity.ok(ApiResponse.success(
+                "If the account exists, an OTP was sent to its email address",
+                null
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        otpService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully", null));
     }
 
     @PostMapping("/verify-pin")

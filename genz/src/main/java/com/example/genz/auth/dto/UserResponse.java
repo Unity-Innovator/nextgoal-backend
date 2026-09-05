@@ -13,6 +13,7 @@ public record UserResponse(
         UUID id,
         String fullName,
         String phoneNumber,
+        String email,
         Gender gender,
         LocalDate dateOfBirth,
         String status

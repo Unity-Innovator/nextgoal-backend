@@ -1,8 +1,10 @@
 package com.example.genz.auth.service;
 
+import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.enums.Gender;
 import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.common.exception.BadRequestException;
@@ -14,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,8 +41,40 @@ class AuthServiceImplTest {
     @Mock
     private PinAttemptService pinAttemptService;
 
+    @Mock
+    private OtpService otpService;
+
     @InjectMocks
     private AuthServiceImpl authService;
+
+    @Test
+    void registerCreatesPendingUserAndSendsEmailOtpUsingPhoneNumber() {
+        RegisterRequest request = registrationRequest();
+        User mappedUser = User.builder()
+                .phoneNumber(request.getPhoneNumber())
+                .email("person@example.com")
+                .status("ACTIVE")
+                .build();
+
+        when(passwordEncoder.encode(request.getPassword())).thenReturn("password-hash");
+        when(passwordEncoder.encode(request.getPin())).thenReturn("pin-hash");
+        when(userMapper.toEntity(
+                request,
+                "password-hash",
+                "pin-hash",
+                "Test Person"
+        )).thenReturn(mappedUser);
+
+        authService.register(request);
+
+        assertEquals("person@example.com", request.getEmail());
+        assertEquals("PENDING", mappedUser.getStatus());
+        verify(userRepository).existsByPhoneNumber(request.getPhoneNumber());
+        verify(userRepository).existsByEmailIgnoreCase("person@example.com");
+        verify(userRepository).save(mappedUser);
+        verify(otpService).sendRegistrationOtp(request.getPhoneNumber());
+        verifyNoInteractions(jwtUtil);
+    }
 
     @Test
     void verifyPin_Success() {
@@ -167,6 +202,20 @@ class AuthServiceImplTest {
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
 
         assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
+    }
+
+    private RegisterRequest registrationRequest() {
+        RegisterRequest request = new RegisterRequest();
+        request.setFirstName("Test");
+        request.setLastName("Person");
+        request.setPhoneNumber("0123456789");
+        request.setEmail("Person@Example.com");
+        request.setPassword("Password1");
+        request.setConfirmPassword("Password1");
+        request.setGender(Gender.OTHER);
+        request.setDateOfBirth(LocalDate.of(2000, 1, 1));
+        request.setPin("123456");
+        return request;
     }
 }
 
