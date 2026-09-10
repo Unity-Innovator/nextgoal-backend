@@ -11,6 +11,7 @@ import lombok.Data;
 public class VerifyOtpRequest {
     @NotBlank
     @Size(max = 30)
+    @Pattern(regexp = "^\\+?[0-9]{8,15}$", message = "Phone number must contain 8 to 15 digits")
     private String phoneNumber;
 
     @NotBlank
