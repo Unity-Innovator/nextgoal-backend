@@ -2,18 +2,14 @@ spring:
   application:
     name: genz
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_APP_PASSWORD:}
-    properties:
-      "[mail.smtp.auth]": true
-      "[mail.smtp.starttls.enable]": true
-      "[mail.smtp.starttls.required]": true
-      "[mail.smtp.connectiontimeout]": 5000
-      "[mail.smtp.timeout]": 5000
-      "[mail.smtp.writetimeout]": 5000
+  data:
+    redis:
+      repositories:
+        enabled: false
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      timeout: 2s
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nextgoal}
@@ -38,10 +34,7 @@ spring:
       hibernate:
         format_sql: true
 otp:
-  expiration-minutes: 5
-  max-attempts: 5
-  resend-cooldown-seconds: 60
-  length: 6
+  secret: ${OTP_SECRET:}
 
 jwt:
   secret: ${JWT_SECRET}
@@ -71,3 +64,20 @@ management:
       enabled: true
     liveness-state:
       enabled: true
+
+supabase:
+  url: ${SUPABASE_URL}
+  secret-key: ${SUPABASE_SECRET_KEY}
+  storage:
+    bucket: ${SUPABASE_STORAGE_BUCKET}
+
+servlet:
+  multipart:
+    max-file-size: 40MB
+    max-request-size: 42MB
+
+plasgate:
+  base-url: https://cloudapi.plasgate.com
+  private-key: ${PLASGATE_PRIVATE_KEY:}
+  secret-key: ${PLASGATE_SECRET_KEY:}
+  sender: ${PLASGATE_SENDER:}

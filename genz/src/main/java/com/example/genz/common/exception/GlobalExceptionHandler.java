@@ -1,6 +1,5 @@
 package com.example.genz.common.exception;
 
-import com.example.genz.auth.exception.EmailAlreadyExistException;
 import com.example.genz.auth.exception.OtpException;
 import com.example.genz.community.chat.exception.ChatBadRequestException;
 import com.example.genz.community.chat.exception.ChatConflictException;
@@ -43,13 +42,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> NoteFoundHandler(ResourceNoteFoundException ex){
         ErrorResponse error=new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND.value(), LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @Order(Ordered.HIGHEST_PRECEDENCE)
-    @ExceptionHandler(EmailAlreadyExistException.class)
-    public ResponseEntity<ErrorResponse> EmailExistHandler(EmailAlreadyExistException ex){
-        ErrorResponse error=new ErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value(), LocalDateTime.now());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @Order(Ordered.HIGHEST_PRECEDENCE)

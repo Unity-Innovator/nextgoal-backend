@@ -13,19 +13,13 @@ The core identity table — every other table ultimately traces back to a user.
 |---|---|
 | `id` | Unique identifier (UUID) for the user, used as the FK anchor everywhere else in the schema. |
 | `full_name` | Display name shown across the app (profile, posts, bill splits). |
-| `phone_number` | Primary login identifier — Cambodia's mobile-first context means phone, not email, is the main way users authenticate. |
-| `email` | Optional secondary contact, useful for account recovery or notifications. |
+| `phone_number` | Primary login identifier and SMS destination. |
 | `password_hash` | BCrypt-hashed password — never store plain text. |
 | `pin_hash` | A separate, shorter PIN (e.g. 4–6 digits) for quick re-authentication inside the app (like unlocking a wallet), distinct from the login password. |
 | `status` | Account state: `ACTIVE`, `SUSPENDED`, `DEACTIVATED` — lets you disable an account without deleting data. |
-| `otp_code` | The current one-time password sent via SMS, used for phone verification, login 2FA, or password reset. |
-| `otp_expires_at` | Timestamp after which `otp_code` is no longer valid — OTPs should always expire (typically 5–10 min). |
-| `otp_attempts` | Counter for failed OTP entry attempts — lets you lock out after too many tries (brute-force protection). |
-| `otp_verified` | Whether the user has completed phone verification at least once. |
-| `otp_purpose` | What the current OTP is for: `REGISTRATION`, `LOGIN`, `PASSWORD_RESET`, `PHONE_CHANGE` — lets one OTP mechanism serve multiple flows. |
 | `created_at` / `updated_at` | Standard audit timestamps. |
 
-**Why OTP fields live directly on `USERS`** rather than a separate `otp_codes` table: a user only ever has one *active* OTP at a time, so there's no need for a history table unless you want to audit past OTP attempts — in which case you'd add an `OTP_LOGS` table later.
+OTP challenges are short-lived Redis records. Only the resulting verification token is persisted after a successful challenge.
 
 ---
 done

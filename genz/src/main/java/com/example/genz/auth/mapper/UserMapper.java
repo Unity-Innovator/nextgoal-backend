@@ -1,18 +1,15 @@
 package com.example.genz.auth.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.entity.User;
 
-import java.util.Locale;
-
-import org.springframework.stereotype.Component;
-
 @Component
 public class UserMapper {
-
     public UserResponse toUserResponse(User user) {
         if (user == null) {
             return null;
@@ -21,21 +18,24 @@ public class UserMapper {
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .phoneNumber(user.getPhoneNumber())
-                .email(user.getEmail())
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
                 .status(user.getStatus())
                 .build();
     }
 
-    public User toEntity(RegisterRequest request, String passwordHash, String pinHash, String fullName) {
+    public User toEntity(
+        RegisterRequest request, 
+        String passwordHash, 
+        String pinHash, 
+        String fullName
+    ) {
         if (request == null) {
             return null;
         }
         return User.builder()
                 .fullName(fullName)
                 .phoneNumber(request.getPhoneNumber())
-                .email(request.getEmail().trim().toLowerCase(Locale.ROOT))
                 .passwordHash(passwordHash)
                 .pinHash(pinHash)
                 .gender(request.getGender())
@@ -49,13 +49,13 @@ public class UserMapper {
             long expiresIn,
             UserResponse userResponse
     ) {
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(expiresIn)
-                .user(userResponse)
-                .build();
+        return new LoginResponse(
+            accessToken, 
+            refreshToken, 
+            "Bearer", 
+            null, 
+            userResponse
+        );
     }
 
     public RegisterResponse toRegisterResponse(
