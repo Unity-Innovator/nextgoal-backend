@@ -20,9 +20,11 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "${SPRING_DATA_REDIS_PASSWORD:-local-redis-password}"]
+    environment:
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-local-redis-password}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$SPRING_DATA_REDIS_PASSWORD\" ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -41,6 +43,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-local-redis-password}
       OTP_SECRET: ${OTP_SECRET}
       PLASGATE_PRIVATE_KEY: ${PLASGATE_PRIVATE_KEY}
       PLASGATE_SECRET_KEY: ${PLASGATE_SECRET_KEY}
