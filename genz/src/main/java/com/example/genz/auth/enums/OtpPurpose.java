@@ -2,5 +2,6 @@ package com.example.genz.auth.enums;
 
 public enum OtpPurpose {
     REGISTRATION,
-    PASSWORD_RESET
+    PASSWORD_RESET,
+    LOGIN
 }

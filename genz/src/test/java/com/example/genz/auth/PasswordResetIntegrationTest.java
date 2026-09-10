@@ -5,13 +5,18 @@ import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
-import com.example.genz.auth.entity.Otp;
+import com.example.genz.auth.service.RedisOtpStore;
+import com.example.genz.auth.service.PlasGateSmsSender;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
+import com.example.genz.auth.exception.OtpException;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.Gender;
 import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.enums.UserRole;
-import com.example.genz.auth.repository.OtpRepository;
+
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.util.TokenHashUtil;
@@ -47,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "jwt.access-expiration=900000",
         "jwt.refresh-expiration=604800000",
         "jwt.step-up-expiration=300000",
-        "otp.console-delivery-enabled=true"
+        "otp.secret=test-only-otp-secret-at-least-32-characters"
 })
 @AutoConfigureMockMvc
 @Transactional
@@ -59,8 +64,11 @@ class PasswordResetIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private OtpRepository otpRepository;
+    @MockitoBean
+    private RedisOtpStore otpStore;
+
+    @MockitoBean
+    private PlasGateSmsSender smsSender;
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
@@ -80,7 +88,6 @@ class PasswordResetIntegrationTest {
         testUser = userRepository.save(User.builder()
                 .fullName("Reset Test User")
                 .phoneNumber(phoneNumber)
-                .email("reset_user@example.com")
                 .dateOfBirth(LocalDate.of(2000, 1, 1))
                 .gender(Gender.MALE)
                 .passwordHash(passwordEncoder.encode(initialPassword))
@@ -96,22 +103,13 @@ class PasswordResetIntegrationTest {
     @DisplayName("OTP verification with REGISTRATION purpose returns short-lived verification token")
     void otpVerification_ReturnsVerificationToken() throws Exception {
         String rawOtp = "654321";
-        Otp otpEntity = Otp.builder()
-                .phoneNumber(phoneNumber)
-                .purpose(OtpPurpose.PASSWORD_RESET)
-                .otpHash(TokenHashUtil.sha256Hex(rawOtp))
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
-                .attempts(0)
-                .used(false)
-                .build();
-        otpRepository.save(otpEntity);
 
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
         verifyOtpRequest.setPhoneNumber(phoneNumber);
         verifyOtpRequest.setOtp(rawOtp);
         verifyOtpRequest.setPurpose(OtpPurpose.PASSWORD_RESET);
 
-        mockMvc.perform(post("/api/auth/verify-otp")
+        mockMvc.perform(post("/api/auth/otp/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isOk())
@@ -127,18 +125,14 @@ class PasswordResetIntegrationTest {
         SendOtpRequest sendOtpRequest = new SendOtpRequest();
         sendOtpRequest.setPhoneNumber(phoneNumber);
 
-        mockMvc.perform(post("/api/auth/send-otp")
+        mockMvc.perform(post("/api/auth/otp/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sendOtpRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        // Retrieve generated OTP from DB for testing
+        // Redis is mocked here; Redis semantics are covered by RedisOtpStoreIntegrationTest.
         String rawOtp = "123456";
-        Otp otpEntity = otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber)
-                .orElseThrow();
-        otpEntity.setOtpHash(TokenHashUtil.sha256Hex(rawOtp));
-        otpRepository.save(otpEntity);
 
         // 2. Verify OTP with PASSWORD_RESET purpose
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
@@ -146,7 +140,7 @@ class PasswordResetIntegrationTest {
         verifyOtpRequest.setOtp(rawOtp);
         verifyOtpRequest.setPurpose(OtpPurpose.PASSWORD_RESET);
 
-        MvcResult verifyResult = mockMvc.perform(post("/api/auth/verify-otp")
+        MvcResult verifyResult = mockMvc.perform(post("/api/auth/otp/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isOk())
@@ -214,24 +208,19 @@ class PasswordResetIntegrationTest {
     @DisplayName("Complete registration flow: send OTP -> verify OTP with REGISTRATION -> register with token -> login")
     void fullRegistrationFlow_Success() throws Exception {
         String newPhoneNumber = "0899887766";
-        String email = "new_user@example.com";
         String password = "StrongPassword123!";
 
         // 1. Send OTP
         SendOtpRequest sendOtpRequest = new SendOtpRequest();
         sendOtpRequest.setPhoneNumber(newPhoneNumber);
 
-        mockMvc.perform(post("/api/auth/send-otp")
+        mockMvc.perform(post("/api/auth/otp/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(sendOtpRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
         String rawOtp = "654321";
-        Otp otpEntity = otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(newPhoneNumber)
-                .orElseThrow();
-        otpEntity.setOtpHash(TokenHashUtil.sha256Hex(rawOtp));
-        otpRepository.save(otpEntity);
 
         // 2. Verify OTP with REGISTRATION purpose
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
@@ -239,7 +228,7 @@ class PasswordResetIntegrationTest {
         verifyOtpRequest.setOtp(rawOtp);
         verifyOtpRequest.setPurpose(OtpPurpose.REGISTRATION);
 
-        MvcResult verifyResult = mockMvc.perform(post("/api/auth/verify-otp")
+        MvcResult verifyResult = mockMvc.perform(post("/api/auth/otp/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isOk())
@@ -255,7 +244,6 @@ class PasswordResetIntegrationTest {
         registerRequest.setFirstName("New");
         registerRequest.setLastName("Member");
         registerRequest.setPhoneNumber(newPhoneNumber);
-        registerRequest.setEmail(email);
         registerRequest.setPassword(password);
         registerRequest.setConfirmPassword(password);
         registerRequest.setGender(Gender.MALE);
@@ -336,7 +324,6 @@ class PasswordResetIntegrationTest {
         registerRequest.setFirstName("Hacker");
         registerRequest.setLastName("User");
         registerRequest.setPhoneNumber(unusedPhone);
-        registerRequest.setEmail("hacker@example.com");
         registerRequest.setPassword("SecretPass123!");
         registerRequest.setConfirmPassword("SecretPass123!");
         registerRequest.setGender(Gender.OTHER);
@@ -354,21 +341,14 @@ class PasswordResetIntegrationTest {
     @Test
     @DisplayName("Verify OTP with invalid OTP is rejected")
     void verifyOtp_InvalidOtp_Rejected() throws Exception {
-        Otp otpEntity = Otp.builder()
-                .phoneNumber(phoneNumber)
-                .otpHash(TokenHashUtil.sha256Hex("123456"))
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
-                .attempts(0)
-                .used(false)
-                .build();
-        otpRepository.save(otpEntity);
+        doThrow(new OtpException("Invalid OTP")).when(otpStore).consume(anyString(), any(), anyString());
 
         VerifyOtpRequest verifyOtpRequest = new VerifyOtpRequest();
         verifyOtpRequest.setPhoneNumber(phoneNumber);
         verifyOtpRequest.setOtp("000000");
         verifyOtpRequest.setPurpose(OtpPurpose.REGISTRATION);
 
-        mockMvc.perform(post("/api/auth/verify-otp")
+        mockMvc.perform(post("/api/auth/otp/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isBadRequest())
@@ -383,7 +363,7 @@ class PasswordResetIntegrationTest {
         verifyOtpRequest.setOtp("123456");
         verifyOtpRequest.setPurpose(null);
 
-        mockMvc.perform(post("/api/auth/verify-otp")
+        mockMvc.perform(post("/api/auth/otp/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(verifyOtpRequest)))
                 .andExpect(status().isBadRequest());

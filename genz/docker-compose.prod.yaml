@@ -16,6 +16,16 @@ services:
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -25,10 +35,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATA_REDIS_HOST: redis
+      OTP_SECRET: ${OTP_SECRET}
+      PLASGATE_PRIVATE_KEY: ${PLASGATE_PRIVATE_KEY}
+      PLASGATE_SECRET_KEY: ${PLASGATE_SECRET_KEY}
+      PLASGATE_SENDER: ${PLASGATE_SENDER}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
