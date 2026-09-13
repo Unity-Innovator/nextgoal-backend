@@ -4,6 +4,7 @@ import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
+import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.entity.Otp;
 import com.example.genz.auth.entity.User;
@@ -428,5 +429,31 @@ class PasswordResetIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid or expired reset token"));
+    }
+
+    @Test
+    @DisplayName("Send phone OTP endpoint accepts phone-only request and saves OTP")
+    void sendPhoneOtp_Success() throws Exception {
+        SendPhoneOtpRequest request = new SendPhoneOtpRequest("0998877665");
+
+        mockMvc.perform(post("/api/auth/send-phone-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("OTP sent successfully"));
+
+        assertTrue(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc("0998877665").isPresent());
+    }
+
+    @Test
+    @DisplayName("Send phone OTP endpoint with blank phone number is rejected")
+    void sendPhoneOtp_BlankPhone_Rejected() throws Exception {
+        SendPhoneOtpRequest request = new SendPhoneOtpRequest("");
+
+        mockMvc.perform(post("/api/auth/send-phone-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }

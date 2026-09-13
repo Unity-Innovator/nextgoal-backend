@@ -2,6 +2,7 @@ package com.example.genz.auth.service;
 
 import com.example.genz.auth.config.OtpProperties;
 import com.example.genz.auth.dto.SendOtpRequest;
+import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpResponse;
 import com.example.genz.auth.entity.Otp;
@@ -90,6 +91,36 @@ public class OtpServiceImpl implements OtpService {
                 log.warn("Failed to send email OTP to {}: {}", recipientEmail, e.getMessage());
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public void sendPhoneOtp(SendPhoneOtpRequest request) {
+        String phoneNumber = request.getPhoneNumber();
+
+        checkRateLimit(phoneNumber);
+        invalidatePreviousOtps(phoneNumber);
+
+        String otp = generateOtp();
+        String otpHash = hashOtp(otp);
+
+        OtpPurpose purpose = userRepository.findByPhoneNumber(phoneNumber)
+                .map(user -> PENDING_STATUS.equalsIgnoreCase(user.getStatus()) ? OtpPurpose.REGISTRATION
+                        : OtpPurpose.PASSWORD_RESET)
+                .orElse(OtpPurpose.REGISTRATION);
+
+        Otp otpEntity = Otp.builder()
+                .phoneNumber(phoneNumber)
+                .purpose(purpose)
+                .otpHash(otpHash)
+                .expiresAt(LocalDateTime.now().plusMinutes(otpProperties.getExpirationMinutes()))
+                .attempts(0)
+                .used(false)
+                .build();
+        otpRepository.save(otpEntity);
+
+        // Deliver OTP number directly to console for now
+        deliverOtpToConsole(phoneNumber, otp, purpose);
     }
 
     @Override
@@ -219,6 +250,13 @@ public class OtpServiceImpl implements OtpService {
         if (otpProperties.isConsoleDeliveryEnabled()) {
             log.warn("Development OTP for phone ending in {}: {}", maskedPhoneSuffix(phoneNumber), otp);
         }
+    }
+
+    private void deliverOtpToConsole(String phoneNumber, String otp, OtpPurpose purpose) {
+        log.info("========================================");
+        log.info("[OTP CONSOLE DELIVERY] Phone: {}, OTP: {}, Purpose: {}", phoneNumber, otp, purpose);
+        log.info("========================================");
+        System.out.println("[OTP CONSOLE DELIVERY] Phone: " + phoneNumber + " | OTP: " + otp + " | Purpose: " + purpose);
     }
 
     private void checkRateLimit(String phoneNumber) {

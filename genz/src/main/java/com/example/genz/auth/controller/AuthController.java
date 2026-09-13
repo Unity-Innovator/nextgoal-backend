@@ -13,6 +13,7 @@ import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
+import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpResponse;
@@ -48,6 +49,12 @@ public class AuthController {
     @PostMapping("/send-otp")
     public ResponseEntity<ApiResponse<Void>> sendOtp(@Valid @RequestBody SendOtpRequest request) {
         otpService.sendOtp(request);
+        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
+    }
+
+    @PostMapping({"/send-phone-otp", "/send-otp-phone"})
+    public ResponseEntity<ApiResponse<Void>> sendPhoneOtp(@Valid @RequestBody SendPhoneOtpRequest request) {
+        otpService.sendPhoneOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
     }
 
