@@ -1,6 +1,7 @@
 package com.example.genz.auth.service;
 
 import com.example.genz.auth.dto.SendOtpRequest;
+import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpResponse;
 
