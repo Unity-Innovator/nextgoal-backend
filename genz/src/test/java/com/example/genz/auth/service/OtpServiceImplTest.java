@@ -5,8 +5,6 @@ import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpResponse;
-import com.example.genz.auth.entity.Otp;
-import com.example.genz.auth.entity.User;
 import com.example.genz.auth.dto.*;
 import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.OtpPurpose;
@@ -145,39 +143,5 @@ class OtpServiceImplTest {
         request.setPurpose(OtpPurpose.REGISTRATION);
         request.setOtp("123456");
         return request;
-    }
-
-    @Test
-    void sendPhoneOtp_Success_SavesOtpAndDoesNotTriggerEmailSender() {
-        String phoneNumber = "0123456789";
-        SendPhoneOtpRequest request = new SendPhoneOtpRequest(phoneNumber);
-
-        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
-        when(otpRepository.countByPhoneNumberAndCreatedAtAfter(eq(phoneNumber), any())).thenReturn(0L);
-
-        service.sendPhoneOtp(request);
-
-        ArgumentCaptor<Otp> otpCaptor = ArgumentCaptor.forClass(Otp.class);
-        verify(otpRepository).save(otpCaptor.capture());
-        Otp savedOtp = otpCaptor.getValue();
-
-        assertEquals(phoneNumber, savedOtp.getPhoneNumber());
-        assertEquals(OtpPurpose.REGISTRATION, savedOtp.getPurpose());
-        assertNotNull(savedOtp.getOtpHash());
-        assertFalse(savedOtp.isUsed());
-        assertEquals(0, savedOtp.getAttempts());
-        verifyNoInteractions(emailOtpSender);
-    }
-
-    @Test
-    void sendPhoneOtp_RateLimitExceeded_ThrowsOtpException() {
-        String phoneNumber = "0123456789";
-        SendPhoneOtpRequest request = new SendPhoneOtpRequest(phoneNumber);
-
-        when(otpRepository.countByPhoneNumberAndCreatedAtAfter(eq(phoneNumber), any())).thenReturn(1L);
-
-        OtpException exception = assertThrows(OtpException.class, () -> service.sendPhoneOtp(request));
-        assertEquals("Please wait before requesting a new OTP", exception.getMessage());
-        verify(otpRepository, never()).save(any());
     }
 }

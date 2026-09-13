@@ -7,6 +7,5 @@ import com.example.genz.auth.dto.VerifyOtpResponse;
 
 public interface OtpService {
     void sendOtp(SendOtpRequest request);
-    void sendPhoneOtp(SendPhoneOtpRequest request);
     VerifyOtpResponse verifyOtp(VerifyOtpRequest request);
 }

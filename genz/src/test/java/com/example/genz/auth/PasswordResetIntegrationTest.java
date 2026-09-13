@@ -4,7 +4,6 @@ import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
-import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.service.RedisOtpStore;
 import com.example.genz.auth.service.PlasGateSmsSender;
@@ -412,26 +411,28 @@ class PasswordResetIntegrationTest {
     }
 
     @Test
-    @DisplayName("Send phone OTP endpoint accepts phone-only request and saves OTP")
-    void sendPhoneOtp_Success() throws Exception {
-        SendPhoneOtpRequest request = new SendPhoneOtpRequest("0998877665");
+    @DisplayName("Send OTP endpoint accepts valid phone request and sends OTP")
+    void sendOtp_Success() throws Exception {
+        SendOtpRequest request = new SendOtpRequest();
+        request.setPhoneNumber("0998877665");
 
-        mockMvc.perform(post("/api/auth/send-phone-otp")
+        mockMvc.perform(post("/api/auth/otp/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("OTP sent successfully"));
 
-        assertTrue(otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc("0998877665").isPresent());
+        verify(otpStore).save(eq("0998877665"), any(), any());
     }
 
     @Test
-    @DisplayName("Send phone OTP endpoint with blank phone number is rejected")
-    void sendPhoneOtp_BlankPhone_Rejected() throws Exception {
-        SendPhoneOtpRequest request = new SendPhoneOtpRequest("");
+    @DisplayName("Send OTP endpoint with blank phone number is rejected")
+    void sendOtp_BlankPhone_Rejected() throws Exception {
+        SendOtpRequest request = new SendOtpRequest();
+        request.setPhoneNumber("");
 
-        mockMvc.perform(post("/api/auth/send-phone-otp")
+        mockMvc.perform(post("/api/auth/otp/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
