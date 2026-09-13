@@ -1,8 +1,35 @@
 package com.example.genz.auth.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
 import com.example.genz.auth.dto.RegisterRequest;
+import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.UserResponse;
@@ -17,22 +44,6 @@ import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.security.jwt.JwtUtil;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
@@ -57,9 +68,6 @@ class AuthServiceImplTest {
 
     @Mock
     private PinAttemptService pinAttemptService;
-
-    @Mock
-    private OtpService otpService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -126,7 +134,6 @@ class AuthServiceImplTest {
 
         User mappedUser = User.builder()
                 .phoneNumber(request.getPhoneNumber())
-                .email("person@example.com")
                 .status("ACTIVE")
                 .build();
 
@@ -144,32 +151,29 @@ class AuthServiceImplTest {
         when(jwtUtil.generateRefreshToken(request.getPhoneNumber())).thenReturn("refresh-token");
         when(jwtUtil.getAccessExpirationSeconds()).thenReturn(900L);
         UserResponse userResponse = UserResponse.builder().phoneNumber(request.getPhoneNumber()).build();
-        LoginResponse expectedResponse = LoginResponse.builder()
+        RegisterResponse expectedResponse = RegisterResponse.builder()
                 .accessToken("access-token")
                 .refreshToken("refresh-token")
                 .expiresIn(900L)
                 .user(userResponse)
                 .build();
         when(userMapper.toUserResponse(mappedUser)).thenReturn(userResponse);
-        when(userMapper.toLoginResponse("access-token", "refresh-token", 900L, userResponse)).thenReturn(expectedResponse);
+        when(userMapper.toRegisterResponse("access-token", "refresh-token", 900L, userResponse)).thenReturn(expectedResponse);
 
-        LoginResponse response = authService.register(request);
+        RegisterResponse response = authService.register(request);
 
         assertNotNull(response);
         assertEquals(expectedResponse, response);
-        assertEquals("person@example.com", request.getEmail());
         assertEquals("ACTIVE", mappedUser.getStatus());
         assertTrue(verificationToken.isUsed());
         assertEquals(mappedUser, verificationToken.getUser());
 
         verify(userRepository).existsByPhoneNumber(request.getPhoneNumber());
-        verify(userRepository).existsByEmailIgnoreCase("person@example.com");
         verify(verificationTokenRepository).findByTokenHash(tokenHash);
         verify(verificationTokenRepository).save(verificationToken);
         verify(userRepository).save(mappedUser);
         verify(jwtUtil).generateAccessToken(request.getPhoneNumber());
         verify(jwtUtil).generateRefreshToken(request.getPhoneNumber());
-        verifyNoInteractions(otpService);
     }
 
     @Test
@@ -515,7 +519,6 @@ class AuthServiceImplTest {
         request.setFirstName("Test");
         request.setLastName("Person");
         request.setPhoneNumber("0123456789");
-        request.setEmail("Person@Example.com");
         request.setPassword("Password1");
         request.setConfirmPassword("Password1");
         request.setGender(Gender.OTHER);

@@ -1,17 +1,7 @@
 package com.example.genz.auth.service;
 
-import com.example.genz.auth.mapper.UserMapper;
-import com.example.genz.security.jwt.JwtUtil;
-import com.example.genz.auth.dto.*;
-import com.example.genz.auth.entity.User;
-import com.example.genz.auth.entity.VerificationToken;
-import com.example.genz.auth.repository.VerificationTokenRepository;
-import com.example.genz.auth.repository.UserRepository;
-import com.example.genz.auth.util.TokenHashUtil;
-import com.example.genz.common.exception.BadRequestException;
-import com.example.genz.common.exception.ResourceNoteFoundException;
+import java.time.LocalDateTime;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,8 +9,26 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Locale;
+import com.example.genz.auth.dto.LoginRequest;
+import com.example.genz.auth.dto.LoginResponse;
+import com.example.genz.auth.dto.RefreshTokenRequest;
+import com.example.genz.auth.dto.RegisterRequest;
+import com.example.genz.auth.dto.RegisterResponse;
+import com.example.genz.auth.dto.ResetPasswordRequest;
+import com.example.genz.auth.dto.StepUpTokenResponse;
+import com.example.genz.auth.dto.UserResponse;
+import com.example.genz.auth.dto.VerifyPinRequest;
+import com.example.genz.auth.entity.User;
+import com.example.genz.auth.entity.VerificationToken;
+import com.example.genz.auth.mapper.UserMapper;
+import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.auth.repository.VerificationTokenRepository;
+import com.example.genz.auth.util.TokenHashUtil;
+import com.example.genz.common.exception.BadRequestException;
+import com.example.genz.common.exception.ResourceNoteFoundException;
+import com.example.genz.security.jwt.JwtUtil;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +41,6 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final PinAttemptService pinAttemptService;
-    private final OtpService otpService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -54,9 +61,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public LoginResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
         final String fullName = request.getFirstName() + " " + request.getLastName();
-        final String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BadRequestException("Passwords do not match");
@@ -64,10 +70,6 @@ public class AuthServiceImpl implements AuthService {
 
         if (userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
             throw new BadRequestException("Phone number already exists");
-        }
-
-        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new BadRequestException("Email already exists");
         }
 
         if (request.getVerificationToken() == null || request.getVerificationToken().isBlank()) {
@@ -90,8 +92,6 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("Verification token does not match phone number");
         }
 
-        request.setEmail(normalizedEmail);
-
         String passwordHash = passwordEncoder.encode(request.getPassword());
         String pinHash = passwordEncoder.encode(request.getPin());
 
@@ -108,13 +108,13 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
 
         UserResponse userResponse = userMapper.toUserResponse(savedUser);
-        return userMapper.toLoginResponse(jwt, refreshToken, jwtUtil.getAccessExpirationSeconds(), userResponse);
+        return userMapper.toRegisterResponse(jwt, refreshToken, jwtUtil.getAccessExpirationSeconds(), userResponse);
     }
 
     @Override
     public Boolean checkUser(String phoneNumber) {
         User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
         return user != null;
     }
 

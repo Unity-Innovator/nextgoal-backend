@@ -1,16 +1,19 @@
 package com.example.genz.auth.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
-import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RefreshTokenRequest;
+import com.example.genz.auth.dto.RegisterRequest;
+import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.SendPhoneOtpRequest;
@@ -18,12 +21,11 @@ import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
-import com.example.genz.common.api.ApiResponse;
 import com.example.genz.auth.service.AuthService;
 import com.example.genz.auth.service.OtpService;
+import com.example.genz.common.api.ApiResponse;
 
 import jakarta.validation.Valid;
-import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -41,24 +43,18 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<LoginResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        LoginResponse response = authService.register(request);
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        RegisterResponse response = authService.register(request);
         return ResponseEntity.ok(ApiResponse.success("User registered successfully", response));
     }
 
-    @PostMapping("/send-otp")
+    @PostMapping("/otp/send")
     public ResponseEntity<ApiResponse<Void>> sendOtp(@Valid @RequestBody SendOtpRequest request) {
         otpService.sendOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
     }
 
-    @PostMapping({"/send-phone-otp", "/send-otp-phone"})
-    public ResponseEntity<ApiResponse<Void>> sendPhoneOtp(@Valid @RequestBody SendPhoneOtpRequest request) {
-        otpService.sendPhoneOtp(request);
-        return ResponseEntity.ok(ApiResponse.success("OTP sent successfully", null));
-    }
-
-    @PostMapping("/verify-otp")
+    @PostMapping("/otp/verify")
     public ResponseEntity<ApiResponse<VerifyOtpResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         VerifyOtpResponse response = otpService.verifyOtp(request);
         return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", response));

@@ -46,9 +46,6 @@ public class User implements UserDetails {
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
-    @Column(name = "email", length = 254, unique = true)
-    private String email;
-
     @Column(name = "date_of_birth", nullable = false)
     private LocalDate dateOfBirth;
 

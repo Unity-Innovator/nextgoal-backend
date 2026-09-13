@@ -1,95 +1,67 @@
 package com.example.genz.auth.service;
 
-import com.example.genz.auth.config.OtpProperties;
 import com.example.genz.auth.dto.SendOtpRequest;
 import com.example.genz.auth.dto.SendPhoneOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpRequest;
 import com.example.genz.auth.dto.VerifyOtpResponse;
-import com.example.genz.auth.entity.Otp;
+import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.exception.OtpException;
-import com.example.genz.auth.repository.OtpRepository;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.auth.repository.VerificationTokenRepository;
+import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.auth.util.TokenHashUtil;
+import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class OtpServiceImpl implements OtpService {
-
-    private static final String PENDING_STATUS = "PENDING";
-
-    private final OtpRepository otpRepository;
+    private final RedisOtpStore otpStore;
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
-    private final OtpProperties otpProperties;
-    private final PasswordEncoder passwordEncoder;
-    private final EmailOtpSender emailOtpSender;
+    private final OtpHasher otpHasher;
+    private final PlasGateSmsSender smsSender;
+    private final JwtUtil jwtUtil;
+    private final UserMapper userMapper;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
-    @Transactional
     public void sendOtp(SendOtpRequest request) {
         String phoneNumber = request.getPhoneNumber();
-        if (!otpProperties.isConsoleDeliveryEnabled() && emailOtpSender == null) {
-            throw new OtpException("OTP delivery is not configured");
+        User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
+        validateAccount(user);
+        OtpPurpose purpose = request.getPurpose();
+        if (purpose == null) {
+            purpose = user == null || "PENDING".equalsIgnoreCase(user.getStatus())
+                    ? OtpPurpose.REGISTRATION : OtpPurpose.PASSWORD_RESET;
         }
-
-        checkRateLimit(phoneNumber);
-        invalidatePreviousOtps(phoneNumber);
-
-        String otp = generateOtp();
-        String otpHash = hashOtp(otp);
-
-        OtpPurpose purpose = userRepository.findByPhoneNumber(phoneNumber)
-                .map(user -> PENDING_STATUS.equalsIgnoreCase(user.getStatus()) ? OtpPurpose.REGISTRATION
-                        : OtpPurpose.PASSWORD_RESET)
-                .orElse(OtpPurpose.REGISTRATION);
-
-        Otp otpEntity = Otp.builder()
-                .phoneNumber(phoneNumber)
-                .purpose(purpose)
-                .otpHash(otpHash)
-                .expiresAt(LocalDateTime.now().plusMinutes(otpProperties.getExpirationMinutes()))
-                .attempts(0)
-                .used(false)
-                .build();
-        otpRepository.save(otpEntity);
-
-        // Deliver to console (your flow)
-        deliverOtp(phoneNumber, otp, purpose);
-
-        // Deliver to email
-        String recipientEmail = request.getEmail();
-        if (recipientEmail == null || recipientEmail.isBlank()) {
-            recipientEmail = userRepository.findByPhoneNumber(phoneNumber)
-                    .map(User::getEmail)
-                    .orElse(null);
+        if (purpose == OtpPurpose.PASSWORD_RESET && user == null) {
+            throw new OtpException("No account found. Please register first.");
         }
-
-        if (recipientEmail != null && !recipientEmail.isBlank() && emailOtpSender != null) {
-            try {
-                emailOtpSender.sendOtp(
-                        recipientEmail,
-                        otp,
-                        purpose,
-                        otpProperties.getExpirationMinutes());
-            } catch (Exception e) {
-                log.warn("Failed to send email OTP to {}: {}", recipientEmail, e.getMessage());
-            }
+        if (purpose == OtpPurpose.LOGIN && user == null) {
+            throw new OtpException("No account found. Please register first.");
+        }
+        if (purpose == OtpPurpose.LOGIN && (user == null || !user.isEnabled())) {
+            throw new OtpException("Account is not active");
+        }
+        String otp = String.format(Locale.ROOT, "%06d", secureRandom.nextInt(1_000_000));
+        String hash = otpHasher.hash(phoneNumber, purpose, otp);
+        otpStore.save(phoneNumber, purpose, hash);
+        try {
+            smsSender.sendOtp(phoneNumber, otp);
+        } catch (RuntimeException ex) {
+            otpStore.removeIfMatching(phoneNumber, hash);
+            throw ex;
         }
     }
 
@@ -129,9 +101,28 @@ public class OtpServiceImpl implements OtpService {
         if (request.getPurpose() == null) {
             throw new OtpException("Purpose is required");
         }
-
         String phoneNumber = request.getPhoneNumber();
-        User user = validateAndConsumeOtp(phoneNumber, request.getOtp(), request.getPurpose());
+        User user = userRepository.findByPhoneNumber(phoneNumber).orElse(null);
+        validateAccount(user);
+        if (request.getPurpose() == OtpPurpose.PASSWORD_RESET && user == null) {
+            throw new OtpException("No account found. Please register first.");
+        }
+        otpStore.consume(phoneNumber, request.getPurpose(),
+                otpHasher.hash(phoneNumber, request.getPurpose(), request.getOtp()));
+
+        if (request.getPurpose() == OtpPurpose.LOGIN) {
+            if (user == null || !user.isEnabled()) {
+                throw new OtpException("Account is not active");
+            }
+            UserResponse userResponse = userMapper.toUserResponse(user);
+            return VerifyOtpResponse.builder()
+                    .accessToken(jwtUtil.generateAccessToken(phoneNumber))
+                    .refreshToken(jwtUtil.generateRefreshToken(phoneNumber))
+                    .tokenType("Bearer")
+                    .expiresIn(jwtUtil.getAccessExpirationSeconds())
+                    .user(userResponse)
+                    .build();
+        }
 
         // Invalidate previous active verification tokens for this phone number
         List<VerificationToken> activeTokens = verificationTokenRepository.findByPhoneNumberAndUsedFalse(phoneNumber);
@@ -161,48 +152,8 @@ public class OtpServiceImpl implements OtpService {
                 .build();
     }
 
-    private User validateAndConsumeOtp(String phoneNumber, String otp, OtpPurpose purpose) {
-        Otp otpEntity = otpRepository
-                .findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber)
-                .orElseThrow(() -> new OtpException("No OTP found for this phone number"));
-
-        if (otpEntity.isUsed()) {
-            throw new OtpException("OTP has already been used");
-        }
-
-        if (otpEntity.getExpiresAt().isBefore(LocalDateTime.now())) {
-            otpEntity.setUsed(true);
-            otpRepository.save(otpEntity);
-            throw new OtpException("OTP has expired");
-        }
-
-        if (otpEntity.getAttempts() >= otpProperties.getMaxAttempts()) {
-            otpEntity.setUsed(true);
-            otpRepository.save(otpEntity);
-            throw new OtpException("Maximum OTP attempts exceeded");
-        }
-
-        otpEntity.setAttempts(otpEntity.getAttempts() + 1);
-
-        boolean matches = (otpEntity.getOtpHash() != null && otpEntity.getOtpHash().equals(hashOtp(otp)))
-                || (passwordEncoder != null && passwordEncoder.matches(otp, otpEntity.getOtpHash()))
-                || otp.equals(otpEntity.getOtpHash());
-
-        if (!matches) {
-            if (otpEntity.getAttempts() >= otpProperties.getMaxAttempts()) {
-                otpEntity.setUsed(true);
-            }
-            otpRepository.save(otpEntity);
-            throw new OtpException("Invalid OTP");
-        }
-
-        otpEntity.setUsed(true);
-        otpRepository.save(otpEntity);
-
-        User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElse(null);
-
-        if (user != null && !user.isEnabled() && !PENDING_STATUS.equalsIgnoreCase(user.getStatus())) {
+    private void validateAccount(User user) {
+        if (user != null && !user.isEnabled() && !"PENDING".equalsIgnoreCase(user.getStatus())) {
             throw new OtpException("Account is not active");
         }
 
