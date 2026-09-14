@@ -15,5 +15,6 @@ public interface AuthService {
     Boolean checkUser(String phoneNumber);
     StepUpTokenResponse verifyPin(VerifyPinRequest request, String phoneNumber);
     LoginResponse refresh(RefreshTokenRequest request);
+    void logout(RefreshTokenRequest request);
     Void resetPassword(ResetPasswordRequest request);
 }

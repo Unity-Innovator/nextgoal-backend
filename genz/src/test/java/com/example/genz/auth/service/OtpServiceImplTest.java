@@ -24,6 +24,7 @@ class OtpServiceImplTest {
     private final RedisOtpStore store = mock(RedisOtpStore.class);
     private final UserRepository users = mock(UserRepository.class);
     private final VerificationTokenRepository tokens = mock(VerificationTokenRepository.class);
+    private final RefreshTokenRepository refreshTokens = mock(RefreshTokenRepository.class);
     private final PlasGateSmsSender sender = mock(PlasGateSmsSender.class);
     private final JwtUtil jwtUtil = mock(JwtUtil.class);
     private final UserMapper userMapper = mock(UserMapper.class);
@@ -36,7 +37,7 @@ class OtpServiceImplTest {
         OtpProperties properties = new OtpProperties();
         properties.setSecret("test-only-otp-secret-at-least-32-characters");
         hasher = new OtpHasher(properties);
-        service = new OtpServiceImpl(store, users, tokens, hasher, sender, jwtUtil, userMapper);
+        service = new OtpServiceImpl(store, users, tokens, refreshTokens, hasher, sender, jwtUtil, userMapper);
     }
 
     @Test

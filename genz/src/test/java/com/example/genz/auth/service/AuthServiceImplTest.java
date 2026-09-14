@@ -17,7 +17,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -28,22 +30,28 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.genz.auth.dto.LoginRequest;
 import com.example.genz.auth.dto.LoginResponse;
+import com.example.genz.auth.dto.RefreshTokenRequest;
 import com.example.genz.auth.dto.RegisterRequest;
 import com.example.genz.auth.dto.RegisterResponse;
 import com.example.genz.auth.dto.ResetPasswordRequest;
 import com.example.genz.auth.dto.StepUpTokenResponse;
 import com.example.genz.auth.dto.UserResponse;
 import com.example.genz.auth.dto.VerifyPinRequest;
+import com.example.genz.auth.entity.RefreshToken;
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.entity.VerificationToken;
 import com.example.genz.auth.enums.Gender;
 import com.example.genz.auth.enums.OtpPurpose;
 import com.example.genz.auth.mapper.UserMapper;
+import com.example.genz.auth.repository.RefreshTokenRepository;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.common.exception.BadRequestException;
+import com.example.genz.common.exception.UnauthorizedException;
 import com.example.genz.security.jwt.JwtUtil;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
@@ -53,6 +61,9 @@ class AuthServiceImplTest {
 
     @Mock
     private VerificationTokenRepository verificationTokenRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -512,6 +523,120 @@ class AuthServiceImplTest {
         when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.empty());
 
         assertThrows(BadRequestException.class, () -> authService.verifyPin(request, phoneNumber));
+    }
+
+    @Test
+    void refresh_Success_RotatesTokensAndRevokesPreviousToken() {
+        String phoneNumber = "0123456789";
+        String rawToken = "valid-refresh-token";
+        String tokenHash = TokenHashUtil.sha256Hex(rawToken);
+
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn(phoneNumber);
+        when(jwtUtil.extractAndValidateRefreshToken(rawToken)).thenReturn(claims);
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .status("ACTIVE")
+                .build();
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
+
+        RefreshToken storedToken = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .revoked(false)
+                .build();
+        when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(storedToken));
+
+        when(jwtUtil.generateAccessToken(phoneNumber)).thenReturn("new-access-token");
+        when(jwtUtil.generateRefreshToken(phoneNumber)).thenReturn("new-refresh-token");
+        when(jwtUtil.getRefreshExpirationMillis()).thenReturn(604800000L);
+        when(jwtUtil.getAccessExpirationSeconds()).thenReturn(900L);
+
+        UserResponse userResponse = UserResponse.builder()
+                .phoneNumber(phoneNumber)
+                .build();
+        when(userMapper.toUserResponse(user)).thenReturn(userResponse);
+
+        LoginResponse expectedResponse = LoginResponse.builder()
+                .accessToken("new-access-token")
+                .refreshToken("new-refresh-token")
+                .tokenType("Bearer")
+                .expiresIn(900L)
+                .user(userResponse)
+                .build();
+        when(userMapper.toLoginResponse("new-access-token", "new-refresh-token", 900L, userResponse))
+                .thenReturn(expectedResponse);
+
+        LoginResponse result = authService.refresh(new RefreshTokenRequest(rawToken));
+
+        assertNotNull(result);
+        assertEquals("new-access-token", result.accessToken());
+        assertEquals("new-refresh-token", result.refreshToken());
+        assertTrue(storedToken.isRevoked());
+        verify(refreshTokenRepository, times(2)).save(any(RefreshToken.class));
+    }
+
+    @Test
+    void refresh_InvalidJwt_ThrowsUnauthorizedException() {
+        String rawToken = "malformed-or-expired-jwt";
+        when(jwtUtil.extractAndValidateRefreshToken(rawToken)).thenThrow(new JwtException("Invalid token"));
+
+        assertThrows(UnauthorizedException.class, () -> authService.refresh(new RefreshTokenRequest(rawToken)));
+        verifyNoInteractions(refreshTokenRepository);
+    }
+
+    @Test
+    void refresh_ReusedRevokedToken_TriggersRevokeAllForUserAndThrowsUnauthorized() {
+        String phoneNumber = "0123456789";
+        String rawToken = "stolen-already-used-refresh-token";
+        String tokenHash = TokenHashUtil.sha256Hex(rawToken);
+
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn(phoneNumber);
+        when(jwtUtil.extractAndValidateRefreshToken(rawToken)).thenReturn(claims);
+
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .phoneNumber(phoneNumber)
+                .status("ACTIVE")
+                .build();
+        when(userRepository.findByPhoneNumber(phoneNumber)).thenReturn(Optional.of(user));
+
+        RefreshToken revokedStoredToken = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .user(user)
+                .tokenHash(tokenHash)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .revoked(true)
+                .build();
+        when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(revokedStoredToken));
+
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> authService.refresh(new RefreshTokenRequest(rawToken)));
+        assertTrue(ex.getMessage().contains("revoked"));
+        verify(refreshTokenRepository).revokeAllForUser(user);
+        verify(jwtUtil, never()).generateAccessToken(anyString());
+    }
+
+    @Test
+    void logout_Success_MarksTokenRevoked() {
+        String rawToken = "active-refresh-token";
+        String tokenHash = TokenHashUtil.sha256Hex(rawToken);
+
+        RefreshToken storedToken = RefreshToken.builder()
+                .id(UUID.randomUUID())
+                .tokenHash(tokenHash)
+                .revoked(false)
+                .build();
+        when(refreshTokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(storedToken));
+
+        authService.logout(new RefreshTokenRequest(rawToken));
+
+        assertTrue(storedToken.isRevoked());
+        verify(refreshTokenRepository).save(storedToken);
     }
 
     private RegisterRequest registrationRequest() {
