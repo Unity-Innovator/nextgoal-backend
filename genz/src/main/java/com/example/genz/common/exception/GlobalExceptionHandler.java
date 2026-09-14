@@ -82,6 +82,17 @@ public class GlobalExceptionHandler {
     }
 
     @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> unauthorizedHandler(UnauthorizedException ex) {
+        ErrorResponse error = new ErrorResponse(
+                ex.getMessage(),
+                HttpStatus.UNAUTHORIZED.value(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> AccessDeniedHandler(AccessDeniedException ex){
         ErrorResponse error=new ErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN.value(), LocalDateTime.now());

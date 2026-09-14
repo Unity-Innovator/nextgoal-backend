@@ -81,6 +81,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", authService.refresh(request)));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request);
+        return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+    }
+
     @GetMapping("/check")
     public ResponseEntity<ApiResponse<Boolean>> checkUser(@RequestParam String phoneNumber){
         return ResponseEntity.ok(ApiResponse.success("Success", authService.checkUser(phoneNumber)));

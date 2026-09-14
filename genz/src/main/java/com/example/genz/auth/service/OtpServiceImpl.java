@@ -12,11 +12,14 @@ import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.auth.repository.VerificationTokenRepository;
 import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.auth.util.TokenHashUtil;
+import com.example.genz.auth.entity.RefreshToken;
+import com.example.genz.auth.repository.RefreshTokenRepository;
 import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
@@ -28,6 +31,7 @@ public class OtpServiceImpl implements OtpService {
     private final RedisOtpStore otpStore;
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final OtpHasher otpHasher;
     private final PlasGateSmsSender smsSender;
     private final JwtUtil jwtUtil;
@@ -84,9 +88,19 @@ public class OtpServiceImpl implements OtpService {
                 throw new OtpException("Account is not active");
             }
             UserResponse userResponse = userMapper.toUserResponse(user);
+            String refreshToken = jwtUtil.generateRefreshToken(phoneNumber);
+            String tokenHash = TokenHashUtil.sha256Hex(refreshToken);
+            RefreshToken refreshTokenEntity = RefreshToken.builder()
+                    .user(user)
+                    .tokenHash(tokenHash)
+                    .expiresAt(LocalDateTime.now().plus(Duration.ofMillis(jwtUtil.getRefreshExpirationMillis())))
+                    .revoked(false)
+                    .build();
+            refreshTokenRepository.save(refreshTokenEntity);
+
             return VerifyOtpResponse.builder()
                     .accessToken(jwtUtil.generateAccessToken(phoneNumber))
-                    .refreshToken(jwtUtil.generateRefreshToken(phoneNumber))
+                    .refreshToken(refreshToken)
                     .tokenType("Bearer")
                     .expiresIn(jwtUtil.getAccessExpirationSeconds())
                     .user(userResponse)

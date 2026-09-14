@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Locale;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 
 @Component
@@ -71,6 +72,7 @@ public class JwtUtil {
 
     public String generateRefreshToken(String phoneNumber) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(phoneNumber)
                 .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
                 .issuedAt(new Date())
@@ -136,6 +138,18 @@ public class JwtUtil {
 
     public long getAccessExpirationSeconds() {
         return accessExpiration / 1_000;
+    }
+
+    public long getRefreshExpirationMillis() {
+        return refreshExpiration;
+    }
+
+    public Claims extractAndValidateRefreshToken(String token) {
+        Claims claims = parseClaims(token);
+        if (!REFRESH_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))) {
+            throw new io.jsonwebtoken.JwtException("Token is not a refresh token");
+        }
+        return claims;
     }
 
     public long getStepUpExpirationSeconds() {

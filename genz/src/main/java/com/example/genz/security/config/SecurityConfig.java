@@ -41,6 +41,7 @@ public class SecurityConfig {
                                 "/api/auth/otp/verify",
                                 "/api/auth/reset-password",
                                 "/api/auth/refresh",
+                                "/api/auth/logout",
                                 "/api/auth/check",
                                 "/actuator/health",
                                 "/actuator/health/**",

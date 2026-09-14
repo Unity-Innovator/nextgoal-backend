@@ -53,7 +53,7 @@ public class UserMapper {
             accessToken, 
             refreshToken, 
             "Bearer", 
-            null, 
+            expiresIn, 
             userResponse
         );
     }
