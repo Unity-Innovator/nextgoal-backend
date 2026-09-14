@@ -5,6 +5,7 @@ import com.example.genz.community.post.dto.PostMediaResponse;
 import com.example.genz.community.post.dto.PostResponse;
 import com.example.genz.community.post.entity.Post;
 import com.example.genz.community.post.entity.PostMedia;
+import com.example.genz.community.chat.service.SupabaseStorageService;
 import com.example.genz.settings.entity.UserSettings;
 import com.example.genz.settings.repository.UserSettingsRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class PostMapper {
 
     private final UserSettingsRepository settingsRepository;
+    private final SupabaseStorageService storageService;
 
     public PostResponse toResponse(Post post, UUID currentUserId) {
         boolean owner = post.getAuthor().getId().equals(currentUserId);
@@ -54,7 +56,9 @@ public class PostMapper {
         return new PostMediaResponse(
                 media.getId(),
                 media.getMediaType(),
-                media.getMediaUrl(),
+                media.getStoragePath() == null || media.getStoragePath().isBlank()
+                        ? media.getMediaUrl()
+                        : storageService.createSignedUrl(media.getStoragePath()),
                 media.getThumbnailUrl(),
                 media.getWidthPx(),
                 media.getHeightPx(),

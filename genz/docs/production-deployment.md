@@ -29,6 +29,10 @@ SPRING_PROFILES_ACTIVE=prod
 JWT_SECRET=replace-with-at-least-32-random-bytes
 JWT_ACCESS_EXPIRATION=900000
 JWT_REFRESH_EXPIRATION=604800000
+
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_replace-with-server-only-key
+SUPABASE_STORAGE_BUCKET=chat-attachments
 ```
 
 `DB_USERNAME` must equal `SPRING_DATASOURCE_USERNAME`, and `DB_PASSWORD` must

@@ -392,7 +392,21 @@ Returns `201 Created`. Rules:
 - `mediaUrl` and nonblank `thumbnailUrl` must be absolute HTTP/HTTPS URLs, up to 2,048 characters.
 - Positive dimensions are required when present; `durationMs` may be zero or positive.
 - The array order becomes `sortOrder`, starting at zero.
-- This endpoint stores media metadata only. The client must upload the actual file to storage first, then send its URL.
+- For Supabase-backed uploads, upload the binary through the endpoint below, then copy its returned `mediaType` and `mediaUrl` into this request's `media` array. The backend recognizes its own signed URL and persists the private storage path so it can refresh the URL in future post responses.
+
+### Upload post media
+
+```http
+POST /api/community/posts/media
+Content-Type: multipart/form-data
+Authorization: Bearer <access-token>
+```
+
+Send one `file` field. Only images and videos are accepted, up to 40 MB. The
+response contains the inferred `mediaType` and a private signed `mediaUrl`.
+Use those two values to create or update a post; the URL expires after one hour,
+but feed and post responses automatically return a refreshed URL for media
+uploaded through this endpoint.
 
 ### Update and delete
 
@@ -609,6 +623,31 @@ export interface SliceResponse<T> {
   hasNext: boolean;
 }
 ```
+
+### Send an attachment
+
+Send one file as `multipart/form-data`; do not upload directly to Supabase from
+the mobile app. The backend verifies that the authenticated user is an active
+conversation member, stores the private object, and emits the normal message
+WebSocket event.
+
+| Field | Required | Description |
+|---|---:|---|
+| `clientMessageId` | yes | A UUID generated once by the client. Reuse it when retrying. |
+| `file` | yes | The binary attachment, up to 40 MB. |
+| `body` | no | An optional caption, up to 10,000 characters. |
+| `replyToMessageId` | no | UUID of a message in the same conversation. |
+
+```http
+POST /api/chat/conversations/{conversationId}/messages/attachments
+Content-Type: multipart/form-data
+Authorization: Bearer <access-token>
+```
+
+The server derives the attachment type: image, video, audio (`VOICE`), or
+`FILE`. `fileUrl` in the returned message and message-history responses is a
+private Supabase signed URL that expires after one hour; fetch the conversation
+history again to obtain a refreshed URL when needed.
 
 ### Create or open a conversation
 

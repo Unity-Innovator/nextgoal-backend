@@ -46,6 +46,9 @@ public class ChatMessageAttachment {
     @Column(name = "file_url", nullable = false, columnDefinition = "TEXT")
     private String fileUrl;
 
+    @Column(name = "storage_path", columnDefinition = "TEXT")
+    private String storagePath;
+
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 
