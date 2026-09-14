@@ -409,4 +409,32 @@ class PasswordResetIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid or expired reset token"));
     }
+
+    @Test
+    @DisplayName("Send OTP endpoint accepts valid phone request and sends OTP")
+    void sendOtp_Success() throws Exception {
+        SendOtpRequest request = new SendOtpRequest();
+        request.setPhoneNumber("0998877665");
+
+        mockMvc.perform(post("/api/auth/otp/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("OTP sent successfully"));
+
+        verify(otpStore).save(eq("0998877665"), any(), any());
+    }
+
+    @Test
+    @DisplayName("Send OTP endpoint with blank phone number is rejected")
+    void sendOtp_BlankPhone_Rejected() throws Exception {
+        SendOtpRequest request = new SendOtpRequest();
+        request.setPhoneNumber("");
+
+        mockMvc.perform(post("/api/auth/otp/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
 }
