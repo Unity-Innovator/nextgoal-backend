@@ -16,6 +16,7 @@ import java.util.UUID;
 
 public interface CommunityNotificationRepository extends JpaRepository<Notification, UUID> {
 
+    // PostgreSQL needs an explicit type for a null cursor in the IS NULL guard.
     @Query("""
             select n
             from CommunityNotification n
@@ -23,7 +24,7 @@ public interface CommunityNotificationRepository extends JpaRepository<Notificat
             where n.recipient.id = :recipientId
               and (:unreadOnly = false or n.readAt is null)
               and (
-                  :cursorCreatedAt is null
+                  cast(:cursorCreatedAt as timestamp) is null
                   or n.createdAt < :cursorCreatedAt
                   or (n.createdAt = :cursorCreatedAt and n.id < :cursorNotificationId)
               )

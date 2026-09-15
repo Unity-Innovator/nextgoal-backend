@@ -32,6 +32,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     @Query("select p from Post p where p.id = :postId")
     Optional<Post> findByIdForUpdate(@Param("postId") UUID postId);
 
+    // PostgreSQL needs an explicit type for a null cursor in the IS NULL guard.
     @Query("""
             select p
             from Post p
@@ -68,7 +69,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
                      or (b.blocker.id = p.author.id and b.blockedUser.id = :viewerId)
               )
               and (
-                  :cursorCreatedAt is null
+                  cast(:cursorCreatedAt as timestamp) is null
                   or p.createdAt < :cursorCreatedAt
                   or (p.createdAt = :cursorCreatedAt and p.id < :cursorPostId)
               )
@@ -116,7 +117,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
                      or (b.blocker.id = p.author.id and b.blockedUser.id = :viewerId)
               )
               and (
-                  :cursorCreatedAt is null
+                  cast(:cursorCreatedAt as timestamp) is null
                   or p.createdAt < :cursorCreatedAt
                   or (p.createdAt = :cursorCreatedAt and p.id < :cursorPostId)
               )
@@ -178,7 +179,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
                   )
               )
               and (
-                  :cursorCreatedAt is null
+                  cast(:cursorCreatedAt as timestamp) is null
                   or p.createdAt < :cursorCreatedAt
                   or (p.createdAt = :cursorCreatedAt and p.id < :cursorPostId)
               )
