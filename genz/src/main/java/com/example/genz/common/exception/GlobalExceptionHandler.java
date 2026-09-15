@@ -4,6 +4,7 @@ import com.example.genz.auth.exception.OtpException;
 import com.example.genz.community.chat.exception.ChatBadRequestException;
 import com.example.genz.community.chat.exception.ChatConflictException;
 import com.example.genz.community.chat.exception.ChatNotFoundException;
+import com.example.genz.community.chat.exception.ChatStorageException;
 import com.example.genz.community.friendship.exception.FriendshipBadRequestException;
 import com.example.genz.community.friendship.exception.FriendshipConflictException;
 import com.example.genz.community.friendship.exception.FriendshipNotFoundException;
@@ -118,6 +119,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> chatConflictHandler(ChatConflictException ex) {
         ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value(), LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(ChatStorageException.class)
+    public ResponseEntity<ErrorResponse> chatStorageHandler(ChatStorageException ex) {
+        log.warn("Chat attachment storage failure", ex);
+        ErrorResponse error = new ErrorResponse(
+                "Attachment storage is temporarily unavailable",
+                HttpStatus.BAD_GATEWAY.value(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
     }
 
     @Order(Ordered.HIGHEST_PRECEDENCE)

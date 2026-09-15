@@ -15,7 +15,9 @@ import com.example.genz.community.chat.entity.ChatMessageReceipt;
 import com.example.genz.community.chat.enums.ConversationMemberStatus;
 import com.example.genz.community.chat.enums.ConversationType;
 import com.example.genz.community.chat.enums.MessageStatus;
+import com.example.genz.community.chat.service.SupabaseStorageService;
 import com.example.genz.auth.entity.User;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -25,7 +27,10 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class ChatMapper {
+
+    private final SupabaseStorageService storageService;
 
     public ConversationResponse toConversationResponse(
             ChatConversation conversation,
@@ -131,7 +136,7 @@ public class ChatMapper {
         return new MessageAttachmentResponse(
                 attachment.getId(),
                 attachment.getType(),
-                attachment.getFileUrl(),
+                storageService.createSignedUrl(attachment),
                 attachment.getThumbnailUrl(),
                 attachment.getOriginalName(),
                 attachment.getMimeType(),

@@ -10,6 +10,7 @@ import com.example.genz.community.safety.service.CommunityPrivacyService;
 import com.example.genz.community.safety.service.CommunityRateLimiter;
 import com.example.genz.community.post.dto.PostCursorPageResponse;
 import com.example.genz.community.post.dto.PostCursorResponse;
+import com.example.genz.community.post.dto.PostMediaUploadResponse;
 import com.example.genz.community.post.dto.PostMediaRequest;
 import com.example.genz.community.post.dto.PostResponse;
 import com.example.genz.community.post.dto.SharePostRequest;
@@ -22,6 +23,7 @@ import com.example.genz.community.post.enums.PostVisibility;
 import com.example.genz.community.post.exception.PostBadRequestException;
 import com.example.genz.community.post.exception.PostNotFoundException;
 import com.example.genz.community.post.mapper.PostMapper;
+import com.example.genz.community.chat.service.SupabaseStorageService;
 import com.example.genz.community.post.repository.PostMediaRepository;
 import com.example.genz.community.post.repository.PostRepository;
 import com.example.genz.goal.entity.Goal;
@@ -31,6 +33,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,6 +47,7 @@ import java.util.UUID;
 public class PostService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final long MAX_POST_MEDIA_SIZE_BYTES = 40L * 1024 * 1024;
 
     private final UserRepository userRepository;
     private final GoalRepository goalRepository;
@@ -53,6 +59,21 @@ public class PostService {
     private final CommunityContentValidator contentValidator;
     private final CommunityPrivacyService privacyService;
     private final CommunityRateLimiter rateLimiter;
+    private final SupabaseStorageService storageService;
+
+    public PostMediaUploadResponse uploadMedia(MultipartFile file, String currentPhoneNumber) {
+        User author = requireCurrentUser(currentPhoneNumber);
+        validateUpload(file);
+        String storagePath = postStoragePath(author.getId(), file);
+        storageService.uploadPostMedia(file, storagePath);
+        return new PostMediaUploadResponse(
+                mediaType(file),
+                storageService.createSignedUrl(storagePath),
+                safeFileName(file),
+                file.getContentType(),
+                file.getSize()
+        );
+    }
 
     @Transactional
     public PostResponse createPost(CreatePostRequest request, String currentPhoneNumber) {
@@ -109,15 +130,24 @@ public class PostService {
             if (post.getPostType() == PostType.SHARED_POST && !request.media().isEmpty()) {
                 throw new PostBadRequestException("Shared posts cannot contain additional media");
             }
+            List<String> removedStoragePaths = post.getMedia().stream()
+                    .map(PostMedia::getStoragePath)
+                    .filter(path -> path != null && !path.isBlank())
+                    .toList();
             postMediaRepository.deleteAllByPostId(post.getId());
             post.setMedia(new ArrayList<>());
             post.setMedia(saveMedia(post, request.media()));
+            scheduleStorageDeletion(removedStoragePaths);
         }
 
         if (post.getPostType() != PostType.SHARED_POST) {
             requirePostBody(post.getContent(), post.getMedia());
         }
         postRepository.saveAndFlush(post);
+        scheduleStorageDeletion(post.getMedia().stream()
+                .map(PostMedia::getStoragePath)
+                .filter(path -> path != null && !path.isBlank())
+                .toList());
         return mapper.toResponse(post, currentUser.getId());
     }
 
@@ -295,6 +325,10 @@ public class PostService {
             entity.setPost(post);
             entity.setMediaType(item.mediaType());
             entity.setMediaUrl(item.mediaUrl().trim());
+            entity.setStoragePath(storageService.ownedPostStoragePath(
+                    item.mediaUrl(),
+                    post.getAuthor().getId()
+            ));
             entity.setThumbnailUrl(normalizeOptionalText(item.thumbnailUrl()));
             entity.setWidthPx(item.widthPx());
             entity.setHeightPx(item.heightPx());
@@ -343,6 +377,66 @@ public class PostService {
 
     private PostVisibility visibilityOrPublic(PostVisibility visibility) {
         return visibility == null ? PostVisibility.PUBLIC : visibility;
+    }
+
+    private void validateUpload(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new PostBadRequestException("A post media file is required");
+        }
+        if (file.getSize() > MAX_POST_MEDIA_SIZE_BYTES) {
+            throw new PostBadRequestException("Post media must not exceed 40 MB");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null) {
+            throw new PostBadRequestException("Post media must be an image or video");
+        }
+        String normalized = contentType.toLowerCase(java.util.Locale.ROOT);
+        if ((!normalized.startsWith("image/") || normalized.equals("image/svg+xml"))
+                && !normalized.startsWith("video/")) {
+            throw new PostBadRequestException("Post media must be an image or video");
+        }
+    }
+
+    private com.example.genz.community.post.enums.PostMediaType mediaType(MultipartFile file) {
+        return file.getContentType().toLowerCase(java.util.Locale.ROOT).startsWith("video/")
+                ? com.example.genz.community.post.enums.PostMediaType.VIDEO
+                : com.example.genz.community.post.enums.PostMediaType.IMAGE;
+    }
+
+    private String postStoragePath(UUID authorId, MultipartFile file) {
+        String fileName = safeFileName(file);
+        int extensionStart = fileName.lastIndexOf('.');
+        String extension = extensionStart > 0 && extensionStart < fileName.length() - 1
+                ? fileName.substring(extensionStart).replaceAll("[^A-Za-z0-9.]", "")
+                : "";
+        if (extension.length() > 11) {
+            extension = "";
+        }
+        return "posts/" + authorId + "/" + UUID.randomUUID() + extension;
+    }
+
+    private String safeFileName(MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.isBlank()) {
+            return "post-media";
+        }
+        String leafName = fileName.replace('\\', '/');
+        leafName = leafName.substring(leafName.lastIndexOf('/') + 1)
+                .replaceAll("[\\p{Cntrl}]", "_")
+                .trim();
+        return leafName.isBlank() ? "post-media" : leafName.substring(0, Math.min(255, leafName.length()));
+    }
+
+    private void scheduleStorageDeletion(List<String> storagePaths) {
+        if (storagePaths.isEmpty()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                storagePaths.forEach(storageService::deleteQuietly);
+            }
+        });
     }
 
     private PostCursorPageResponse toCursorPage(List<Post> posts, UUID currentUserId, int limit) {

@@ -53,6 +53,9 @@ public class PostMedia {
     @Column(name = "media_url", nullable = false, columnDefinition = "TEXT")
     private String mediaUrl;
 
+    @Column(name = "storage_path", columnDefinition = "TEXT")
+    private String storagePath;
+
     @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     private String thumbnailUrl;
 

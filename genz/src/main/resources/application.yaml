@@ -33,6 +33,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 40MB
+      max-request-size: 42MB
 otp:
   secret: ${OTP_SECRET:}
 
@@ -66,15 +70,10 @@ management:
       enabled: true
 
 supabase:
-  url: ${SUPABASE_URL}
-  secret-key: ${SUPABASE_SECRET_KEY}
+  url: ${SUPABASE_URL:}
+  secret-key: ${SUPABASE_SECRET_KEY:}
   storage:
-    bucket: ${SUPABASE_STORAGE_BUCKET}
-
-servlet:
-  multipart:
-    max-file-size: 40MB
-    max-request-size: 42MB
+    bucket: ${SUPABASE_STORAGE_BUCKET:}
 
 plasgate:
   base-url: https://cloudapi.plasgate.com

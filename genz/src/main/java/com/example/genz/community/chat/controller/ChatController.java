@@ -10,6 +10,7 @@ import com.example.genz.community.chat.dto.MarkMessageDeliveredRequest;
 import com.example.genz.community.chat.dto.MessageResponse;
 import com.example.genz.community.chat.dto.ReadReceiptEvent;
 import com.example.genz.community.chat.dto.SendMessageRequest;
+import com.example.genz.community.chat.dto.SendAttachmentRequest;
 import com.example.genz.community.chat.service.ChatMessageService;
 import com.example.genz.community.chat.service.ChatRealtimePublisher;
 import com.example.genz.community.chat.service.ChatReceiptService;
@@ -24,12 +25,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
 
 import java.util.UUID;
 
@@ -125,6 +128,28 @@ public class ChatController {
         return ResponseEntity.status(result.duplicate() ? HttpStatus.OK : HttpStatus.CREATED)
                 .body(ApiResponse.success(
                         result.duplicate() ? "Message already accepted" : "Message sent",
+                        result.message()
+                ));
+    }
+
+    @PostMapping(
+            value = "/{conversationId}/messages/attachments",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ApiResponse<MessageResponse>> sendAttachment(
+            @PathVariable UUID conversationId,
+            @Valid @ModelAttribute SendAttachmentRequest request,
+            Authentication authentication
+    ) {
+        MessageSendResult result = messageService.sendAttachment(
+                conversationId,
+                request,
+                authentication.getName()
+        );
+        realtimePublisher.publishMessage(result);
+        return ResponseEntity.status(result.duplicate() ? HttpStatus.OK : HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        result.duplicate() ? "Message already accepted" : "Attachment sent",
                         result.message()
                 ));
     }

@@ -3,6 +3,7 @@ package com.example.genz.community.post.controller;
 import com.example.genz.common.api.ApiResponse;
 import com.example.genz.community.post.dto.CreatePostRequest;
 import com.example.genz.community.post.dto.PostCursorPageResponse;
+import com.example.genz.community.post.dto.PostMediaUploadResponse;
 import com.example.genz.community.post.dto.PostResponse;
 import com.example.genz.community.post.dto.SharePostRequest;
 import com.example.genz.community.post.dto.UpdatePostRequest;
@@ -10,6 +11,7 @@ import com.example.genz.community.post.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -41,6 +44,16 @@ public class PostController {
         PostResponse response = postService.createPost(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Post created", response));
+    }
+
+    @PostMapping(value = "/posts/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<PostMediaUploadResponse>> uploadPostMedia(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        PostMediaUploadResponse response = postService.uploadMedia(file, authentication.getName());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Post media uploaded", response));
     }
 
     @PutMapping("/posts/{postId}")
