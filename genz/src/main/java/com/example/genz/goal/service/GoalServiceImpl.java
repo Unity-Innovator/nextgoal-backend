@@ -96,8 +96,15 @@ public class GoalServiceImpl implements GoalService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GoalResponse> getMyGoals(String phoneNumber) {
+    public List<GoalResponse> getMyGoals(String phoneNumber, GoalStatus status) {
         User owner = getUserByPhone(phoneNumber);
+        if (status != null) {
+            return goalRepository.findByOwnerOrderByCreatedAtDesc(owner)
+                    .stream()
+                    .filter(goal -> goal.getStatus() == status)
+                    .map(this::toGoalResponse)
+                    .toList();
+        }
         return goalRepository.findByOwnerOrderByCreatedAtDesc(owner)
                 .stream()
                 .map(this::toGoalResponse)
@@ -297,17 +304,17 @@ public class GoalServiceImpl implements GoalService {
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found"));
     }
 
-    private Integer calculateProgressPercentage(BigDecimal currentAmount, BigDecimal targetAmount) {
+    private Double calculateProgressPercentage(BigDecimal currentAmount, BigDecimal targetAmount) {
         if (targetAmount == null || targetAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return 0;
+            return 0.0;
         }
         if (currentAmount == null || currentAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return 0;
+            return 0.0;
         }
-        int progress = currentAmount.multiply(ONE_HUNDRED)
-                .divide(targetAmount, 0, RoundingMode.DOWN)
-                .intValue();
-        return Math.min(100, Math.max(0, progress));
+        BigDecimal progress = currentAmount.multiply(ONE_HUNDRED)
+                .divide(targetAmount, 4, RoundingMode.HALF_UP);
+        double val = progress.doubleValue();
+        return Math.min(100.0, Math.max(0.0, val));
     }
 
     private LocalDate calculateExpectedCompletionDate(Goal goal) {
@@ -401,7 +408,7 @@ public class GoalServiceImpl implements GoalService {
             rem = BigDecimal.ZERO;
         }
 
-        Integer progressPercentage = calculateProgressPercentage(current, target);
+        Double progressPercentage = calculateProgressPercentage(current, target);
         LocalDate expectedDate = calculateExpectedCompletionDate(goal);
         LocalDate estimatedDate = calculateEstimatedCompletionDate(goal);
         CompletionStatus completionStatus = calculateCompletionStatus(expectedDate, estimatedDate);

@@ -99,7 +99,7 @@ class GoalProgressAndCompletionTest {
 
         GoalResponse response = goalService.getGoal(goalId, phoneNumber);
 
-        assertEquals(0, response.getProgressPercentage());
+        assertEquals(0.0, response.getProgressPercentage());
         assertEquals(BigDecimal.valueOf(1000), response.getRemainingAmount());
     }
 
@@ -113,7 +113,7 @@ class GoalProgressAndCompletionTest {
 
         GoalResponse response = goalService.getGoal(goalId, phoneNumber);
 
-        assertEquals(50, response.getProgressPercentage());
+        assertEquals(50.0, response.getProgressPercentage());
         assertEquals(BigDecimal.valueOf(500), response.getRemainingAmount());
     }
 
@@ -129,7 +129,7 @@ class GoalProgressAndCompletionTest {
 
         GoalResponse response = goalService.getGoal(goalId, phoneNumber);
 
-        assertEquals(100, response.getProgressPercentage());
+        assertEquals(100.0, response.getProgressPercentage());
         assertEquals(BigDecimal.ZERO, response.getRemainingAmount());
         assertNotNull(response.getEstimatedCompletionDate());
     }

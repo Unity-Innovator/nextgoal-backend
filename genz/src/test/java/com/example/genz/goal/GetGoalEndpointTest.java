@@ -214,6 +214,6 @@ class GetGoalEndpointTest {
         assertEquals(BigDecimal.valueOf(1000), response.getTargetAmount());
         assertEquals(BigDecimal.valueOf(350), response.getCurrentAmount());
         assertEquals(BigDecimal.valueOf(650), response.getRemainingAmount());
-        assertEquals(35, response.getProgressPercentage());
+        assertEquals(35.0, response.getProgressPercentage());
     }
 }

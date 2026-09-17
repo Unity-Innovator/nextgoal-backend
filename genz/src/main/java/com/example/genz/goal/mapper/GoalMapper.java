@@ -67,7 +67,7 @@ public class GoalMapper {
             Goal goal,
             BigDecimal currentAmount,
             BigDecimal remainingAmount,
-            Integer progressPercentage,
+            Double progressPercentage,
             LocalDate expectedCompletionDate,
             LocalDate estimatedCompletionDate,
             CompletionStatus completionStatus,
