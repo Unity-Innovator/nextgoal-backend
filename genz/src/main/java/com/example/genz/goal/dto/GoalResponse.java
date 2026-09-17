@@ -28,7 +28,7 @@ public class GoalResponse {
     private BigDecimal targetAmount;
     private BigDecimal currentAmount;
     private BigDecimal remainingAmount;
-    private Integer progressPercentage;
+    private Double progressPercentage;
 
     private LocalDate targetDate;
     private LocalDate expectedCompletionDate;

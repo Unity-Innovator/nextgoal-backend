@@ -4,6 +4,7 @@ import com.example.genz.goal.service.GoalService;
 import com.example.genz.goal.dto.CreateGoalRequest;
 import com.example.genz.goal.dto.GoalResponse;
 import com.example.genz.goal.dto.UpdateGoalRequest;
+import com.example.genz.goal.enums.GoalStatus;
 import com.example.genz.common.api.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -42,9 +44,9 @@ public class GoalController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<GoalResponse>>> getMyGoals(Authentication authentication) {
+    public ResponseEntity<ApiResponse<List<GoalResponse>>> getMyGoals(Authentication authentication,@RequestParam(required = false) GoalStatus status) {
         String phoneNumber = authentication.getName();
-        List<GoalResponse> goals = goalService.getMyGoals(phoneNumber);
+        List<GoalResponse> goals = goalService.getMyGoals(phoneNumber, status);
         return ResponseEntity.ok(ApiResponse.success("Goals retrieved successfully", goals));
     }
 
