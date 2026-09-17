@@ -28,11 +28,14 @@ import com.example.genz.notification.service.NotificationService;
 import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.common.exception.ResourceNoteFoundException;
 
+import com.example.genz.reward.service.GoalMilestoneRewardService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Service
@@ -48,6 +51,7 @@ public class WalletServiceImpl implements WalletService {
     private final SavingPlanRepository savingPlanRepository;
     private final NotificationService notificationService;
     private final WalletMapper walletMapper;
+    private final GoalMilestoneRewardService goalMilestoneRewardService;
 
     @Override
     @Transactional
@@ -140,8 +144,26 @@ public class WalletServiceImpl implements WalletService {
         );
         walletTransactionRepository.save(transaction);
 
+        int coinsEarned = goalMilestoneRewardService.processMilestoneRewards(goal, user, currentAmount, newCurrentAmount);
+
         notificationService.createGoalContributionNotifications(goal, savedContribution, user);
 
-        return walletMapper.toDepositResponse(true, "Deposit successful.", newBalance);
+        Double progressPercentage = 0.0;
+        if (targetAmount.compareTo(BigDecimal.ZERO) > 0) {
+            double rawProgress = newCurrentAmount.divide(targetAmount, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100)).doubleValue();
+            progressPercentage = Math.min(100.0, rawProgress);
+        }
+
+        return walletMapper.toDepositResponse(
+                true,
+                "Deposit successful.",
+                newBalance,
+                coinsEarned,
+                newCurrentAmount,
+                targetAmount,
+                progressPercentage,
+                goal.getStatus()
+        );
     }
 }
