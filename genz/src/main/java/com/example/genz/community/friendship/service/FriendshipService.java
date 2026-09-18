@@ -5,6 +5,7 @@ import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.community.friendship.dto.BlockedUserResponse;
 import com.example.genz.community.friendship.dto.FriendRequestResponse;
 import com.example.genz.community.friendship.dto.FriendResponse;
+import com.example.genz.community.friendship.dto.FriendshipUserResponse;
 import com.example.genz.community.friendship.dto.FriendshipPageResponse;
 import com.example.genz.community.friendship.entity.FriendRequest;
 import com.example.genz.community.friendship.entity.Friendship;
@@ -44,6 +45,22 @@ public class FriendshipService {
     private final FriendshipMapper mapper;
     private final CommunityNotificationService notificationService;
     private final CommunityRateLimiter rateLimiter;
+
+    @Transactional(readOnly = true)
+    public FriendshipPageResponse<FriendshipUserResponse> searchUsers(
+            String query, String currentPhoneNumber, int page, int size) {
+        User currentUser = requireCurrentUser(currentPhoneNumber);
+        String term = query == null ? "" : query.trim();
+        if (term.length() < 2 || term.length() > 100) {
+            throw new FriendshipBadRequestException("Search must contain between 2 and 100 characters");
+        }
+        String pattern = "%" + term.replace("!", "!!").replace("%", "!%")
+                .replace("_", "!_") + "%";
+        return FriendshipPageResponse.from(userRepository.searchFriendCandidates(
+                currentUser.getId(), pattern, term, pageRequest(page, size))
+                .map(user -> new FriendshipUserResponse(
+                        user.getId(), user.getFullName())));
+    }
 
     @Transactional
     public FriendRequestResponse sendRequest(UUID receiverId, String currentPhoneNumber) {

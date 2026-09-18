@@ -12,15 +12,20 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateUserSettingsRequest {
+    @jakarta.validation.constraints.Pattern(regexp = "en|km", message = "must be en or km")
     private String language;
+    @jakarta.validation.constraints.Pattern(regexp = "LIGHT|DARK|SYSTEM", message = "must be LIGHT, DARK or SYSTEM")
     private String theme;
     private Boolean billReminder;
+    @jakarta.validation.constraints.Size(max = 2048)
     private String avatarUrl;
     private Boolean goalAlert;
     private Boolean lessonReminder;
     private Boolean aiTips;
     private Boolean dailyChallengeEnabled;
     private Boolean faceIdEnabled;
+    @jakarta.validation.constraints.Min(1)
+    @jakarta.validation.constraints.Max(60)
     private Integer autoLockMinutes;
     private Boolean pushNotificationsEnabled;
     private Boolean smsNotificationsEnabled;

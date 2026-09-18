@@ -67,6 +67,42 @@ class FriendshipCoreIntegrationTests {
     private MockMvc mockMvc;
 
     @Test
+    void searchFindsNamesAndExactPhonesWithoutExposingPhoneNumbers() throws Exception {
+        User alice = saveUser("Search Alice", "0119000001");
+        User bob = saveUser("Search Bob", "0119000002");
+        mockMvc.perform(get("/api/community/users/search")
+                        .with(user(alice.getPhoneNumber())).param("query", "  bOB  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].id").value(bob.getId().toString()))
+                .andExpect(jsonPath("$.data.items[0].phoneNumber").doesNotExist());
+        assertEquals(bob.getId(), friendshipService.searchUsers(
+                bob.getPhoneNumber(), alice.getPhoneNumber(), 0, 20).items().getFirst().id());
+        assertEquals(0, friendshipService.searchUsers("011900", alice.getPhoneNumber(), 0, 20).totalElements());
+        assertEquals(0, friendshipService.searchUsers("%%", alice.getPhoneNumber(), 0, 20).totalElements());
+        assertThrows(FriendshipBadRequestException.class,
+                () -> friendshipService.searchUsers(" ", alice.getPhoneNumber(), 0, 20));
+    }
+
+    @Test
+    void searchExcludesSelfInactiveAndBlockedUsersAndPaginates() {
+        User alice = saveUser("Find Alice", "0119100001");
+        User bob = saveUser("Find Bob", "0119100002");
+        User carol = saveUser("Find Carol", "0119100003");
+        User inactive = saveUser("Find Inactive", "0119100004");
+        inactive.setStatus("INACTIVE");
+        userRepository.saveAndFlush(inactive);
+        var first = friendshipService.searchUsers("find", alice.getPhoneNumber(), 0, 1);
+        assertEquals(2, first.totalElements());
+        assertTrue(first.hasNext());
+        assertEquals(bob.getId(), first.items().getFirst().id());
+        assertEquals(carol.getId(), friendshipService.searchUsers("find", alice.getPhoneNumber(), 1, 1)
+                .items().getFirst().id());
+        friendshipService.blockUser(bob.getId(), alice.getPhoneNumber());
+        friendshipService.blockUser(alice.getId(), carol.getPhoneNumber());
+        assertEquals(0, friendshipService.searchUsers("find", alice.getPhoneNumber(), 0, 20).totalElements());
+    }
+
+    @Test
     void authenticatedRestEndpointsUseTheSecurityPrincipalAsTheSender() throws Exception {
         User alice = saveUser("Alice", "0110000001");
         User bob = saveUser("Bob", "0110000002");

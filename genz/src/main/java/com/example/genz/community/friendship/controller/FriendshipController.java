@@ -4,6 +4,7 @@ import com.example.genz.common.api.ApiResponse;
 import com.example.genz.community.friendship.dto.BlockedUserResponse;
 import com.example.genz.community.friendship.dto.FriendRequestResponse;
 import com.example.genz.community.friendship.dto.FriendResponse;
+import com.example.genz.community.friendship.dto.FriendshipUserResponse;
 import com.example.genz.community.friendship.dto.FriendshipPageResponse;
 import com.example.genz.community.friendship.dto.SendFriendRequestRequest;
 import com.example.genz.community.friendship.enums.FriendRequestStatus;
@@ -31,6 +32,16 @@ import java.util.UUID;
 public class FriendshipController {
 
     private final FriendshipService friendshipService;
+
+    @GetMapping("/users/search")
+    public ResponseEntity<ApiResponse<FriendshipPageResponse<FriendshipUserResponse>>> searchUsers(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success("Users retrieved",
+                friendshipService.searchUsers(query, authentication.getName(), page, size)));
+    }
 
     @PostMapping("/friend-requests")
     public ResponseEntity<ApiResponse<FriendRequestResponse>> sendFriendRequest(
