@@ -29,7 +29,7 @@ public class UserSettingsController {
 
     @PatchMapping
     public ResponseEntity<ApiResponse<UserSettingsResponse>> updateUserSettings(
-            @RequestBody UpdateUserSettingsRequest request,
+            @jakarta.validation.Valid @RequestBody UpdateUserSettingsRequest request,
             Authentication authentication) {
         User user = getUser(authentication);
         UserSettingsResponse response = userSettingsService.updateUserSettings(user, request);
