@@ -45,6 +45,7 @@ import com.example.genz.transaction.entity.GoalContribution;
 import com.example.genz.transaction.repository.WalletTransactionRepository;
 import com.example.genz.wallet.dto.DepositRequest;
 import com.example.genz.wallet.entity.GrouplWallet;
+import com.example.genz.reward.service.GoalMilestoneRewardService;
 import com.example.genz.wallet.mapper.WalletMapper;
 import com.example.genz.wallet.repository.GoalWalletRepository;
 import com.example.genz.wallet.service.WalletServiceImpl;
@@ -76,6 +77,8 @@ class GoalContributionNotificationTest {
     private SavingPlanRepository savingPlanRepository;
     @Mock
     private NotificationServiceImpl mockNotificationService;
+    @Mock
+    private GoalMilestoneRewardService goalMilestoneRewardService;
 
     private WalletServiceImpl walletService;
 
@@ -105,7 +108,8 @@ class GoalContributionNotificationTest {
                 walletTransactionRepository,
                 savingPlanRepository,
                 mockNotificationService,
-                new WalletMapper()
+                new WalletMapper(),
+                goalMilestoneRewardService
         );
 
         owner = new User();

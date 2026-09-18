@@ -19,6 +19,10 @@ public interface GoalMemberRepository extends JpaRepository<GoalMember, UUID> {
 
     long countByGoalAndStatus(Goal goal, MemberStatus status);
 
+    long countByGoal(Goal goal);
+
+    List<GoalMember> findByGoal(Goal goal);
+
     boolean existsByGoalIdAndUserId(UUID goalId, UUID userId);
 
     boolean existsByGoalIdAndUserIdAndStatus(UUID goalId, UUID userId, MemberStatus status);

@@ -75,6 +75,10 @@ public class User implements UserDetails {
     @Column(name = "total_xp")
     private Integer totalXp = 0;
 
+    @Builder.Default
+    @Column(name = "coin_balance", nullable = false)
+    private Integer coinBalance = 0;
+
     @Column(name = "energy_reset_date")
     private LocalDate energyResetDate;
 

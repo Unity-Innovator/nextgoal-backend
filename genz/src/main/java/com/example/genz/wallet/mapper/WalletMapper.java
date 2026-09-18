@@ -21,6 +21,38 @@ public class WalletMapper {
         return new DepositResponse(success, message, newBalance);
     }
 
+    public DepositResponse toDepositResponse(
+            boolean success,
+            String message,
+            BigDecimal newBalance,
+            Integer coinsEarned,
+            BigDecimal currentAmount,
+            BigDecimal targetAmount,
+            Double progressPercentage,
+            com.example.genz.goal.enums.GoalStatus goalStatus
+    ) {
+        DepositResponse.DepositData data = DepositResponse.DepositData.builder()
+                .currentAmount(currentAmount)
+                .targetAmount(targetAmount)
+                .progressPercentage(progressPercentage)
+                .goalStatus(goalStatus)
+                .coinsEarned(coinsEarned)
+                .balance(newBalance)
+                .build();
+
+        return DepositResponse.builder()
+                .success(success)
+                .message(message)
+                .balance(newBalance)
+                .coinsEarned(coinsEarned)
+                .currentAmount(currentAmount)
+                .targetAmount(targetAmount)
+                .progressPercentage(progressPercentage)
+                .goalStatus(goalStatus)
+                .data(data)
+                .build();
+    }
+
     public GrouplWallet toGoalWalletEntity(User user, Goal goal, Currency currency) {
         GrouplWallet wallet = new GrouplWallet();
         wallet.setBalance(BigDecimal.ZERO);
