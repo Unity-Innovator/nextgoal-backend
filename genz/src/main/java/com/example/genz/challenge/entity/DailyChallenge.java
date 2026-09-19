@@ -1,17 +1,14 @@
 package com.example.genz.challenge.entity;
+
+import com.example.genz.challenge.enums.ChallengeRuleType;
+import com.example.genz.challenge.enums.ChallengeType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
-
-import com.example.genz.challenge.enums.ChallengeType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,10 +42,13 @@ public class DailyChallenge {
     @Column(name = "challenge_type", nullable = false)
     private ChallengeType challengeType;
 
+    @Embedded
+    private ChallengeRule rule;
+
     @Column(name = "xp_reward")
     private Integer xpReward;
 
-    @Column(name = "is_active",nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
     @CreationTimestamp
@@ -57,4 +57,14 @@ public class DailyChallenge {
 
     @OneToMany(mappedBy = "challenge", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserDailyChallenge> userDailyChallenges;
+
+    public boolean isAutomaticallyVerifiable() {
+        if (rule != null && rule.getRuleType() == ChallengeRuleType.MANUAL_CONFIRM) {
+            return false;
+        }
+        if (challengeType == ChallengeType.MANUAL || challengeType == ChallengeType.TIP) {
+            return false;
+        }
+        return challengeType == ChallengeType.GOAL_DEPOSIT || challengeType == ChallengeType.QUIZ;
+    }
 }

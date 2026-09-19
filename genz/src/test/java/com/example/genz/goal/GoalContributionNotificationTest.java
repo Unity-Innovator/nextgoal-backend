@@ -79,6 +79,8 @@ class GoalContributionNotificationTest {
     private NotificationServiceImpl mockNotificationService;
     @Mock
     private GoalMilestoneRewardService goalMilestoneRewardService;
+    @Mock
+    private com.example.genz.challenge.service.ChallengeCompletionService challengeCompletionService;
 
     private WalletServiceImpl walletService;
 
@@ -109,7 +111,8 @@ class GoalContributionNotificationTest {
                 savingPlanRepository,
                 mockNotificationService,
                 new WalletMapper(),
-                goalMilestoneRewardService
+                goalMilestoneRewardService,
+                challengeCompletionService
         );
 
         owner = new User();

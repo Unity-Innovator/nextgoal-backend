@@ -44,7 +44,7 @@ class DailyChallengeSeederTest {
     }
 
     @Test
-    @DisplayName("Should seed 20 diverse daily challenges into empty database")
+    @DisplayName("Should seed 24 diverse daily challenges into empty database")
     void seedDailyChallenges_WhenEmpty_SeedsSuccessfully() throws Exception {
         assertEquals(0, dailyChallengeRepository.count());
 
@@ -52,16 +52,19 @@ class DailyChallengeSeederTest {
         runner.run();
 
         long count = dailyChallengeRepository.count();
-        assertEquals(20, count, "Should seed exactly 20 daily challenges");
+        assertEquals(24, count, "Should seed exactly 24 daily challenges");
 
         List<DailyChallenge> all = dailyChallengeRepository.findAll();
         assertTrue(all.stream().allMatch(DailyChallenge::getIsActive), "All seeded challenges should be active");
         assertTrue(all.stream().allMatch(c -> c.getXpReward() != null && c.getXpReward() > 0), "All seeded challenges should have positive XP reward");
+        assertTrue(all.stream().allMatch(c -> c.getRule() != null && c.getRule().getRuleType() != null), "All seeded challenges should have rules defined");
 
+        boolean hasGoalDeposit = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.GOAL_DEPOSIT);
         boolean hasQuiz = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.QUIZ);
         boolean hasExpenseLog = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.EXPENSE_LOG);
         boolean hasTip = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.TIP);
 
+        assertTrue(hasGoalDeposit, "Should contain GOAL_DEPOSIT challenges");
         assertTrue(hasQuiz, "Should contain QUIZ challenges");
         assertTrue(hasExpenseLog, "Should contain EXPENSE_LOG challenges");
         assertTrue(hasTip, "Should contain TIP challenges");
@@ -73,7 +76,7 @@ class DailyChallengeSeederTest {
         CommandLineRunner runner = dailyChallengeSeeder.seedDailyChallenges();
         runner.run();
         long initialCount = dailyChallengeRepository.count();
-        assertEquals(20, initialCount);
+        assertEquals(24, initialCount);
 
         // Run second time
         runner.run();

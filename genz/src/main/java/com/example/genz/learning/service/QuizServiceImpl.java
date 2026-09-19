@@ -17,6 +17,7 @@ import com.example.genz.reward.entity.XpTransaction;
 import com.example.genz.reward.enums.ActivityType;
 import com.example.genz.reward.repository.UserRewardRepository;
 import com.example.genz.reward.repository.XpTransactionRepository;
+import com.example.genz.challenge.service.ChallengeCompletionService;
 import com.example.genz.reward.service.AchievementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -44,6 +45,7 @@ public class QuizServiceImpl implements QuizService {
     private final XpTransactionRepository xpTransactionRepository;
     private final AchievementService achievementService;
     private final QuizMapper quizMapper;
+    private final ChallengeCompletionService challengeCompletionService;
 
     @Override
     @Transactional
@@ -189,6 +191,10 @@ public class QuizServiceImpl implements QuizService {
         attempt.setIsCompleted(true);
         attempt.setCompletedAt(LocalDateTime.now());
         attempt = quizAttemptRepository.save(attempt);
+
+        try {
+            challengeCompletionService.evaluateQuizChallenges(managedUser, attempt);
+        } catch (Exception ignored) {}
 
         return quizMapper.toQuizResultResponse(attempt, newEnergy);
     }
