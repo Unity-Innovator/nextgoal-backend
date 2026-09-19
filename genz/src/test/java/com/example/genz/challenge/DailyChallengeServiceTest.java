@@ -61,6 +61,9 @@ class DailyChallengeServiceTest {
 
     @BeforeEach
     void setUp() {
+        userDailyChallengeRepository.deleteAll();
+        dailyChallengeRepository.deleteAll();
+
         userA = new User();
         userA.setFullName("User A");
         userA.setPhoneNumber("0987654321");
