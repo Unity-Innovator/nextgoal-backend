@@ -95,7 +95,7 @@ public class SupabaseStorageService {
             }
 
             HttpResponse<String> response = httpClient.send(
-                    request.PUT(HttpRequest.BodyPublishers.ofByteArray(file.getBytes())).build(),
+                    request.POST(HttpRequest.BodyPublishers.ofByteArray(file.getBytes())).build(),
                     HttpResponse.BodyHandlers.ofString()
             );
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
