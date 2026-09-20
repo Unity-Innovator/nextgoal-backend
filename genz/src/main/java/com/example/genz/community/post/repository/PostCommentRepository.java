@@ -11,6 +11,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PostCommentRepository extends JpaRepository<PostComment, UUID> {
+    org.springframework.data.domain.Page<PostComment> findByPost_IdAndStatus(
+            UUID postId, com.example.genz.community.post.enums.CommentStatus status,
+            org.springframework.data.domain.Pageable pageable);
 
     @Query("""
             select c

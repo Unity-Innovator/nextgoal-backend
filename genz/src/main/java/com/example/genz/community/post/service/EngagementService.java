@@ -46,6 +46,22 @@ public class EngagementService {
     private final CommunityPrivacyService privacyService;
     private final CommunityRateLimiter rateLimiter;
 
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getComments(UUID postId, String phone, int page, int size) {
+        User viewer = requireCurrentUser(phone);
+        Post post = postRepository.findById(postId).orElseThrow(this::invisiblePost);
+        if (post.getStatus() != PostStatus.ACTIVE || !postAccessService.canView(post, viewer.getId())) {
+            throw invisiblePost();
+        }
+        var rows = postCommentRepository.findByPost_IdAndStatus(postId, CommentStatus.ACTIVE,
+                org.springframework.data.domain.PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 100)),
+                        org.springframework.data.domain.Sort.by("createdAt", "id")));
+        var items = rows.getContent().stream().map(comment -> commentMapper.toResponse(comment,
+                viewer.getId(), commentLikeRepository.existsByComment_IdAndUser_Id(comment.getId(), viewer.getId())))
+                .toList();
+        return java.util.Map.of("items", items, "hasNext", rows.hasNext());
+    }
+
     @Transactional
     public EngagementLikeResponse likePost(UUID postId, String currentPhoneNumber) {
         User currentUser = requireCurrentUser(currentPhoneNumber);
