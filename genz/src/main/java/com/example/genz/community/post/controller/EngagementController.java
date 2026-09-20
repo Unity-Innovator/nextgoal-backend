@@ -27,6 +27,16 @@ public class EngagementController {
 
     private final EngagementService engagementService;
 
+    @org.springframework.web.bind.annotation.GetMapping("/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getComments(
+            @PathVariable UUID postId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.success("Comments loaded",
+                engagementService.getComments(postId, authentication.getName(), page, size)));
+    }
+
     @PostMapping("/posts/{postId}/like")
     public ResponseEntity<ApiResponse<EngagementLikeResponse>> likePost(
             @PathVariable UUID postId,
