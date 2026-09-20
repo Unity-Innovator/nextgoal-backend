@@ -74,6 +74,12 @@ class GoalMilestoneDepositIntegrationTest {
     private GoalMilestoneRewardRepository goalMilestoneRewardRepository;
 
     @Autowired
+    private com.example.genz.challenge.repository.DailyChallengeRepository dailyChallengeRepository;
+
+    @Autowired
+    private com.example.genz.challenge.repository.UserDailyChallengeRepository userDailyChallengeRepository;
+
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     private User owner;
@@ -83,6 +89,9 @@ class GoalMilestoneDepositIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        userDailyChallengeRepository.deleteAll();
+        dailyChallengeRepository.deleteAll();
+
         owner = new User();
         owner.setFullName("Alice Owner");
         owner.setPhoneNumber("0981112223");

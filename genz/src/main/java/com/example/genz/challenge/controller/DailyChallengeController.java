@@ -32,15 +32,6 @@ public class DailyChallengeController {
         return ResponseEntity.ok(ApiResponse.success("Today's daily challenge retrieved successfully", responseOpt.get()));
     }
 
-    @PostMapping("/{userDailyChallengeId}/complete")
-    public ResponseEntity<ApiResponse<UserDailyChallengeResponse>> completeChallenge(
-            @PathVariable UUID userDailyChallengeId,
-            Authentication authentication) {
-        User user = getUser(authentication);
-        UserDailyChallengeResponse response = dailyChallengeService.completeChallenge(userDailyChallengeId, user);
-        return ResponseEntity.ok(ApiResponse.success("Daily challenge completed successfully", response));
-    }
-
     private User getUser(Authentication authentication) {
         if (authentication == null) {
             throw new ResourceNoteFoundException("User not authenticated");

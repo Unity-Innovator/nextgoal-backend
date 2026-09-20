@@ -99,33 +99,40 @@ class DailyChallengeControllerTest {
     }
 
     @Test
-    @DisplayName("completeChallenge successfully marks challenge complete and returns response")
-    void completeChallenge_Success() {
+    @DisplayName("getTodayChallenge returns completed challenge with progress and coins")
+    void getTodayChallenge_WhenCompleted_ReturnsCompletedChallenge() {
         UUID userDailyChallengeId = UUID.randomUUID();
         when(authentication.getName()).thenReturn("0987654321");
         when(userRepository.findByPhoneNumber("0987654321")).thenReturn(Optional.of(testUser));
 
         UserDailyChallengeResponse completedResponse = UserDailyChallengeResponse.builder()
+                .id(userDailyChallengeId)
                 .userDailyChallengeId(userDailyChallengeId)
                 .challengeId(UUID.randomUUID())
-                .title("Zero-Spend Day Challenge")
-                .challengeType(ChallengeType.EXPENSE_LOG)
-                .xpReward(50)
+                .title("Save at least $2 today")
+                .type(ChallengeType.DEPOSIT_AMOUNT)
+                .challengeType(ChallengeType.DEPOSIT_AMOUNT)
+                .targetValue(new java.math.BigDecimal("2.00"))
+                .progress(new java.math.BigDecimal("2.50"))
+                .rewardCoins(25)
+                .xpReward(25)
                 .status(ChallengeStatus.COMPLETED)
                 .completedAt(LocalDateTime.now())
                 .challengeDate(LocalDate.now())
                 .build();
 
-        when(dailyChallengeService.completeChallenge(userDailyChallengeId, testUser)).thenReturn(completedResponse);
+        when(dailyChallengeService.getTodayChallenge(testUser)).thenReturn(Optional.of(completedResponse));
 
         ResponseEntity<ApiResponse<UserDailyChallengeResponse>> response =
-                dailyChallengeController.completeChallenge(userDailyChallengeId, authentication);
+                dailyChallengeController.getTodayChallenge(authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertTrue(response.getBody().isSuccess());
-        assertEquals("Daily challenge completed successfully", response.getBody().getMessage());
+        assertEquals("Today's daily challenge retrieved successfully", response.getBody().getMessage());
         assertEquals(ChallengeStatus.COMPLETED, response.getBody().getData().getStatus());
+        assertEquals(new java.math.BigDecimal("2.50"), response.getBody().getData().getProgress());
+        assertEquals(25, response.getBody().getData().getRewardCoins());
     }
 
     @Test

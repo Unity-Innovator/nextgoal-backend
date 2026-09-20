@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -42,6 +43,14 @@ public class UserDailyChallenge {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ChallengeStatus status;
+
+    @Column(name = "progress", precision = 19, scale = 4)
+    @Builder.Default
+    private BigDecimal progress = BigDecimal.ZERO;
+
+    @Column(name = "reward_coins_awarded")
+    @Builder.Default
+    private Integer rewardCoinsAwarded = 0;
 
     @Column(name = "xp_awarded")
     @Builder.Default

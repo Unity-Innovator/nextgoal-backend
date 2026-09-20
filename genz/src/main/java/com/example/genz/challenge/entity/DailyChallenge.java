@@ -10,6 +10,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +43,13 @@ public class DailyChallenge {
     @Column(name = "challenge_type", nullable = false)
     private ChallengeType challengeType;
 
+    @Column(name = "target_value", precision = 19, scale = 4)
+    private BigDecimal targetValue;
+
+    @Builder.Default
+    @Column(name = "reward_coins")
+    private Integer rewardCoins = 0;
+
     @Embedded
     private ChallengeRule rule;
 
@@ -65,6 +73,6 @@ public class DailyChallenge {
         if (challengeType == ChallengeType.MANUAL || challengeType == ChallengeType.TIP) {
             return false;
         }
-        return challengeType == ChallengeType.GOAL_DEPOSIT || challengeType == ChallengeType.QUIZ;
+        return true;
     }
 }

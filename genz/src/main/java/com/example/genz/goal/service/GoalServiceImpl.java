@@ -58,6 +58,7 @@ public class GoalServiceImpl implements GoalService {
     private final SavingPlanRepository savingPlanRepository;
     private final GoalContributionRepository goalContributionRepository;
     private final AchievementService achievementService;
+    private final com.example.genz.challenge.service.ChallengeCompletionService challengeCompletionService;
     private final GoalMapper goalMapper;
     private final SavingPlanMapper savingPlanMapper;
     private final WalletMapper walletMapper;
@@ -89,6 +90,7 @@ public class GoalServiceImpl implements GoalService {
         try {
             achievementService.evaluateAndUnlockAchievements(owner, BadgeRequirementType.FIRST_GOAL_CREATED, Map.of("createdGoalCount", 1));
             achievementService.evaluateAndUnlockAchievements(owner, BadgeRequirementType.MULTI_GOAL_MASTER, Map.of());
+            challengeCompletionService.evaluateGoalChallenges(owner);
         } catch (Exception ignored) {}
 
         return toGoalResponse(saved);

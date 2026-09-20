@@ -194,6 +194,7 @@ public class QuizServiceImpl implements QuizService {
 
         try {
             challengeCompletionService.evaluateQuizChallenges(managedUser, attempt);
+            challengeCompletionService.evaluateXpChallenges(managedUser, totalXpEarned);
         } catch (Exception ignored) {}
 
         return quizMapper.toQuizResultResponse(attempt, newEnergy);

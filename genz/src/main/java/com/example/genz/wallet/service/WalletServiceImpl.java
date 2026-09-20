@@ -150,6 +150,7 @@ public class WalletServiceImpl implements WalletService {
 
         try {
             challengeCompletionService.evaluateDepositChallenges(user, request.getAmount());
+            challengeCompletionService.evaluateGoalMilestoneChallenges(user, goal, currentAmount, newCurrentAmount);
         } catch (Exception ignored) {}
 
         notificationService.createGoalContributionNotifications(goal, savedContribution, user);

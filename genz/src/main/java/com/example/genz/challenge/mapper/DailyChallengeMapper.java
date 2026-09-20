@@ -23,11 +23,16 @@ public class DailyChallengeMapper {
         boolean isCompleted = udc.getStatus() == ChallengeStatus.COMPLETED;
 
         return UserDailyChallengeResponse.builder()
+                .id(udc.getId())
                 .userDailyChallengeId(udc.getId())
                 .challengeId(challenge != null ? challenge.getId() : null)
                 .title(challenge != null ? challenge.getTitle() : null)
                 .description(challenge != null ? challenge.getDescription() : null)
+                .type(challenge != null ? challenge.getChallengeType() : null)
                 .challengeType(challenge != null ? challenge.getChallengeType() : null)
+                .targetValue(challenge != null ? challenge.getTargetValue() : null)
+                .progress(udc.getProgress() != null ? udc.getProgress() : java.math.BigDecimal.ZERO)
+                .rewardCoins(challenge != null ? challenge.getRewardCoins() : 0)
                 .ruleType(rule != null ? rule.getRuleType() : null)
                 .minimumAmount(rule != null ? rule.getMinimumAmount() : null)
                 .targetCount(rule != null ? rule.getTargetCount() : null)

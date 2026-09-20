@@ -16,11 +16,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class UserDailyChallengeResponse {
+    private UUID id;
     private UUID userDailyChallengeId;
     private UUID challengeId;
     private String title;
     private String description;
+    private ChallengeType type;
     private ChallengeType challengeType;
+    private BigDecimal targetValue;
+    private BigDecimal progress;
+    private Integer rewardCoins;
     private ChallengeRuleType ruleType;
     private BigDecimal minimumAmount;
     private Integer targetCount;

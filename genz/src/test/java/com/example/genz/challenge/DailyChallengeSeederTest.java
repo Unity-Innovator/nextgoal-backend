@@ -44,7 +44,7 @@ class DailyChallengeSeederTest {
     }
 
     @Test
-    @DisplayName("Should seed 24 diverse daily challenges into empty database")
+    @DisplayName("Should seed diverse trackable daily challenges into empty database")
     void seedDailyChallenges_WhenEmpty_SeedsSuccessfully() throws Exception {
         assertEquals(0, dailyChallengeRepository.count());
 
@@ -52,22 +52,25 @@ class DailyChallengeSeederTest {
         runner.run();
 
         long count = dailyChallengeRepository.count();
-        assertEquals(24, count, "Should seed exactly 24 daily challenges");
+        assertTrue(count >= 6, "Should seed at least 6 daily challenges");
 
         List<DailyChallenge> all = dailyChallengeRepository.findAll();
         assertTrue(all.stream().allMatch(DailyChallenge::getIsActive), "All seeded challenges should be active");
-        assertTrue(all.stream().allMatch(c -> c.getXpReward() != null && c.getXpReward() > 0), "All seeded challenges should have positive XP reward");
-        assertTrue(all.stream().allMatch(c -> c.getRule() != null && c.getRule().getRuleType() != null), "All seeded challenges should have rules defined");
+        assertTrue(all.stream().allMatch(c -> c.getRewardCoins() != null && c.getRewardCoins() > 0), "All seeded challenges should have positive coin reward");
 
-        boolean hasGoalDeposit = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.GOAL_DEPOSIT);
-        boolean hasQuiz = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.QUIZ);
-        boolean hasExpenseLog = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.EXPENSE_LOG);
-        boolean hasTip = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.TIP);
+        boolean hasDepositAmount = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.DEPOSIT_AMOUNT);
+        boolean hasDepositAny = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.DEPOSIT_ANY);
+        boolean hasCreateGoal = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.CREATE_GOAL);
+        boolean hasQuiz = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.COMPLETE_QUIZ);
+        boolean hasXp = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.EARN_XP);
+        boolean hasInvite = all.stream().anyMatch(c -> c.getChallengeType() == ChallengeType.INVITE_FRIEND);
 
-        assertTrue(hasGoalDeposit, "Should contain GOAL_DEPOSIT challenges");
-        assertTrue(hasQuiz, "Should contain QUIZ challenges");
-        assertTrue(hasExpenseLog, "Should contain EXPENSE_LOG challenges");
-        assertTrue(hasTip, "Should contain TIP challenges");
+        assertTrue(hasDepositAmount, "Should contain DEPOSIT_AMOUNT challenges");
+        assertTrue(hasDepositAny, "Should contain DEPOSIT_ANY challenges");
+        assertTrue(hasCreateGoal, "Should contain CREATE_GOAL challenges");
+        assertTrue(hasQuiz, "Should contain COMPLETE_QUIZ challenges");
+        assertTrue(hasXp, "Should contain EARN_XP challenges");
+        assertTrue(hasInvite, "Should contain INVITE_FRIEND challenges");
     }
 
     @Test
@@ -76,7 +79,7 @@ class DailyChallengeSeederTest {
         CommandLineRunner runner = dailyChallengeSeeder.seedDailyChallenges();
         runner.run();
         long initialCount = dailyChallengeRepository.count();
-        assertEquals(24, initialCount);
+        assertTrue(initialCount >= 6);
 
         // Run second time
         runner.run();

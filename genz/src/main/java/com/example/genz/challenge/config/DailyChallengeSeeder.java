@@ -25,263 +25,120 @@ public class DailyChallengeSeeder {
     public CommandLineRunner seedDailyChallenges() {
         return args -> {
             if (dailyChallengeRepository.count() == 0) {
-                log.info("Seeding default daily challenges into database...");
+                log.info("Seeding default trackable action-based daily challenges into database...");
 
                 List<DailyChallenge> challenges = List.of(
-                    // GOAL_DEPOSIT challenges
-                    createChallenge(
-                            "Save $10 Today",
-                            "Deposit at least $10 into any of your active savings goals today.",
-                            ChallengeType.GOAL_DEPOSIT,
-                            30,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MINIMUM_DEPOSIT)
-                                    .minimumAmount(new BigDecimal("10.00"))
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Daily Micro-Saver ($5)",
-                            "Contribute at least $5 toward one of your savings goals today.",
-                            ChallengeType.GOAL_DEPOSIT,
-                            20,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MINIMUM_DEPOSIT)
-                                    .minimumAmount(new BigDecimal("5.00"))
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Make a Goal Deposit",
-                            "Add any amount to one of your active savings goals today.",
-                            ChallengeType.GOAL_DEPOSIT,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.DEPOSIT_COUNT)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Double Goal Deposit Day",
-                            "Make at least 2 goal contributions today to build unstoppable momentum.",
-                            ChallengeType.GOAL_DEPOSIT,
-                            35,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.DEPOSIT_COUNT)
-                                    .targetCount(2)
-                                    .build()
-                    ),
+                        // 1. Deposit Amount
+                        createChallenge(
+                                "Save at least $2 today",
+                                "Deposit at least $2 into any of your active savings goals today.",
+                                ChallengeType.DEPOSIT_AMOUNT,
+                                new BigDecimal("2.00"),
+                                25,
+                                25,
+                                ChallengeRule.builder()
+                                        .ruleType(ChallengeRuleType.MINIMUM_DEPOSIT)
+                                        .minimumAmount(new BigDecimal("2.00"))
+                                        .build()
+                        ),
 
-                    // EXPENSE_LOG challenges
-                    createChallenge(
-                            "Log Today's Coffee or Drink",
-                            "Track the exact cost of your coffee, tea, boba, or beverage today to see where your loose change goes.",
-                            ChallengeType.EXPENSE_LOG,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Track All Meals Today",
-                            "Log what you spend for breakfast, lunch, and dinner today to stay mindful of daily food expenses.",
-                            ChallengeType.EXPENSE_LOG,
-                            30,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Log Your Daily Transportation",
-                            "Record your bus fare, train ticket, rideshare, or petrol expense for today.",
-                            ChallengeType.EXPENSE_LOG,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Zero-Spend Day Challenge",
-                            "Spend zero dollars on non-essential items today and celebrate your impulse-control milestone!",
-                            ChallengeType.EXPENSE_LOG,
-                            50,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Audit Active Subscriptions",
-                            "Review your streaming, music, app, and gym subscriptions and record the ones you actually use.",
-                            ChallengeType.EXPENSE_LOG,
-                            35,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Track an Impulse Purchase Urge",
-                            "Write down an item you were tempted to buy on impulse today but chose to skip.",
-                            ChallengeType.EXPENSE_LOG,
-                            30,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Log Grocery Shopping Total",
-                            "Record your grocery receipt total and check if you stayed within your planned list.",
-                            ChallengeType.EXPENSE_LOG,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.LOG_EXPENSE)
-                                    .targetCount(1)
-                                    .build()
-                    ),
+                        // 2. Any Deposit
+                        createChallenge(
+                                "Make a deposit today",
+                                "Add any deposit amount to one of your active savings goals today.",
+                                ChallengeType.DEPOSIT_ANY,
+                                new BigDecimal("1.00"),
+                                15,
+                                15,
+                                ChallengeRule.builder()
+                                        .ruleType(ChallengeRuleType.DEPOSIT_COUNT)
+                                        .targetCount(1)
+                                        .build()
+                        ),
 
-                    // QUIZ challenges
-                    createChallenge(
-                            "The 50/30/20 Rule Check",
-                            "Test your knowledge on how much of your monthly income should go toward needs, wants, and savings.",
-                            ChallengeType.QUIZ,
-                            40,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Emergency Fund Essentials",
-                            "How many months of essential living expenses should your emergency fund cover?",
-                            ChallengeType.QUIZ,
-                            40,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Compound Interest Mastery",
-                            "Test how compound interest turns small, consistent savings into serious long-term growth.",
-                            ChallengeType.QUIZ,
-                            45,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Credit Score & Utilization",
-                            "Understand how your credit card utilization ratio directly impacts your credit health.",
-                            ChallengeType.QUIZ,
-                            40,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Inflation vs Cash Savings",
-                            "Learn why uninvested cash loses purchasing power over time due to inflation.",
-                            ChallengeType.QUIZ,
-                            45,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Needs vs Wants Breakdown",
-                            "Test your ability to distinguish between essential survival needs and lifestyle upgrade wants.",
-                            ChallengeType.QUIZ,
-                            35,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "High-Yield Savings Accounts (HYSA)",
-                            "Discover how high-yield savings accounts help your money outpace standard bank interest rates.",
-                            ChallengeType.QUIZ,
-                            40,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
-                                    .targetCount(1)
-                                    .build()
-                    ),
+                        // 3. Create Goal
+                        createChallenge(
+                                "Create a saving goal",
+                                "Start a new personal or shared saving goal to plan your future.",
+                                ChallengeType.CREATE_GOAL,
+                                new BigDecimal("1.00"),
+                                20,
+                                20,
+                                ChallengeRule.builder()
+                                        .targetCount(1)
+                                        .build()
+                        ),
 
-                    // TIP challenges
-                    createChallenge(
-                            "The 24-Hour Cooling Rule",
-                            "Wait 24 hours before purchasing non-essential items over $30 to eliminate emotional spending.",
-                            ChallengeType.TIP,
-                            20,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MANUAL_CONFIRM)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Pay Yourself First",
-                            "Automatically move a portion of any incoming allowance or paycheck into your goal before spending.",
-                            ChallengeType.TIP,
-                            30,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MANUAL_CONFIRM)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Automate Micro-Savings",
-                            "Set up a recurring daily transfer of even $1 or $2 to build your savings effortlessly.",
-                            ChallengeType.TIP,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MANUAL_CONFIRM)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Unsubscribe from Retail Promos",
-                            "Unsubscribe from 3 marketing email newsletters or brand SMS channels to curb flash-sale FOMO.",
-                            ChallengeType.TIP,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MANUAL_CONFIRM)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "The 72-Hour Rule for Big Purchases",
-                            "For purchases over $100, pause for 72 hours to evaluate whether the purchase aligns with your goals.",
-                            ChallengeType.TIP,
-                            30,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MANUAL_CONFIRM)
-                                    .build()
-                    ),
-                    createChallenge(
-                            "Round-Up Savings Habit",
-                            "Calculate your spare change by rounding daily purchases to the next dollar and stash it away.",
-                            ChallengeType.TIP,
-                            25,
-                            ChallengeRule.builder()
-                                    .ruleType(ChallengeRuleType.MANUAL_CONFIRM)
-                                    .build()
-                    )
+                        // 4. Complete Quiz
+                        createChallenge(
+                                "Complete a quiz",
+                                "Finish any financial literacy learning quiz to test and grow your knowledge.",
+                                ChallengeType.COMPLETE_QUIZ,
+                                new BigDecimal("1.00"),
+                                20,
+                                20,
+                                ChallengeRule.builder()
+                                        .ruleType(ChallengeRuleType.COMPLETE_QUIZ)
+                                        .targetCount(1)
+                                        .build()
+                        ),
+
+                        // 5. Earn XP
+                        createChallenge(
+                                "Earn 50 XP today",
+                                "Earn at least 50 XP by taking quizzes and learning financial habits today.",
+                                ChallengeType.EARN_XP,
+                                new BigDecimal("50.00"),
+                                25,
+                                25,
+                                null
+                        ),
+
+                        // 6. Invite Friends
+                        createChallenge(
+                                "Invite 2 friends",
+                                "Invite 2 friends to join and save with you on NextGoal.",
+                                ChallengeType.INVITE_FRIEND,
+                                new BigDecimal("2.00"),
+                                30,
+                                30,
+                                ChallengeRule.builder()
+                                        .targetCount(2)
+                                        .build()
+                        ),
+
+                        // 7. Reach Goal Milestone
+                        createChallenge(
+                                "Reach a goal milestone",
+                                "Hit 25% or more on any of your savings goals today.",
+                                ChallengeType.REACH_GOAL_MILESTONE,
+                                new BigDecimal("25.00"),
+                                30,
+                                30,
+                                null
+                        )
                 );
 
                 dailyChallengeRepository.saveAll(challenges);
-                log.info("Successfully seeded {} default daily challenges into the database.", challenges.size());
+                log.info("Successfully seeded {} default trackable daily challenges into the database.", challenges.size());
             }
         };
     }
 
-    private DailyChallenge createChallenge(String title, String description, ChallengeType type, int xpReward, ChallengeRule rule) {
+    private DailyChallenge createChallenge(
+            String title,
+            String description,
+            ChallengeType type,
+            BigDecimal targetValue,
+            int rewardCoins,
+            int xpReward,
+            ChallengeRule rule) {
         return DailyChallenge.builder()
                 .title(title)
                 .description(description)
                 .challengeType(type)
+                .targetValue(targetValue)
+                .rewardCoins(rewardCoins)
                 .xpReward(xpReward)
                 .rule(rule)
                 .isActive(true)
