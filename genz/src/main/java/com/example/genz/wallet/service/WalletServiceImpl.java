@@ -29,6 +29,7 @@ import com.example.genz.common.exception.BadRequestException;
 import com.example.genz.common.exception.ResourceNoteFoundException;
 
 import com.example.genz.reward.service.GoalMilestoneRewardService;
+import com.example.genz.challenge.service.ChallengeCompletionService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,7 @@ public class WalletServiceImpl implements WalletService {
     private final NotificationService notificationService;
     private final WalletMapper walletMapper;
     private final GoalMilestoneRewardService goalMilestoneRewardService;
+    private final ChallengeCompletionService challengeCompletionService;
 
     @Override
     @Transactional
@@ -145,6 +147,11 @@ public class WalletServiceImpl implements WalletService {
         walletTransactionRepository.save(transaction);
 
         int coinsEarned = goalMilestoneRewardService.processMilestoneRewards(goal, user, currentAmount, newCurrentAmount);
+
+        try {
+            challengeCompletionService.evaluateDepositChallenges(user, request.getAmount());
+            challengeCompletionService.evaluateGoalMilestoneChallenges(user, goal, currentAmount, newCurrentAmount);
+        } catch (Exception ignored) {}
 
         notificationService.createGoalContributionNotifications(goal, savedContribution, user);
 

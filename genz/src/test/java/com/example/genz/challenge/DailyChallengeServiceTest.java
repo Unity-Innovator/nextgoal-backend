@@ -21,6 +21,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.genz.challenge.entity.ChallengeRule;
+import com.example.genz.challenge.enums.ChallengeRuleType;
+
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -61,6 +64,9 @@ class DailyChallengeServiceTest {
 
     @BeforeEach
     void setUp() {
+        userDailyChallengeRepository.deleteAll();
+        dailyChallengeRepository.deleteAll();
+
         userA = new User();
         userA.setFullName("User A");
         userA.setPhoneNumber("0987654321");
@@ -80,7 +86,8 @@ class DailyChallengeServiceTest {
         activeChallenge = DailyChallenge.builder()
                 .title("Save $5 today")
                 .description("Put $5 into one of your savings goals.")
-                .challengeType(ChallengeType.QUIZ)
+                .challengeType(ChallengeType.TIP)
+                .rule(ChallengeRule.builder().ruleType(ChallengeRuleType.MANUAL_CONFIRM).build())
                 .xpReward(25)
                 .isActive(true)
                 .build();

@@ -36,6 +36,7 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final GoalInvitationMapper goalInvitationMapper;
+    private final com.example.genz.challenge.service.ChallengeCompletionService challengeCompletionService;
 
     @Override
     @Transactional
@@ -76,6 +77,10 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
         String title = "Goal Invitation";
         String message = inviter.getFullName() + " invited you to join " + goal.getGoalName() + " goal";
         notificationService.createNotification(invitee, title, message, NotificationType.GOAL_INVITATION, savedInvitation.getId());
+
+        try {
+            challengeCompletionService.evaluateInvitationChallenges(inviter);
+        } catch (Exception ignored) {}
 
         return goalInvitationMapper.toInvitationResponse(savedInvitation);
     }
@@ -122,6 +127,10 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
         }
 
         notificationService.markNotificationAsReadByReference(invitation.getId(), invitee.getId());
+
+        try {
+            challengeCompletionService.evaluateFriendJoinedChallenges(invitation.getInviter());
+        } catch (Exception ignored) {}
 
         return goalInvitationMapper.toInvitationResponse(updatedInvitation);
     }

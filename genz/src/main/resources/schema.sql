@@ -12,6 +12,5 @@ ALTER TABLE IF EXISTS badges DROP CONSTRAINT IF EXISTS badges_requirement_type_c
 ALTER TABLE IF EXISTS xp_transactions DROP CONSTRAINT IF EXISTS xp_transactions_activity_type_check;
 ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS user_daily_challenges_status_check;
 ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS uk_user_challenge_date;
-ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS uk_user_daily_challenge;
-ALTER TABLE IF EXISTS user_daily_challenges ADD CONSTRAINT uk_user_daily_challenge UNIQUE (user_id, challenge_date);
+ALTER TABLE IF EXISTS user_daily_challenges ADD CONSTRAINT uk_user_challenge_date UNIQUE (user_id, challenge_id, challenge_date);
 ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS users_role_check;

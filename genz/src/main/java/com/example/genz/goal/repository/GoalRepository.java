@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,4 +29,11 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
     long countByOwner(User owner);
 
     long countByOwnerAndStatus(User owner, GoalStatus status);
+
+    @Query("SELECT COUNT(g) FROM Goal g WHERE g.owner.id = :ownerId AND g.createdAt >= :start AND g.createdAt <= :end")
+    long countByOwnerIdAndCreatedAtBetween(
+            @Param("ownerId") UUID ownerId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
