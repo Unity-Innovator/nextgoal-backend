@@ -19,8 +19,8 @@ public class LevelServiceImpl implements LevelService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProfileLevelResponse calculateLevelProgress(Integer userXp) {
-        int xp = userXp != null ? userXp : 0;
+    public ProfileLevelResponse calculateLevelProgress(Integer totalXp) {
+        int xp = totalXp != null ? totalXp : 0;
         List<Level> levels = levelRepository.findAllByOrderByLevelNumberAsc();
         if (levels == null || levels.isEmpty()) {
             throw new IllegalStateException("No levels configured in the system");
@@ -61,7 +61,7 @@ public class LevelServiceImpl implements LevelService {
         return ProfileLevelResponse.builder()
                 .level(currentLevel.getLevelNumber())
                 .name(currentLevel.getName())
-                .xp(xp)
+                .totalXp(xp)
                 .currentLevelXp(currentLevelXp)
                 .nextLevelXp(nextLevelXp)
                 .progressPercentage(progressPercentage)

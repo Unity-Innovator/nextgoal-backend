@@ -12,14 +12,19 @@ import java.math.BigDecimal;
 @Component
 public class ProfileMapper {
 
-    public ProfileUserResponse toUserResponse(User user) {
+    public ProfileUserResponse toUserResponse(User user, int achievementUnlockedCount) {
         if (user == null) {
             return null;
         }
         return ProfileUserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
+                .achievementUnlockedCount(achievementUnlockedCount)
                 .build();
+    }
+
+    public ProfileUserResponse toUserResponse(User user) {
+        return toUserResponse(user, 0);
     }
 
     public ProfileSummaryResponse toSummaryResponse(BigDecimal totalSaved, Long totalGoals, Integer coins) {
@@ -35,12 +40,23 @@ public class ProfileMapper {
             ProfileLevelResponse levelResponse,
             BigDecimal totalSaved,
             Long totalGoals,
-            Integer coins
+            Integer coins,
+            int achievementUnlockedCount
     ) {
         return ProfileResponse.builder()
-                .user(toUserResponse(user))
+                .user(toUserResponse(user, achievementUnlockedCount))
                 .level(levelResponse)
                 .summary(toSummaryResponse(totalSaved, totalGoals, coins))
                 .build();
+    }
+
+    public ProfileResponse toProfileResponse(
+            User user,
+            ProfileLevelResponse levelResponse,
+            BigDecimal totalSaved,
+            Long totalGoals,
+            Integer coins
+    ) {
+        return toProfileResponse(user, levelResponse, totalSaved, totalGoals, coins, 0);
     }
 }

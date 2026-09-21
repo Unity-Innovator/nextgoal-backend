@@ -88,11 +88,14 @@ class AchievementServiceTest {
 		assertEquals(1, unlocked.size());
 		assertEquals("First Goal Created", unlocked.get(0).getBadge().getName());
 
-		// 2. Check UserReward summary updated
+		// 2. Check UserReward summary and User.totalXp updated
 		UserRewardSummaryResponse summary = achievementService.getUserRewardSummary(testUser);
 		assertEquals(1, summary.getAchievementCount());
 		assertEquals(50, summary.getTotalXp());
 		assertEquals(1, summary.getLevel());
+
+		User refreshedUser = userRepository.findById(testUser.getId()).orElseThrow();
+		assertEquals(50, refreshedUser.getTotalXp(), "User entity totalXp must be updated when achievement unlocks");
 
 		// 3. Verify XP history recorded
 		List<XpTransactionResponse> xpHistory = achievementService.getXpHistory(testUser);
