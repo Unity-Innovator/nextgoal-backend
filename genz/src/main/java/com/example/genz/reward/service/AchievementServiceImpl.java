@@ -17,6 +17,7 @@ import com.example.genz.reward.repository.BadgeRepository;
 import com.example.genz.reward.repository.UserBadgeRepository;
 import com.example.genz.reward.repository.UserRewardRepository;
 import com.example.genz.reward.repository.XpTransactionRepository;
+import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.notification.service.NotificationService;
 import com.example.genz.reward.evaluator.BadgeEvaluatorRegistry;
 import com.example.genz.reward.evaluator.BadgeRequirementEvaluator;
@@ -35,6 +36,7 @@ public class AchievementServiceImpl implements AchievementService {
     private final UserBadgeRepository userBadgeRepository;
     private final UserRewardRepository userRewardRepository;
     private final XpTransactionRepository xpTransactionRepository;
+    private final UserRepository userRepository;
     private final BadgeEvaluatorRegistry evaluatorRegistry;
     private final NotificationService notificationService;
     private final AchievementMapper achievementMapper;
@@ -81,9 +83,14 @@ public class AchievementServiceImpl implements AchievementService {
                         .build();
                 userBadge = userBadgeRepository.save(userBadge);
 
-                // 2. Award XP & update UserReward
+                // 2. Award XP & update User and UserReward
                 int points = badge.getXpReward() != null ? badge.getXpReward() : 0;
+                int currentXp = user.getTotalXp() != null ? user.getTotalXp() : 0;
+                user.setTotalXp(currentXp + points);
+                userRepository.save(user);
+
                 userReward.addXp(points);
+                userReward.setTotalXp(user.getTotalXp());
                 userRewardRepository.save(userReward);
 
                 // 3. Create XP Transaction (if not already exists for this badge)

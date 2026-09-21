@@ -65,14 +65,20 @@ class ProfileControllerTest {
         when(userRepository.findByPhoneNumber("012345678")).thenReturn(Optional.of(testUser));
 
         ProfileResponse profileResponse = ProfileResponse.builder()
-                .user(ProfileUserResponse.builder().id(userId).fullName("Chea Teng").build())
+                .user(ProfileUserResponse.builder()
+                        .id(userId)
+                        .fullName("Chea Teng")
+                        .achievementUnlockedCount(4)
+                        .build())
                 .level(ProfileLevelResponse.builder()
                         .level(3)
                         .name("Goal Builder")
-                        .xp(350)
+                        .totalXp(365)
                         .currentLevelXp(300)
                         .nextLevelXp(600)
-                        .progressPercentage(16.67)
+                        .progressPercentage(21.67)
+                        .completedAchievements(4)
+                        .streak(5)
                         .build())
                 .summary(ProfileSummaryResponse.builder()
                         .totalSaved(new BigDecimal("1250.00"))
@@ -93,9 +99,13 @@ class ProfileControllerTest {
 
         ProfileResponse data = responseEntity.getBody().getData();
         assertEquals("Chea Teng", data.getUser().getFullName());
+        assertEquals(4, data.getUser().getAchievementUnlockedCount());
         assertEquals(3, data.getLevel().getLevel());
         assertEquals("Goal Builder", data.getLevel().getName());
-        assertEquals(16.67, data.getLevel().getProgressPercentage());
+        assertEquals(365, data.getLevel().getTotalXp());
+        assertEquals(21.67, data.getLevel().getProgressPercentage());
+        assertEquals(4, data.getLevel().getCompletedAchievements());
+        assertEquals(5, data.getLevel().getStreak());
         assertEquals(new BigDecimal("1250.00"), data.getSummary().getTotalSaved());
         assertEquals(5L, data.getSummary().getTotalGoals());
         assertEquals(245, data.getSummary().getCoins());

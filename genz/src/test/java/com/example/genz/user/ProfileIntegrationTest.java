@@ -73,7 +73,7 @@ class ProfileIntegrationTest {
                 .gender(Gender.MALE)
                 .status("ACTIVE")
                 .role(UserRole.USER)
-                .totalXp(350)
+                .totalXp(365)
                 .coinBalance(245)
                 .build();
         testUser = userRepository.save(testUser);
@@ -143,12 +143,17 @@ class ProfileIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Profile retrieved successfully"))
                 .andExpect(jsonPath("$.data.user.id").value(testUser.getId().toString()))
                 .andExpect(jsonPath("$.data.user.fullName").value("Chea Teng"))
+                .andExpect(jsonPath("$.data.user.achievementUnlockedCount").value(0))
                 .andExpect(jsonPath("$.data.level.level").value(3))
                 .andExpect(jsonPath("$.data.level.name").value("Goal Builder"))
-                .andExpect(jsonPath("$.data.level.xp").value(350))
+                .andExpect(jsonPath("$.data.level.totalXp").value(365))
+                .andExpect(jsonPath("$.data.level.xp").doesNotExist())
                 .andExpect(jsonPath("$.data.level.currentLevelXp").value(300))
                 .andExpect(jsonPath("$.data.level.nextLevelXp").value(600))
-                .andExpect(jsonPath("$.data.level.progressPercentage").value(16.67))
+                .andExpect(jsonPath("$.data.level.progressPercentage").value(21.67))
+                .andExpect(jsonPath("$.data.level.completedAchievements").value(0))
+                .andExpect(jsonPath("$.data.level.completedAchievement").doesNotExist())
+                .andExpect(jsonPath("$.data.level.streak").value(0))
                 .andExpect(jsonPath("$.data.summary.totalSaved").value(1250.00))
                 .andExpect(jsonPath("$.data.summary.totalGoals").value(2))
                 .andExpect(jsonPath("$.data.summary.coins").value(245));

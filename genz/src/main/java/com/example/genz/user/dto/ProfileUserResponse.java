@@ -14,4 +14,5 @@ import java.util.UUID;
 public class ProfileUserResponse {
     private UUID id;
     private String fullName;
+    private int achievementUnlockedCount;
 }

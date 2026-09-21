@@ -24,4 +24,7 @@ public interface XpTransactionRepository extends JpaRepository<XpTransaction, UU
             @Param("end") LocalDateTime end,
             @Param("excludedType") ActivityType excludedType
     );
+
+    @Query("SELECT COALESCE(SUM(xt.points), 0) FROM XpTransaction xt WHERE xt.user = :user")
+    int sumPointsByUser(@Param("user") User user);
 }

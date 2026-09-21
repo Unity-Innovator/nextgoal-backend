@@ -4,5 +4,5 @@ import com.example.genz.user.dto.ProfileLevelResponse;
 
 public interface LevelService {
 
-    ProfileLevelResponse calculateLevelProgress(Integer userXp);
+    ProfileLevelResponse calculateLevelProgress(Integer totalXp);
 }
