@@ -1,6 +1,7 @@
 package com.example.genz.reward.service;
 
 import com.example.genz.reward.dto.AchievementResponse;
+import com.example.genz.reward.dto.UserAchievementsResponse;
 import com.example.genz.reward.dto.UserRewardSummaryResponse;
 import com.example.genz.reward.dto.XpTransactionResponse;
 import com.example.genz.auth.entity.User;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 public interface AchievementService {
     List<UserBadge> evaluateAndUnlockAchievements(User user, BadgeRequirementType requirementType, Map<String, Object> context);
+    UserAchievementsResponse getUserAchievements(User user);
     List<AchievementResponse> getAllAchievementsForUser(User user);
     List<AchievementResponse> getUnlockedAchievementsForUser(User user);
     List<AchievementResponse> getAchievementsByCategoryForUser(User user, BadgeCategory category);

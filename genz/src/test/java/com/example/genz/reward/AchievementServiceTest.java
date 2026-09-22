@@ -1,6 +1,7 @@
 package com.example.genz.reward;
 
 import com.example.genz.reward.dto.AchievementResponse;
+import com.example.genz.reward.dto.UserAchievementsResponse;
 import com.example.genz.reward.dto.UserRewardSummaryResponse;
 import com.example.genz.reward.dto.XpTransactionResponse;
 import com.example.genz.auth.entity.User;
@@ -145,5 +146,31 @@ class AchievementServiceTest {
 		assertEquals(4, streak7Badge.getCurrentProgress());
 		assertEquals(7, streak7Badge.getRequirementValue());
 		assertEquals(57, streak7Badge.getProgressPercentage());
+	}
+
+	@Test
+	void testGetUserAchievementsSinglePayload() {
+		// Unlock one achievement
+		achievementService.evaluateAndUnlockAchievements(
+				testUser,
+				BadgeRequirementType.FIRST_GOAL_CREATED,
+				Map.of("createdGoalCount", 1)
+		);
+
+		UserAchievementsResponse response = achievementService.getUserAchievements(testUser);
+		assertNotNull(response);
+		assertEquals(48, response.getTotal(), "Total achievements should equal 48 seeded badges");
+		assertEquals(1, response.getCompleted(), "Completed achievements count should be 1");
+		assertEquals(48, response.getAchievements().size());
+
+		// Verify that completed achievement is marked unlocked/completed
+		AchievementResponse completedAchievement = response.getAchievements().stream()
+				.filter(AchievementResponse::getUnlocked)
+				.findFirst()
+				.orElseThrow();
+		assertEquals("First Goal Created", completedAchievement.getName());
+		assertTrue(completedAchievement.getCompleted());
+		assertEquals(100, completedAchievement.getProgressPercentage());
+		assertNotNull(completedAchievement.getCompletedAt());
 	}
 }

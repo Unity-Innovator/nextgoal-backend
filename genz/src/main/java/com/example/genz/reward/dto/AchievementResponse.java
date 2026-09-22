@@ -3,6 +3,7 @@ package com.example.genz.reward.dto;
 import com.example.genz.reward.enums.BadgeCategory;
 import com.example.genz.reward.enums.BadgeRarity;
 import com.example.genz.reward.enums.BadgeRequirementType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,4 +30,34 @@ public class AchievementResponse {
     private Integer progressPercentage;
     private Boolean unlocked;
     private LocalDateTime earnedAt;
+
+    @JsonProperty("rewardXp")
+    public Integer getRewardXp() {
+        return xpReward;
+    }
+
+    @JsonProperty("target")
+    public Integer getTarget() {
+        return requirementValue;
+    }
+
+    @JsonProperty("progress")
+    public Long getProgress() {
+        return currentProgress;
+    }
+
+    @JsonProperty("completed")
+    public Boolean getCompleted() {
+        return unlocked;
+    }
+
+    @JsonProperty("completedAt")
+    public LocalDateTime getCompletedAt() {
+        return earnedAt;
+    }
+
+    @JsonProperty("icon")
+    public String getIcon() {
+        return iconUrl;
+    }
 }
