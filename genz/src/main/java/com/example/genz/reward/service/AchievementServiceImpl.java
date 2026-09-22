@@ -1,6 +1,7 @@
 package com.example.genz.reward.service;
 
 import com.example.genz.reward.dto.AchievementResponse;
+import com.example.genz.reward.dto.UserAchievementsResponse;
 import com.example.genz.reward.dto.UserRewardSummaryResponse;
 import com.example.genz.reward.dto.XpTransactionResponse;
 import com.example.genz.auth.entity.User;
@@ -122,6 +123,21 @@ public class AchievementServiceImpl implements AchievementService {
         }
 
         return newlyUnlocked;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserAchievementsResponse getUserAchievements(User user) {
+        List<AchievementResponse> achievements = getAllAchievementsForUser(user);
+        long completedCount = achievements.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getUnlocked()))
+                .count();
+
+        return UserAchievementsResponse.builder()
+                .total(achievements.size())
+                .completed(completedCount)
+                .achievements(achievements)
+                .build();
     }
 
     @Override

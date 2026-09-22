@@ -1,6 +1,6 @@
 package com.example.genz.reward.controller;
-
 import com.example.genz.reward.dto.AchievementResponse;
+import com.example.genz.reward.dto.UserAchievementsResponse;
 import com.example.genz.reward.dto.UserRewardSummaryResponse;
 import com.example.genz.reward.dto.XpTransactionResponse;
 import com.example.genz.auth.entity.User;
@@ -23,36 +23,21 @@ public class AchievementController {
     private final UserRepository userRepository;
 
     @GetMapping("/api/achievements")
-    public ResponseEntity<ApiResponse<List<AchievementResponse>>> getAllAchievements(Authentication authentication) {
+    public ResponseEntity<ApiResponse<UserAchievementsResponse>> getUserAchievements(Authentication authentication) {
         User user = getUser(authentication);
-        List<AchievementResponse> response = achievementService.getAllAchievementsForUser(user);
+        UserAchievementsResponse response = achievementService.getUserAchievements(user);
         return ResponseEntity.ok(ApiResponse.success("Achievements retrieved successfully", response));
     }
-
-    @GetMapping("/api/achievements/me")
-    public ResponseEntity<ApiResponse<List<AchievementResponse>>> getMyAchievements(Authentication authentication) {
-        User user = getUser(authentication);
-        List<AchievementResponse> response = achievementService.getAllAchievementsForUser(user);
-        return ResponseEntity.ok(ApiResponse.success("My achievement progress retrieved successfully", response));
-    }
-
-    @GetMapping("/api/achievements/unlocked")
-    public ResponseEntity<ApiResponse<List<AchievementResponse>>> getUnlockedAchievements(Authentication authentication) {
-        User user = getUser(authentication);
-        List<AchievementResponse> response = achievementService.getUnlockedAchievementsForUser(user);
-        return ResponseEntity.ok(ApiResponse.success("Unlocked achievements retrieved successfully", response));
-    }
-
-    @GetMapping("/api/achievements/categories")
-    public ResponseEntity<ApiResponse<BadgeCategory[]>> getCategories() {
-        return ResponseEntity.ok(ApiResponse.success("Badge categories retrieved successfully", BadgeCategory.values()));
-    }
-
     @GetMapping("/api/rewards/me")
     public ResponseEntity<ApiResponse<UserRewardSummaryResponse>> getRewardSummary(Authentication authentication) {
         User user = getUser(authentication);
         UserRewardSummaryResponse response = achievementService.getUserRewardSummary(user);
         return ResponseEntity.ok(ApiResponse.success("User reward summary retrieved successfully", response));
+    }
+
+    @GetMapping("/api/achievements/categories")
+    public ResponseEntity<ApiResponse<BadgeCategory[]>> getCategories() {
+        return ResponseEntity.ok(ApiResponse.success("Badge categories retrieved successfully", BadgeCategory.values()));
     }
 
     @GetMapping("/api/rewards/xp-history")
