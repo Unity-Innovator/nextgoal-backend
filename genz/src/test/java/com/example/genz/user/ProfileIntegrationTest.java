@@ -166,4 +166,30 @@ class ProfileIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(username = "012345678", roles = {"USER"})
+    @DisplayName("GET /api/v1/profile returns 200 with profile summary data")
+    void getMyProfileV1_Authenticated_ReturnsProfileV1Response() throws Exception {
+        mockMvc.perform(get("/api/v1/profile")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Profile retrieved"))
+                .andExpect(jsonPath("$.data.name").value("Chea Teng"))
+                .andExpect(jsonPath("$.data.phone").value("012345678"))
+                .andExpect(jsonPath("$.data.birthday").value("2000-01-01"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.level").value(1))
+                .andExpect(jsonPath("$.data.goalsCount").value(2))
+                .andExpect(jsonPath("$.data.coinsCount").value(245));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/profile unauthenticated returns 401/403")
+    void getMyProfileV1_Unauthenticated_ReturnsForbiddenOrUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/profile")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
 }

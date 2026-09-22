@@ -1,9 +1,13 @@
 package com.example.genz.user;
 
 import com.example.genz.auth.entity.User;
+import com.example.genz.auth.enums.Gender;
 import com.example.genz.auth.repository.UserRepository;
 import com.example.genz.common.api.ApiResponse;
 import com.example.genz.common.exception.ResourceNoteFoundException;
+import com.example.genz.goal.repository.GoalRepository;
+import com.example.genz.reward.dto.UserRewardSummaryResponse;
+import com.example.genz.reward.service.AchievementService;
 import com.example.genz.user.controller.ProfileController;
 import com.example.genz.user.dto.ProfileLevelResponse;
 import com.example.genz.user.dto.ProfileResponse;
@@ -38,6 +42,12 @@ class ProfileControllerTest {
     private UserRepository userRepository;
 
     @Mock
+    private GoalRepository goalRepository;
+
+    @Mock
+    private AchievementService achievementService;
+
+    @Mock
     private Authentication authentication;
 
     @InjectMocks
@@ -53,6 +63,7 @@ class ProfileControllerTest {
                 .id(userId)
                 .fullName("Chea Teng")
                 .phoneNumber("012345678")
+                .gender(Gender.MALE)
                 .totalXp(350)
                 .coinBalance(245)
                 .build();
@@ -126,5 +137,33 @@ class ProfileControllerTest {
         when(userRepository.findByPhoneNumber("099999999")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNoteFoundException.class, () -> profileController.getMyProfile(authentication));
+    }
+
+    @Test
+    @DisplayName("getProfileV1 returns legacy profile response for authenticated user")
+    void getProfileV1_WhenAuthenticated_ReturnsProfileV1() {
+        when(authentication.getName()).thenReturn("012345678");
+        when(userRepository.findByPhoneNumber("012345678")).thenReturn(Optional.of(testUser));
+        when(goalRepository.countByOwner(testUser)).thenReturn(5L);
+        when(achievementService.getUserRewardSummary(testUser)).thenReturn(
+                UserRewardSummaryResponse.builder().level(3).build()
+        );
+
+        ResponseEntity<ApiResponse<ProfileController.ProfileV1Response>> responseEntity =
+                profileController.getProfileV1(authentication);
+
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
+        assertTrue(responseEntity.getBody().isSuccess());
+        assertEquals("Profile retrieved", responseEntity.getBody().getMessage());
+
+        ProfileController.ProfileV1Response data = responseEntity.getBody().getData();
+        assertEquals("Chea Teng", data.name());
+        assertEquals("012345678", data.phone());
+        assertEquals(Gender.MALE.name(), data.gender());
+        assertEquals(3, data.level());
+        assertEquals(5L, data.goalsCount());
+        assertEquals(245, data.coinsCount());
     }
 }
