@@ -1,5 +1,6 @@
 HELP.md
 target/
+.maven-cache/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -31,3 +32,11 @@ build/
 
 ### VS Code ###
 .vscode/
+.env
+.env.prod
+k8s/**/secret.env
+k8s/**/secret.yaml
+chat_core_api.md
+community_chat_erd.mermaid
+community_chat_schema_notes.md
+community_chat_target_schema.sql

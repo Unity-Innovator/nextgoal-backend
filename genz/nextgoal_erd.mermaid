@@ -1,0 +1,443 @@
+erDiagram
+
+  USERS ||--|| USER_SETTINGS : has
+  USERS ||--o{ BILLS : creates
+  USERS ||--o{ BILL_PARTICIPANTS : joins
+  USERS ||--o{ SETTLEMENTS : pays
+  USERS ||--o{ SETTLEMENTS : receives
+  USERS ||--o{ SAVING_GOALS : owns
+  USERS ||--o{ SAVING_CONTRIBUTIONS : makes
+  USERS ||--o{ USER_REWARDS : earns
+  USERS ||--o{ USER_LESSONS : completes
+  USERS ||--o{ AI_CHAT_MESSAGES : sends
+  USERS ||--o{ POSTS : creates
+  USERS ||--o{ POST_LIKES : gives
+  USERS ||--o{ POST_COMMENTS : writes
+  USERS ||--o{ POST_REPORTS : files
+  USERS ||--o{ USER_FOLLOWS : follows
+  USERS ||--o{ USER_FOLLOWS : followed_by
+  USERS ||--o{ SAVING_GROUPS : creates
+  USERS ||--o{ GROUP_MEMBERS : joins
+  USERS ||--o{ GROUP_CONTRIBUTIONS : makes
+  USERS ||--o{ GROUP_INVITATIONS : sends
+  USERS ||--|| WALLETS : has
+  USERS ||--o{ PAYMENT_METHODS : owns
+  USERS ||--o{ GROUP_WALLET_TRANSACTIONS : initiates
+  USERS ||--o{ GROUP_WITHDRAWAL_REQUESTS : requests
+  USERS ||--o{ GROUP_WITHDRAWAL_APPROVALS : decides
+  USERS ||--o{ PAYMENT_QR_CODES : generates
+  USERS ||--o{ QR_SCAN_LOGS : scans
+
+  BILLS ||--o{ BILL_PARTICIPANTS : has
+  BILLS ||--o{ SETTLEMENTS : generates
+
+  SAVING_GOALS ||--o{ SAVING_CONTRIBUTIONS : receives
+  SAVING_GOALS ||--o{ SAVING_MILESTONES : triggers
+  SAVING_GOALS ||--o{ POSTS : referenced_by
+
+  SAVING_MILESTONES ||--o{ USER_REWARDS : grants
+
+  LESSONS ||--o{ LESSON_QUESTIONS : contains
+  LESSONS ||--o{ USER_LESSONS : tracked_by
+
+  REWARDS ||--o{ USER_REWARDS : assigned_to
+
+  POSTS ||--o{ POST_LIKES : receives
+  POSTS ||--o{ POST_COMMENTS : receives
+  POSTS ||--o{ POST_REPORTS : flagged_by
+
+  POST_COMMENTS ||--o{ POST_COMMENTS : replies_to
+
+  SAVING_GROUPS ||--o{ GROUP_MEMBERS : has
+  SAVING_GROUPS ||--o{ GROUP_CONTRIBUTIONS : receives
+  SAVING_GROUPS ||--o{ GROUP_INVITATIONS : sends
+  SAVING_GROUPS ||--o{ POSTS : referenced_by
+  SAVING_GROUPS ||--|| GROUP_WALLETS : has
+
+  WALLETS ||--o{ WALLET_TRANSACTIONS : records
+  PAYMENT_METHODS ||--o{ WALLET_TRANSACTIONS : used_in
+  PAYMENT_METHODS ||--o{ GROUP_WALLET_TRANSACTIONS : used_in
+
+  GROUP_WALLETS ||--o{ GROUP_WALLET_TRANSACTIONS : records
+  GROUP_WALLETS ||--o{ GROUP_WITHDRAWAL_REQUESTS : has
+  GROUP_WALLETS ||--o{ PAYMENT_QR_CODES : generates
+
+  GROUP_WITHDRAWAL_REQUESTS ||--o{ GROUP_WITHDRAWAL_APPROVALS : receives
+
+  PAYMENT_QR_CODES ||--o{ QR_SCAN_LOGS : scanned_via
+
+  USERS {
+    uuid id PK
+    string full_name
+    string phone_number
+    string password_hash
+    string pin_hash
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  USER_SETTINGS {
+    uuid id PK
+    uuid user_id FK
+    string language
+    string theme
+    string avatar_url
+    boolean bill_reminder
+    boolean goal_alert
+    boolean lesson_reminder
+    boolean ai_tips
+    boolean face_id_enabled
+    int auto_lock_minutes
+    boolean push_notifications_enabled
+    boolean sms_notifications_enabled
+    boolean email_notifications_enabled
+    string profile_visibility
+    boolean show_savings_goals_publicly
+    boolean show_full_name_on_posts
+    boolean allow_comments_on_posts
+    string preferred_currency
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  BILLS {
+    uuid id PK
+    uuid creator_id FK
+    string name
+    decimal total_amount
+    string currency
+    string category
+    string receipt_url
+    string status
+    date bill_date
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  BILL_PARTICIPANTS {
+    uuid id PK
+    uuid bill_id FK
+    uuid user_id FK
+    decimal amount_owed
+    string split_type
+    boolean is_paid
+    timestamp paid_at
+  }
+
+  SETTLEMENTS {
+    uuid id PK
+    uuid bill_id FK
+    uuid payer_id FK
+    uuid receiver_id FK
+    decimal amount
+    string currency
+    string status
+    timestamp settled_at
+  }
+
+  SAVING_GOALS {
+    uuid id PK
+    uuid user_id FK
+    string name
+    decimal target_amount
+    decimal current_amount
+    string currency
+    string category
+    string icon
+    date deadline
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  SAVING_CONTRIBUTIONS {
+    uuid id PK
+    uuid goal_id FK
+    uuid user_id FK
+    decimal amount
+    string note
+    timestamp contributed_at
+  }
+
+  SAVING_MILESTONES {
+    uuid id PK
+    uuid goal_id FK
+    int percentage
+    decimal amount_required
+    boolean is_reached
+    timestamp reached_at
+  }
+
+  REWARDS {
+    uuid id PK
+    string name
+    string type
+    string icon_url
+    string description
+    int points_value
+    boolean is_active
+    timestamp created_at
+  }
+
+  USER_REWARDS {
+    uuid id PK
+    uuid user_id FK
+    uuid reward_id FK
+    uuid milestone_id FK
+    string source
+    int points_earned
+    timestamp earned_at
+  }
+
+  LESSONS {
+    uuid id PK
+    string title
+    string category
+    string content
+    string difficulty
+    int estimated_minutes
+    int points_reward
+    boolean is_active
+    timestamp created_at
+  }
+
+  LESSON_QUESTIONS {
+    uuid id PK
+    uuid lesson_id FK
+    string question
+    string option_a
+    string option_b
+    string option_c
+    string option_d
+    string correct_answer
+    int order_index
+  }
+
+  USER_LESSONS {
+    uuid id PK
+    uuid user_id FK
+    uuid lesson_id FK
+    string status
+    int score
+    int streak_count
+    timestamp started_at
+    timestamp completed_at
+  }
+
+  AI_CHAT_MESSAGES {
+    uuid id PK
+    uuid user_id FK
+    string role
+    text content
+    string context_type
+    timestamp created_at
+  }
+
+  POSTS {
+    uuid id PK
+    uuid user_id FK
+    string post_type
+    text content
+    string image_url
+    uuid goal_id FK
+    uuid group_id FK
+    string visibility
+    boolean is_pinned
+    string status
+    int like_count
+    int comment_count
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  POST_LIKES {
+    uuid id PK
+    uuid post_id FK
+    uuid user_id FK
+    timestamp created_at
+  }
+
+  POST_COMMENTS {
+    uuid id PK
+    uuid post_id FK
+    uuid user_id FK
+    uuid parent_comment_id FK
+    text content
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  USER_FOLLOWS {
+    uuid id PK
+    uuid follower_id FK
+    uuid following_id FK
+    timestamp created_at
+  }
+
+  POST_REPORTS {
+    uuid id PK
+    uuid post_id FK
+    uuid reported_by FK
+    string reason
+    text details
+    string status
+    timestamp created_at
+  }
+
+  SAVING_GROUPS {
+    uuid id PK
+    uuid creator_id FK
+    string name
+    string description
+    decimal target_amount
+    decimal current_amount
+    string currency
+    string icon
+    date deadline
+    string invite_code
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  GROUP_MEMBERS {
+    uuid id PK
+    uuid group_id FK
+    uuid user_id FK
+    string role
+    string status
+    timestamp joined_at
+  }
+
+  GROUP_CONTRIBUTIONS {
+    uuid id PK
+    uuid group_id FK
+    uuid user_id FK
+    decimal amount
+    string currency
+    string note
+    timestamp contributed_at
+  }
+
+  GROUP_INVITATIONS {
+    uuid id PK
+    uuid group_id FK
+    uuid invited_by FK
+    string phone_number
+    string status
+    string qr_code_data
+    string qr_image_url
+    timestamp created_at
+    timestamp expires_at
+  }
+
+  WALLETS {
+    uuid id PK
+    uuid user_id FK
+    decimal balance_khr
+    decimal balance_usd
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  PAYMENT_METHODS {
+    uuid id PK
+    uuid user_id FK
+    string method_type
+    string provider
+    string account_name
+    string account_number_masked
+    boolean is_default
+    string status
+    timestamp created_at
+  }
+
+  WALLET_TRANSACTIONS {
+    uuid id PK
+    uuid wallet_id FK
+    uuid payment_method_id FK
+    string transaction_type
+    decimal amount
+    string currency
+    decimal balance_before
+    decimal balance_after
+    string reference_type
+    uuid reference_id
+    string status
+    string description
+    timestamp created_at
+  }
+
+  GROUP_WALLETS {
+    uuid id PK
+    uuid group_id FK
+    decimal balance_khr
+    decimal balance_usd
+    string status
+    timestamp created_at
+    timestamp updated_at
+  }
+
+  GROUP_WALLET_TRANSACTIONS {
+    uuid id PK
+    uuid group_wallet_id FK
+    uuid user_id FK
+    uuid payment_method_id FK
+    string transaction_type
+    decimal amount
+    string currency
+    decimal balance_before
+    decimal balance_after
+    string status
+    string description
+    timestamp created_at
+  }
+
+  GROUP_WITHDRAWAL_REQUESTS {
+    uuid id PK
+    uuid group_wallet_id FK
+    uuid requested_by FK
+    decimal amount
+    string currency
+    string reason
+    string status
+    int approvals_required
+    int approvals_received
+    timestamp created_at
+    timestamp resolved_at
+  }
+
+  GROUP_WITHDRAWAL_APPROVALS {
+    uuid id PK
+    uuid withdrawal_request_id FK
+    uuid user_id FK
+    string decision
+    timestamp decided_at
+  }
+
+  PAYMENT_QR_CODES {
+    uuid id PK
+    uuid user_id FK
+    uuid group_wallet_id FK
+    string qr_type
+    decimal amount
+    string currency
+    string qr_code_data
+    string qr_image_url
+    string status
+    timestamp expires_at
+    timestamp used_at
+    timestamp created_at
+  }
+
+  QR_SCAN_LOGS {
+    uuid id PK
+    uuid qr_code_id FK
+    uuid scanned_by FK
+    string result
+    uuid transaction_id
+    timestamp scanned_at
+  }

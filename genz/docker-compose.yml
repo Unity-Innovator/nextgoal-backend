@@ -1,19 +1,75 @@
 services:
-  postgres:
+  db:
     image: postgres:17
-    container_name: postgres-db
-    restart: always
 
+    container_name: nextgoal-db
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-
+      POSTGRES_DB: ${POSTGRES_DB:-nextgoal}
+      POSTGRES_USER: ${DB_USERNAME:-channangan}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root@123}
     ports:
       - "5432:5432"
-
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - nextgoal-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--save",
+        "",
+        "--appendonly",
+        "no",
+        "--requirepass",
+        "${SPRING_DATA_REDIS_PASSWORD:-local-redis-password}",
+      ]
+    environment:
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-local-redis-password}
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli -a "$$SPRING_DATA_REDIS_PASSWORD" ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextgoal-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-local-redis-password}
+      OTP_SECRET: ${OTP_SECRET}
+      PLASGATE_PRIVATE_KEY: ${PLASGATE_PRIVATE_KEY}
+      PLASGATE_SECRET_KEY: ${PLASGATE_SECRET_KEY}
+      PLASGATE_SENDER: ${PLASGATE_SENDER}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/nextgoal}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-channangan}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-root@123}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET}
+    ports:
+      - "8080:8080"
 
 volumes:
-  postgres-data:
+  nextgoal-db-data:
