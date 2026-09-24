@@ -1,6 +1,7 @@
 package com.example.genz.notification.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +34,33 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final GoalMemberRepository goalMemberRepository;
     private final NotificationMapper notificationMapper;
+    private final NotificationWebSocketPublisher notificationWebSocketPublisher;
 
     @Override
     @Transactional
     public Notification createNotification(User user, String title, String message, NotificationType type, UUID referenceId) {
         Notification notification = notificationMapper.toEntity(user, title, message, type, referenceId);
-        return notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+        Notification notificationToPublish = (savedNotification != null) ? savedNotification : notification;
+        if (notificationToPublish.getCreatedAt() == null) {
+            notificationToPublish.setCreatedAt(LocalDateTime.now());
+        }
+
+        if (notificationWebSocketPublisher != null) {
+            String recipientPhone = null;
+            if (user != null) {
+                recipientPhone = user.getPhoneNumber();
+                if ((recipientPhone == null || recipientPhone.isBlank()) && user.getId() != null) {
+                    recipientPhone = userRepository.findById(user.getId())
+                            .map(User::getPhoneNumber)
+                            .orElse(null);
+                }
+            }
+            NotificationResponse response = notificationMapper.toNotificationResponse(notificationToPublish);
+            notificationWebSocketPublisher.sendToUser(recipientPhone, response);
+        }
+
+        return savedNotification;
     }
 
     @Override
