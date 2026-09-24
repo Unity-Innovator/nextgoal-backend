@@ -1,7 +1,7 @@
 # Backend GitHub Actions
 
-`.github/workflows/backend-ci.yml` replaces the GitLab test, build, and manual
-deployment stages. Pushes and pull requests run Java 21 Maven tests followed by a
+`.github/workflows/backend-ci.yml` replaces the GitLab test, build, and deployment
+stages. Pushes and pull requests run Java 21 Maven tests followed by a
 Docker build on GitHub-hosted Ubuntu runners. Test reports are retained for seven
 days. These jobs consume the private repository owner's GitHub Actions allowance.
 
@@ -24,8 +24,9 @@ existing production Compose file and project name `nextgoal`.
    do not automatically apply to the new GitHub runner account. Docker access is
    privileged; use a dedicated trusted deployment account.
 5. Where supported by the repository plan, configure the `production/ubuntu`
-   environment to permit only the default branch and require deployment approval.
-   Protect the default branch and review workflow changes before merging them.
+   environment to permit only `main`. Existing required-reviewer rules still
+   require approval before deployment. Protect `main` and review workflow changes
+   before merging them.
 
 The existing server environment file remains the source of production secrets.
 Do not commit it or copy its contents into workflow logs. This deployment method
@@ -36,14 +37,16 @@ does not require SSH secrets in GitHub.
 1. Commit and push the workflow and this guide. Keep unrelated local changes out
    of the migration commit. Merge the workflow into the GitHub default branch;
    the manual Run workflow button requires the workflow to exist there.
-2. Ensure the default branch contains the backend version you intend to deploy.
-   Uploading feature branches does not merge their code into the default branch.
-3. Open Actions > Backend CI > Run workflow. Select the default branch and check
-   the deploy input. Tests and the Docker build must pass before deployment runs.
+2. Merge reviewed changes from `dev` into `main`. The resulting push automatically
+   runs tests, builds the image, and deploys if both succeed. Uploading feature
+   branches does not merge their code into `main`.
+3. To deploy manually, open Actions > Backend CI > Run workflow. Select `main`
+   and check the deploy input. Tests and the Docker build must pass first.
 4. Check the deployment logs and verify the application's health afterward.
    Compose `ps` reports container status; it is not an application health test.
 
-Pushes, pull requests, and manual runs without the deploy input never deploy.
+Only pushes to `main` or manual runs on `main` with the deploy input deploy.
+Pull requests, pushes to `dev` or feature branches, and tag pushes never deploy.
 Manual runs on other branches also skip deployment. Production deployments are
 serialized and an active deployment is not canceled by a newer run.
 
