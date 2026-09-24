@@ -1,4 +1,5 @@
 package com.example.genz.auth.controller;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -39,6 +40,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+
         return ResponseEntity.ok(ApiResponse.success("success", authService.login(request)));
     }
 
@@ -90,5 +92,6 @@ public class AuthController {
     @GetMapping("/check")
     public ResponseEntity<ApiResponse<Boolean>> checkUser(@RequestParam String phoneNumber){
         return ResponseEntity.ok(ApiResponse.success("Success", authService.checkUser(phoneNumber)));
+
     }
 }

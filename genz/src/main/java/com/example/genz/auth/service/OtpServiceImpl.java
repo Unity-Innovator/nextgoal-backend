@@ -14,10 +14,12 @@ import com.example.genz.auth.mapper.UserMapper;
 import com.example.genz.auth.util.TokenHashUtil;
 import com.example.genz.auth.entity.RefreshToken;
 import com.example.genz.auth.repository.RefreshTokenRepository;
+
 import com.example.genz.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -25,9 +27,11 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 
+
 @Service
 @RequiredArgsConstructor
 public class OtpServiceImpl implements OtpService {
+
     private final RedisOtpStore otpStore;
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
@@ -66,10 +70,12 @@ public class OtpServiceImpl implements OtpService {
             otpStore.removeIfMatching(phoneNumber, hash);
             throw ex;
         }
+
     }
 
     @Override
     @Transactional
+
     public VerifyOtpResponse verifyOtp(VerifyOtpRequest request) {
         if (request.getPurpose() == null) {
             throw new OtpException("Purpose is required");
@@ -176,5 +182,6 @@ public class OtpServiceImpl implements OtpService {
     private String maskedPhoneSuffix(String phoneNumber) {
         int suffixStart = Math.max(0, phoneNumber.length() - 4);
         return phoneNumber.substring(suffixStart);
+
     }
 }

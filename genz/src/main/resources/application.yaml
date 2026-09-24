@@ -12,71 +12,11 @@ spring:
       timeout: 2s
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/nextgoal}
-    username: ${SPRING_DATASOURCE_USERNAME:nextgoal}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+  secret: 52656d656d62657220746f206d616b6520737572652074686973206973206174206c65617374203235362062697473206c6f6e67
+  expiration: 86400000
 
-  sql:
-    init:
-      mode: always
-  flyway:
-    enabled: ${FLYWAY_ENABLED:false}
-    locations: classpath:db/migration
-    baseline-on-migrate: true
-    baseline-version: 1
-  jpa:
-    defer-datasource-initialization: true
-    database: POSTGRESQL
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-  servlet:
-    multipart:
-      max-file-size: 40MB
-      max-request-size: 42MB
 otp:
-  secret: ${OTP_SECRET:}
-
-jwt:
-  secret: ${JWT_SECRET}
-  access-expiration: ${JWT_ACCESS_EXPIRATION:900000}
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
-
-app:
-  seed:
-    test-user-enabled: ${TEST_USER_SEED_ENABLED:false}
-  cors:
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*}
-  websocket:
-    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*}
-
-management:
-  endpoint:
-    health:
-      probes:
-        enabled: true
-  endpoints:
-    web:
-      exposure:
-        include: "health,info"
-
-  health:
-    readiness-state:
-      enabled: true
-    liveness-state:
-      enabled: true
-
-supabase:
-  url: ${SUPABASE_URL:}
-  secret-key: ${SUPABASE_SECRET_KEY:}
-  storage:
-    bucket: ${SUPABASE_STORAGE_BUCKET:}
-
-plasgate:
-  base-url: https://cloudapi.plasgate.com
-  private-key: ${PLASGATE_PRIVATE_KEY:}
-  secret-key: ${PLASGATE_SECRET_KEY:}
-  sender: ${PLASGATE_SENDER:}
+  expiration-minutes: 5
+  max-attempts: 5
+  resend-cooldown-seconds: 60
+  length: 6

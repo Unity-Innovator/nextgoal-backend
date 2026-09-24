@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+
     container_name: nextgoal-db
     restart: unless-stopped
     environment:

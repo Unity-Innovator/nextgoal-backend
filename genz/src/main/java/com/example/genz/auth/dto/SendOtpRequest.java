@@ -1,5 +1,6 @@
 package com.example.genz.auth.dto;
 
+
 import com.example.genz.auth.enums.OtpPurpose;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
