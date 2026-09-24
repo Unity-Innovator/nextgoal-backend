@@ -1,0 +1,14 @@
+# Local editor settings
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Local Maven cache and runtime output
+.m2/
+*.log
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
