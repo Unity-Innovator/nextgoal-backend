@@ -145,35 +145,8 @@ public class OtpServiceImpl implements OtpService {
         if (user != null && !user.isEnabled() && !"PENDING".equalsIgnoreCase(user.getStatus())) {
             throw new OtpException("Account is not active");
         }
-
-//        if (purpose == OtpPurpose.PASSWORD_RESET && user == null) {
-//            throw new OtpException("No account found. Please register first.");
-//        }
         return user;
     }
-
-//    private void checkRateLimit(String phoneNumber) {
-//        LocalDateTime cooldownStart = LocalDateTime.now().minusSeconds(otpProperties.getResendCooldownSeconds());
-//        long recentOtps = otpRepository.countByPhoneNumberAndCreatedAtAfter(phoneNumber, cooldownStart);
-//        if (recentOtps > 0) {
-//            throw new OtpException("Please wait before requesting a new OTP");
-//        }
-//    }
-
-//    private void invalidatePreviousOtps(String phoneNumber) {
-//        otpRepository.findFirstByPhoneNumberAndUsedFalseOrderByCreatedAtDesc(phoneNumber)
-//                .ifPresent(existing -> {
-//                    existing.setUsed(true);
-//                    otpRepository.save(existing);
-//                });
-//    }
-//    private String generateOtp() {
-//        StringBuilder otp = new StringBuilder(otpProperties.getLength());
-//        for (int i = 0; i < otpProperties.getLength(); i++) {
-//            otp.append(secureRandom.nextInt(10));
-//        }
-//        return otp.toString();
-//    }
 
     private String hashOtp(String otp) {
         return TokenHashUtil.sha256Hex(otp);
