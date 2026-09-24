@@ -41,6 +41,7 @@ import com.example.genz.notification.enums.NotificationType;
 import com.example.genz.notification.mapper.NotificationMapper;
 import com.example.genz.notification.repository.NotificationRepository;
 import com.example.genz.notification.service.NotificationServiceImpl;
+import com.example.genz.notification.service.NotificationWebSocketPublisher;
 import com.example.genz.transaction.entity.GoalContribution;
 import com.example.genz.transaction.repository.WalletTransactionRepository;
 import com.example.genz.wallet.dto.DepositRequest;
@@ -61,6 +62,8 @@ class GoalContributionNotificationTest {
     private GoalMemberRepository goalMemberRepository;
     @Spy
     private final NotificationMapper notificationMapper = new NotificationMapper();
+    @Mock
+    private NotificationWebSocketPublisher notificationWebSocketPublisher;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
