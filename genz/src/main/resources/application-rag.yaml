@@ -1,0 +1,14 @@
+assistant:
+  rag:
+    enabled: true
+    api-key: ${OPENAI_API_KEY:}
+    model: ${ASSISTANT_RAG_MODEL:gpt-5.6-luna}
+spring:
+  flyway:
+    enabled: true
+    locations: classpath:db/migration,classpath:db/rag
+  jpa:
+    defer-datasource-initialization: false
+  sql:
+    init:
+      mode: never
