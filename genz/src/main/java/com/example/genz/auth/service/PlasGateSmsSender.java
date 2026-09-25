@@ -21,7 +21,9 @@ public class PlasGateSmsSender {
     }
 
     public void sendOtp(String phone, String otp) {
-        if (!StringUtils.hasText(properties.privateKey()) || !StringUtils.hasText(properties.secretKey())
+        if (!StringUtils.hasText(properties.baseUrl())
+                || !StringUtils.hasText(properties.privateKey())
+                || !StringUtils.hasText(properties.secretKey())
                 || !StringUtils.hasText(properties.sender())) {
             throw new OtpException("SMS delivery is not configured");
         }
@@ -36,7 +38,7 @@ public class PlasGateSmsSender {
                     .body(new PlasGateSmsRequest(properties.sender(), destination,
                             "Your NextGoal OTP is #ma#" + otp + "#ma#. It expires in 5 minutes."))
                     .retrieve().toBodilessEntity();
-        } catch (RestClientException ex) {
+        } catch (RestClientException | IllegalArgumentException ex) {
             // Provider exceptions can contain credentials and message contents. Do not expose them.
             throw new OtpException("Unable to send OTP. Please try again later.");
         }
