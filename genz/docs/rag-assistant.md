@@ -1,16 +1,16 @@
 # Document RAG assistant (V1)
 
 The Flutter assistant now includes **My documents** for PDF/DOCX/TXT/MD upload,
-listing, and deletion. The backend extracts text, chunks it, creates OpenAI
+listing, and deletion. The backend extracts text, chunks it, creates Gemini
 embeddings, stores vectors in PostgreSQL/pgvector, retrieves up to five private
-passages, and sends those passages to GPT-5.6 Luna. Answers include retrieved
+passages, and sends those passages to Gemini 3.5 Flash. Answers include retrieved
 source IDs, names, excerpts, and PDF page numbers.
 
 ## Enable
 
 1. Install pgvector on the existing PostgreSQL 17 server, or use the optional
    Compose override below. Back up an existing database before changing its image.
-2. Provide OPENAI_API_KEY to the backend process. Never put it in Flutter.
+2. Provide GEMINI_API_KEY to the backend process. Never put it in Flutter.
 3. Set SPRING_PROFILES_ACTIVE=prod,rag (rag must come last), keeping the existing
    datasource, JWT, Redis, and other production settings.
 4. Restart the backend. The rag profile enables Flyway and adds db/rag alongside
@@ -26,18 +26,18 @@ Compose example (run from genz, supplying existing required environment settings
 docker compose -f docker-compose.prod.yaml -f docker-compose.rag.yaml up -d --build
 ```
 
-The override uses pgvector/pgvector:pg17 and passes the OpenAI key into the backend.
+The override uses pgvector/pgvector:pg17 and passes the Gemini key into the backend.
 It does not run automatically. No existing database was changed during development.
 
-ASSISTANT_RAG_MODEL defaults to gpt-5.6-luna. The embedding model is deliberately
-fixed to text-embedding-3-small with 1536 dimensions. Changing it requires a
+ASSISTANT_RAG_MODEL defaults to gemini-3.5-flash. The embedding model is deliberately
+fixed to gemini-embedding-001 with 1536 dimensions. Changing it requires a
 migration and re-embedding every document; never mix embedding models in one index.
 assistant.rag.min-similarity defaults to 0.3; calibrate it on representative questions.
 
 Without the rag profile, the original bundled-guide/Groq assistant remains active.
 Once V20 has been applied, keep classpath:db/rag in Flyway's locations even if
 disabling assistant.rag.enabled, so Flyway can still validate its migration history.
-Bundled guides are not automatically sent to OpenAI; upload guides you want to use.
+Bundled guides are not automatically sent to Gemini; upload guides you want to use.
 
 ## API
 
@@ -82,7 +82,7 @@ and does not provide model memory. Existing local history is not account scoped.
 .\mvnw.cmd "-Dtest=AssistantTests,RagTests,RagPostgresTests" test
 ```
 
-Unit tests mock OpenAI. RagPostgresTests runs only when RAG_TEST_DATABASE_URL is
+Unit tests mock Gemini. RagPostgresTests runs only when RAG_TEST_DATABASE_URL is
 set, with optional RAG_TEST_DATABASE_USER and RAG_TEST_DATABASE_PASSWORD.
 Use a disposable PostgreSQL database with vector already installed in public.
 The test creates/removes its own random schema and checks real cosine retrieval,
@@ -92,7 +92,7 @@ Frontend: flutter test --no-pub test/ai_service_test.dart test/ai_documents_serv
 
 Live acceptance: upload a policy as user A; verify a supported answer and source
 page; ask an unrelated question; sign in as user B and verify no access; delete
-the policy as A and verify subsequent retrieval excludes it. No live OpenAI call
+the policy as A and verify subsequent retrieval excludes it. No live Gemini call
 is required for unit tests. Live API access and PostgreSQL integration must be
 verified in the configured environment.
 
@@ -102,7 +102,16 @@ This extends the project's existing Spring RestClient integration instead of
 introducing Spring AI and its auto-configuration. The extraction, provider, store,
 and orchestration components remain separate so adapters can be replaced later.
 
-- [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
-- [OpenAI embeddings](https://developers.openai.com/api/docs/guides/embeddings)
+- [Gemini 3.5 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash)
+- [Gemini embeddings](https://ai.google.dev/gemini-api/docs/embeddings)
 - [pgvector](https://github.com/pgvector/pgvector)
 - [PDFBox 3 loading](https://pdfbox.apache.org/3.0/migration.html)
+
+## Switching from OpenAI embeddings
+
+V21 labels existing vectors as text-embedding-3-small. Gemini retrieval excludes
+those documents until you delete and re-upload them; their metadata remains visible.
+New uploads use gemini-embedding-001 at 1536 dimensions with RETRIEVAL_DOCUMENT;
+questions use RETRIEVAL_QUERY. Existing migration checksums remain unchanged.
+The Gemini key must have access to gemini-3.5-flash and gemini-embedding-001.
+The bundled-guide fallback still uses Groq when the rag profile is disabled.

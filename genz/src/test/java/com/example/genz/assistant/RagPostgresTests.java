@@ -25,7 +25,8 @@ class RagPostgresTests {
             jdbc.execute("CREATE SCHEMA " + schema);
             try {
                 jdbc.execute("SET search_path TO " + schema + ", public");
-                new ResourceDatabasePopulator(new ClassPathResource("db/rag/V20__assistant_vector_knowledge.sql"))
+                new ResourceDatabasePopulator(new ClassPathResource("db/rag/V20__assistant_vector_knowledge.sql"),
+                        new ClassPathResource("db/rag/V21__assistant_embedding_model.sql"))
                     .execute(source);
                 var store = new RagStore(jdbc);
                 var extracted = new DocumentExtractor.Extracted("policy.txt","txt",
@@ -41,6 +42,9 @@ class RagPostgresTests {
                 assertThrows(RuntimeException.class, () -> transaction.execute(status ->
                     store.save("alice",extracted,List.of("[1,2]"))));
                 assertEquals(1,store.list("alice").size());
+                jdbc.update("UPDATE assistant_documents SET embedding_model=? WHERE id=?", "text-embedding-3-small", alice.id());
+                assertTrue(store.search("alice",vector,0.3).isEmpty());
+                assertEquals(1, store.list("alice").size());
                 assertTrue(store.delete("alice",alice.id()));
                 assertTrue(store.search("alice",vector,0.3).isEmpty());
                 assertEquals(1,store.search("bob",vector,0.3).size());

@@ -55,32 +55,55 @@ class RagTests {
         assertThrows(IllegalArgumentException.class, () -> extractor.extract(new MockMultipartFile("file","a.exe","text/plain","hello".getBytes())));
         assertThrows(IllegalArgumentException.class, () -> extractor.extract(new MockMultipartFile("file","a.pdf","application/pdf","fake".getBytes())));
     }
-    @Test void validatesEmbeddingShapeAndUsesProviderIndexes() {
-        var builder = RestClient.builder().baseUrl("https://api.openai.com/v1");
+    @Test void validatesGeminiEmbeddingsAndQueryTask() {
+        var builder = RestClient.builder().baseUrl("https://generativelanguage.googleapis.com/v1beta");
         var server = MockRestServiceServer.bindTo(builder).build();
         String vector = "[" + String.join(",", Collections.nCopies(1536, "0.1")) + "]";
-        server.expect(requestTo("https://api.openai.com/v1/embeddings"))
-            .andExpect(header("Authorization", "Bearer key"))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("text-embedding-3-small")))
-            .andRespond(withSuccess("{\"data\":[{\"index\":0,\"embedding\":" + vector + "}]}", MediaType.APPLICATION_JSON));
-        var provider = new RagProvider("key", "gpt-5.6-luna", builder.build());
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents";
+        server.expect(requestTo(url)).andExpect(header("x-goog-api-key", "key"))
+            .andExpect(jsonPath("$.requests[0].taskType").value("RETRIEVAL_DOCUMENT"))
+            .andExpect(jsonPath("$.requests[0].outputDimensionality").value(1536))
+            .andRespond(withSuccess("{\"embeddings\":[{\"values\":" + vector + "}]}", MediaType.APPLICATION_JSON));
+        var provider = new RagProvider("key", "gemini-3.5-flash", builder.build());
         assertEquals(vector, provider.embed(List.of("policy")).getFirst());
-        server.verify();
-        server.reset();
-        server.expect(requestTo("https://api.openai.com/v1/embeddings"))
-            .andRespond(withSuccess("{\"data\":[{\"index\":0,\"embedding\":[0.1]}]}", MediaType.APPLICATION_JSON));
+        server.verify(); server.reset();
+        server.expect(requestTo(url))
+            .andExpect(jsonPath("$.requests[0].taskType").value("RETRIEVAL_QUERY"))
+            .andRespond(withSuccess("{\"embeddings\":[{\"values\":" + vector + "}]}", MediaType.APPLICATION_JSON));
+        assertEquals(vector, provider.embedQuery("policy?"));
+        server.verify(); server.reset();
+        server.expect(requestTo(url))
+            .andRespond(withSuccess("{\"embeddings\":[{\"values\":[0.1]}]}", MediaType.APPLICATION_JSON));
         assertThrows(AssistantService.Unavailable.class, () -> provider.embed(List.of("policy")));
+        server.verify();
     }
-    @Test void responsesUsesGroundingAndDoesNotStoreProviderConversation() {
-        var builder = RestClient.builder().baseUrl("https://api.openai.com/v1");
+    @Test void geminiUsesGroundingAndExcludesThoughtParts() {
+        var builder = RestClient.builder().baseUrl("https://generativelanguage.googleapis.com/v1beta");
         var server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.openai.com/v1/responses"))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("\"store\":false")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("page 14")))
-            .andRespond(withSuccess("{\"status\":\"completed\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"18 days [s1].\"}]}]}", MediaType.APPLICATION_JSON));
-        assertEquals("18 days [s1].", new RagProvider("key","gpt-5.6-luna",builder.build())
+        server.expect(requestTo("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"))
+            .andExpect(header("x-goog-api-key", "key"))
+            .andExpect(jsonPath("$.systemInstruction.parts[0].text").exists())
+            .andExpect(jsonPath("$.contents[0].parts[0].text").value(org.hamcrest.Matchers.containsString("page 14")))
+            .andRespond(withSuccess("""
+                {"candidates":[{"finishReason":"STOP","content":{"parts":[
+                {"thought":true,"text":"hidden"},{"text":"18 days [s1]."}]}}]}
+                """, MediaType.APPLICATION_JSON));
+        assertEquals("18 days [s1].", new RagProvider("key","gemini-3.5-flash",builder.build())
             .answer("Leave?", List.of(new KnowledgeBase.Source("s1","Policy","18 days",14))));
         server.verify();
+    }
+    @Test void geminiRejectsBlockedTruncatedAndEmptyResponses() {
+        for (String response : List.of("{}",
+                "{\"candidates\":[{\"finishReason\":\"MAX_TOKENS\"}]}",
+                "{\"candidates\":[{\"finishReason\":\"SAFETY\"}]}",
+                "{\"candidates\":[{\"finishReason\":\"STOP\",\"content\":{\"parts\":[]}}]}")) {
+            var builder = RestClient.builder().baseUrl("https://generativelanguage.googleapis.com/v1beta");
+            var server = MockRestServiceServer.bindTo(builder).build();
+            server.expect(anything()).andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+            assertThrows(AssistantService.Unavailable.class, () ->
+                new RagProvider("key", "gemini-3.5-flash", builder.build()).answer("q", List.of()));
+            server.verify();
+        }
     }
     @Test void emptyKnowledgeSkipsProviderAndRetrievalUsesAuthenticatedOwner() {
         var store = mock(RagStore.class); var provider = mock(RagProvider.class);
@@ -89,7 +112,7 @@ class RagTests {
         assertTrue(service.answer("alice","policy").sources().isEmpty());
         verifyNoInteractions(provider);
         when(store.list("alice")).thenReturn(List.of(new RagStore.Document(UUID.randomUUID(),"p.txt","txt",1)));
-        when(provider.embed(List.of("policy"))).thenReturn(List.of("[0.1]"));
+        when(provider.embedQuery("policy")).thenReturn("[0.1]");
         when(store.search("alice","[0.1]",0.3)).thenReturn(List.of());
         assertTrue(service.answer("alice","policy").sources().isEmpty());
         verify(store).search("alice","[0.1]",0.3);
