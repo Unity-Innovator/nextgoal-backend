@@ -19,9 +19,13 @@ public class PlasGateConfig {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(5));
         factory.setReadTimeout(Duration.ofSeconds(10));
+        String baseUrl = properties.baseUrl();
+        if (baseUrl == null || baseUrl.isBlank()) {
+            baseUrl = "https://cloudapi.plasgate.com";
+        }
 		return builder
             .requestFactory(factory)
-            .baseUrl(properties.baseUrl())    
+            .baseUrl(baseUrl)    
             .build();
 
     }

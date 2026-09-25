@@ -20,3 +20,10 @@ otp:
   max-attempts: 5
   resend-cooldown-seconds: 60
   length: 6
+
+plasgate:
+  base-url: ${PLASGATE_BASE_URL:https://cloudapi.plasgate.com}
+  private-key: ${PLASGATE_PRIVATE_KEY:}
+  secret-key: ${PLASGATE_SECRET_KEY:}
+  sender: ${PLASGATE_SENDER:}
+
