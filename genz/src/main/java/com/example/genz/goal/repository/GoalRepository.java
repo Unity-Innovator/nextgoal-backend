@@ -18,6 +18,12 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
 
     List<Goal> findByOwnerOrderByCreatedAtDesc(User owner);
 
+    @Query("SELECT g FROM Goal g WHERE (g.owner = :user OR EXISTS (SELECT 1 FROM GoalMember m WHERE m.goal = g AND m.user = :user AND m.status = com.example.genz.goal.enums.MemberStatus.ACTIVE)) ORDER BY g.createdAt DESC")
+    List<Goal> findAccessibleGoals(@Param("user") User user);
+
+    @Query("SELECT g FROM Goal g WHERE (g.owner = :user OR EXISTS (SELECT 1 FROM GoalMember m WHERE m.goal = g AND m.user = :user AND m.status = com.example.genz.goal.enums.MemberStatus.ACTIVE)) AND g.status = :status ORDER BY g.createdAt DESC")
+    List<Goal> findAccessibleGoalsByStatus(@Param("user") User user, @Param("status") GoalStatus status);
+
     Optional<Goal> findByIdAndOwner(UUID id, User owner);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

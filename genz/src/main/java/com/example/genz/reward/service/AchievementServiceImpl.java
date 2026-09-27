@@ -26,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -169,6 +171,12 @@ public class AchievementServiceImpl implements AchievementService {
     @Transactional
     public UserRewardSummaryResponse getUserRewardSummary(User user) {
         UserReward reward = getOrCreateUserReward(user);
+        if (reward.getLastActivityDate() != null && reward.getLastActivityDate().isBefore(LocalDate.now().minusDays(1))) {
+            if (reward.getCurrentStreak() != null && reward.getCurrentStreak() != 0) {
+                reward.setCurrentStreak(0);
+                userRewardRepository.save(reward);
+            }
+        }
         long unlockedCount = userBadgeRepository.countByUser(user);
         long totalBadges = badgeRepository.count();
 

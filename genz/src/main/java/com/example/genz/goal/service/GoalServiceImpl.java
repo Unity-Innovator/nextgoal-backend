@@ -99,16 +99,11 @@ public class GoalServiceImpl implements GoalService {
     @Override
     @Transactional(readOnly = true)
     public List<GoalResponse> getMyGoals(String phoneNumber, GoalStatus status) {
-        User owner = getUserByPhone(phoneNumber);
-        if (status != null) {
-            return goalRepository.findByOwnerOrderByCreatedAtDesc(owner)
-                    .stream()
-                    .filter(goal -> goal.getStatus() == status)
-                    .map(this::toGoalResponse)
-                    .toList();
-        }
-        return goalRepository.findByOwnerOrderByCreatedAtDesc(owner)
-                .stream()
+        User user = getUserByPhone(phoneNumber);
+        List<Goal> goals = (status != null)
+                ? goalRepository.findAccessibleGoalsByStatus(user, status)
+                : goalRepository.findAccessibleGoals(user);
+        return goals.stream()
                 .map(this::toGoalResponse)
                 .toList();
     }

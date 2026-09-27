@@ -32,4 +32,7 @@ public interface GoalContributionRepository extends JpaRepository<GoalContributi
             @Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfDay") LocalDateTime endOfDay
     );
+
+    @Query("SELECT DISTINCT gc.contributedAt FROM GoalContribution gc WHERE gc.goalMember.user.id = :userId")
+    List<LocalDateTime> findDistinctContributedAtByUserId(@Param("userId") UUID userId);
 }
