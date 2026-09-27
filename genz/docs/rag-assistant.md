@@ -29,6 +29,34 @@ docker compose -f docker-compose.prod.yaml -f docker-compose.rag.yaml up -d --bu
 The override uses pgvector/pgvector:pg17 and passes the Gemini key into the backend.
 It does not run automatically. No existing database was changed during development.
 
+### GitHub Actions deployment
+
+The Backend CI workflow applies both production and RAG Compose files on the
+existing self-hosted Ubuntu deployment runner. Tests and image build must pass
+before deployment. Pushes to main deploy automatically; alternatively, select
+Actions → Backend CI → Run workflow, select main, and enable the deploy input.
+The workflow change must be committed and pushed before Actions can use it.
+
+Before the first RAG deployment, back up the existing PostgreSQL database: the
+override changes its image to pgvector/pgvector:pg17 and enables RAG migrations.
+Keep the existing nextgoal Compose project and database volume.
+
+Set GEMINI_API_KEY in `/etc/default/nextgoal-env` on the Ubuntu runner host,
+alongside the existing deployment settings. The workflow reads that file
+explicitly; adding a key only to a checkout's .env or GitHub Secrets will not
+pass it into this deployment. Do not commit the key. An optional
+ASSISTANT_RAG_MODEL value in the same file overrides the configured default.
+
+The workflow validates the merged configuration with `config --quiet` before
+changing containers, so a missing Gemini key fails without printing the resolved
+secrets. The RAG override sets SPRING_PROFILES_ACTIVE to prod,rag and updates the
+database dependency as part of `up -d --build backend`.
+
+After deployment, verify `docker exec nextgoal-backend printenv
+SPRING_PROFILES_ACTIVE` reports prod,rag and check backend startup logs for
+migration errors. Compose status alone does not confirm the Gemini API works;
+upload a document and ask a question about it to verify the complete flow.
+
 ASSISTANT_RAG_MODEL defaults to gemini-3.5-flash. The embedding model is deliberately
 fixed to gemini-embedding-001 with 1536 dimensions. Changing it requires a
 migration and re-embedding every document; never mix embedding models in one index.
