@@ -6,5 +6,5 @@ services:
   backend:
     environment:
       SPRING_PROFILES_ACTIVE: prod,rag
-      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OPENAI_API_KEY in the deployment environment}
-      ASSISTANT_RAG_MODEL: ${ASSISTANT_RAG_MODEL:-gpt-5.6-luna}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in the deployment environment}
+      ASSISTANT_RAG_MODEL: ${ASSISTANT_RAG_MODEL:-gemini-3.5-flash}

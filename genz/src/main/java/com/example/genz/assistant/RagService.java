@@ -27,7 +27,7 @@ public class RagService {
     public AssistantService.Reply answer(String owner, String question) {
         try {
             if (store.list(owner).isEmpty()) return fallback();
-            var vector = provider.embed(List.of(question)).getFirst();
+            var vector = provider.embedQuery(question);
             var sources = store.search(owner, vector, threshold);
             if (sources.isEmpty()) return fallback();
             return new AssistantService.Reply(provider.answer(question, sources), sources);

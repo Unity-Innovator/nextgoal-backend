@@ -1,8 +1,8 @@
 assistant:
   rag:
     enabled: true
-    api-key: ${OPENAI_API_KEY:}
-    model: ${ASSISTANT_RAG_MODEL:gpt-5.6-luna}
+    api-key: ${GEMINI_API_KEY:}
+    model: ${ASSISTANT_RAG_MODEL:gemini-3.5-flash}
 spring:
   flyway:
     enabled: true
