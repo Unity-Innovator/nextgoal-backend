@@ -31,7 +31,9 @@ import com.example.genz.transaction.repository.WithdrawalApprovalRepository;
 import com.example.genz.transaction.repository.WithdrawalRequestRepository;
 import com.example.genz.wallet.entity.GrouplWallet;
 import com.example.genz.wallet.repository.GoalWalletRepository;
+import com.example.genz.goal.enums.MemberRole;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
@@ -76,7 +79,18 @@ public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
         }
 
         GoalMember requesterMember = goalMemberRepository.findByGoalIdAndUserId(goal.getId(), requester.getId())
-                .orElseThrow(() -> new AccessDeniedException("User is not a member of this goal"));
+                .orElseGet(() -> {
+                    boolean isOwner = goal.getOwner() != null && goal.getOwner().getId().equals(requester.getId());
+                    if (isOwner) {
+                        GoalMember newOwnerMember = new GoalMember();
+                        newOwnerMember.setGoal(goal);
+                        newOwnerMember.setUser(requester);
+                        newOwnerMember.setRole(MemberRole.OWNER);
+                        newOwnerMember.setStatus(MemberStatus.ACTIVE);
+                        return goalMemberRepository.save(newOwnerMember);
+                    }
+                    throw new AccessDeniedException("User is not a member of this goal");
+                });
 
         if (requesterMember.getStatus() != MemberStatus.ACTIVE) {
             throw new AccessDeniedException("Only active members can request a withdrawal");
@@ -345,19 +359,43 @@ public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
         transaction.setCreatedAt(LocalDateTime.now());
         walletTransactionRepository.save(transaction);
 
-        GoalMember requesterMember = goalMemberRepository.findByGoalIdAndUserId(goal.getId(), user.getId()).orElse(null);
-        GroupWalletTransaction groupTx = new GroupWalletTransaction();
-        groupTx.setGroupWallet(wallet);
-        groupTx.setGoalMember(requesterMember);
-        groupTx.setWithdrawalRequest(wr);
-        groupTx.setTransactionType(GroupTransactionType.WITHDRAWAL);
-        groupTx.setAmount(withdrawalAmount);
-        groupTx.setCurrency(wallet.getCurrency() != null ? wallet.getCurrency() : Currency.USD);
-        groupTx.setBalanceBefore(currentWalletBalance);
-        groupTx.setBalanceAfter(newWalletBalance);
-        groupTx.setStatus(GroupTransactionStatus.COMPLETED);
-        groupTx.setCreatedAt(LocalDateTime.now());
-        groupWalletTransactionRepository.save(groupTx);
+        // Locate requester's GoalMember record with fallback to owner/creator
+        GoalMember requesterMember = goalMemberRepository.findByGoalIdAndUserId(goal.getId(), user.getId())
+                .orElseGet(() -> {
+                    return goalMemberRepository.findByGoal(goal).stream()
+                            .filter(m -> m.getUser() != null && m.getUser().getId().equals(user.getId()))
+                            .findFirst()
+                            .orElseGet(() -> {
+                                boolean isOwner = goal.getOwner() != null && goal.getOwner().getId().equals(user.getId());
+                                if (isOwner) {
+                                    GoalMember newOwnerMember = new GoalMember();
+                                    newOwnerMember.setGoal(goal);
+                                    newOwnerMember.setUser(user);
+                                    newOwnerMember.setRole(MemberRole.OWNER);
+                                    newOwnerMember.setStatus(MemberStatus.ACTIVE);
+                                    return goalMemberRepository.save(newOwnerMember);
+                                }
+                                return null;
+                            });
+                });
+
+        if (requesterMember != null) {
+            GroupWalletTransaction groupTx = new GroupWalletTransaction();
+            groupTx.setGroupWallet(wallet);
+            groupTx.setGoalMember(requesterMember);
+            groupTx.setWithdrawalRequest(wr);
+            groupTx.setTransactionType(GroupTransactionType.WITHDRAWAL);
+            groupTx.setAmount(withdrawalAmount);
+            groupTx.setCurrency(wallet.getCurrency() != null ? wallet.getCurrency() : Currency.USD);
+            groupTx.setBalanceBefore(currentWalletBalance);
+            groupTx.setBalanceAfter(newWalletBalance);
+            groupTx.setStatus(GroupTransactionStatus.COMPLETED);
+            groupTx.setCreatedAt(LocalDateTime.now());
+            groupWalletTransactionRepository.save(groupTx);
+        } else {
+            log.warn("Could not find or create GoalMember for user {} in goal {}. Skipping group wallet member transaction.",
+                    user.getId(), goal.getId());
+        }
 
         wr.setStatus(WithdrawalStatus.COMPLETED);
         wr.setResolvedAt(LocalDateTime.now());
