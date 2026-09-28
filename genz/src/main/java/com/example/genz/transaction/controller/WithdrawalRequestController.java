@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,43 +23,36 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@RequestMapping("/api/withdrawal-requests")
 @RequiredArgsConstructor
 public class WithdrawalRequestController {
 
     private final WithdrawalRequestService withdrawalRequestService;
 
-    @PostMapping({"/api/withdrawal-requests", "/api/goals/{goalId}/withdraw-requests"})
+    @PostMapping
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> createWithdrawalRequest(
-            @PathVariable(required = false) UUID goalId,
             @Valid @RequestBody CreateWithdrawalRequest request,
             Authentication authentication
     ) {
         String phoneNumber = authentication.getName();
-        WithdrawalRequestResponse response = withdrawalRequestService.createRequest(goalId, request, phoneNumber);
+        WithdrawalRequestResponse response = withdrawalRequestService.createRequest(request.getGoalId(), request, phoneNumber);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Withdrawal request created successfully", response));
     }
 
-    @GetMapping({"/api/withdrawal-requests", "/api/goals/{goalId}/withdraw-requests", "/api/goals/withdraw-requests"})
+    @GetMapping
     public ResponseEntity<ApiResponse<List<WithdrawalRequestResponse>>> getWithdrawalRequests(
-            @PathVariable(required = false) UUID goalId,
-            @RequestParam(required = false) UUID goal,
+            @RequestParam(required = false) UUID goalId,
             @RequestParam(required = false) WithdrawalStatus status,
             Authentication authentication
     ) {
         String phoneNumber = authentication.getName();
-        UUID effectiveGoalId = goalId != null ? goalId : goal;
-        List<WithdrawalRequestResponse> responses = withdrawalRequestService.getRequests(effectiveGoalId, status, phoneNumber);
+        List<WithdrawalRequestResponse> responses = withdrawalRequestService.getRequests(goalId, status, phoneNumber);
         return ResponseEntity.ok(ApiResponse.success("Withdrawal requests retrieved successfully", responses));
     }
 
-    @GetMapping({
-            "/api/withdrawal-requests/{requestId}",
-            "/api/goals/{goalId}/withdraw-requests/{requestId}",
-            "/api/goals/withdraw-requests/{requestId}"
-    })
+    @GetMapping("/{requestId}")
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> getWithdrawalRequest(
-            @PathVariable(required = false) UUID goalId,
             @PathVariable UUID requestId,
             Authentication authentication
     ) {
@@ -69,16 +61,8 @@ public class WithdrawalRequestController {
         return ResponseEntity.ok(ApiResponse.success("Withdrawal request retrieved successfully", response));
     }
 
-    @RequestMapping(
-            value = {
-                    "/api/withdrawal-requests/{requestId}/approve",
-                    "/api/goals/withdraw-requests/{requestId}/approve",
-                    "/api/goals/{goalId}/withdraw-requests/{requestId}/approve"
-            },
-            method = {RequestMethod.PUT, RequestMethod.POST}
-    )
+    @PostMapping("/{requestId}/approve")
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> approveWithdrawalRequest(
-            @PathVariable(required = false) UUID goalId,
             @PathVariable UUID requestId,
             Authentication authentication
     ) {
@@ -87,16 +71,8 @@ public class WithdrawalRequestController {
         return ResponseEntity.ok(ApiResponse.success("Withdrawal request approved successfully", response));
     }
 
-    @RequestMapping(
-            value = {
-                    "/api/withdrawal-requests/{requestId}/reject",
-                    "/api/goals/withdraw-requests/{requestId}/reject",
-                    "/api/goals/{goalId}/withdraw-requests/{requestId}/reject"
-            },
-            method = {RequestMethod.PUT, RequestMethod.POST}
-    )
+    @PostMapping("/{requestId}/reject")
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> rejectWithdrawalRequest(
-            @PathVariable(required = false) UUID goalId,
             @PathVariable UUID requestId,
             Authentication authentication
     ) {
@@ -106,13 +82,8 @@ public class WithdrawalRequestController {
     }
 
     @RequireStepUp
-    @PostMapping({
-            "/api/withdrawal-requests/{requestId}/confirm",
-            "/api/goals/withdraw-requests/{requestId}/confirm",
-            "/api/goals/{goalId}/withdraw-requests/{requestId}/confirm"
-    })
+    @PostMapping("/{requestId}/confirm")
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> confirmWithdrawal(
-            @PathVariable(required = false) UUID goalId,
             @PathVariable UUID requestId,
             Authentication authentication
     ) {
@@ -121,13 +92,8 @@ public class WithdrawalRequestController {
         return ResponseEntity.ok(ApiResponse.success("Withdrawal confirmed successfully", response));
     }
 
-    @PostMapping({
-            "/api/withdrawal-requests/{requestId}/cancel",
-            "/api/goals/withdraw-requests/{requestId}/cancel",
-            "/api/goals/{goalId}/withdraw-requests/{requestId}/cancel"
-    })
+    @PostMapping("/{requestId}/cancel")
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> cancelWithdrawalRequest(
-            @PathVariable(required = false) UUID goalId,
             @PathVariable UUID requestId,
             Authentication authentication
     ) {
