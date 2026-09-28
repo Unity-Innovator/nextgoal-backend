@@ -35,4 +35,7 @@ public interface GoalContributionRepository extends JpaRepository<GoalContributi
 
     @Query("SELECT DISTINCT gc.contributedAt FROM GoalContribution gc WHERE gc.goalMember.user.id = :userId")
     List<LocalDateTime> findDistinctContributedAtByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT COALESCE(SUM(gc.amount), 0) FROM GoalContribution gc WHERE gc.goal.id = :goalId AND gc.goalMember.user.id = :userId")
+    BigDecimal sumAmountByGoalIdAndUserId(@Param("goalId") UUID goalId, @Param("userId") UUID userId);
 }

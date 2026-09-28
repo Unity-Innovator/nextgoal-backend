@@ -16,7 +16,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "withdrawal_approvals")
+@Table(name = "withdrawal_approvals", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_withdrawal_approvals_request_user", columnNames = {"request_id", "user_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,6 +47,6 @@ public class WithdrawalApproval {
     private ApprovalDecision decision;
 
     @CreationTimestamp
-    @Column(name = "decided_at", nullable = false, updatable = false)
+    @Column(name = "decided_at", nullable = false)
     private LocalDateTime decidedAt;
 }
