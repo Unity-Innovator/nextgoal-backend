@@ -83,12 +83,21 @@ jobs:
           test -r /etc/default/nextgoal-env || { echo 'Runner cannot read /etc/default/nextgoal-env'; exit 1; }
           docker info > /dev/null
           docker compose version
+      - name: Validate RAG deployment configuration
+        run: >-
+          docker compose
+          --project-name nextgoal
+          --env-file /etc/default/nextgoal-env
+          -f docker-compose.prod.yaml
+          -f docker-compose.rag.yaml
+          config --quiet
       - name: Deploy backend
         run: >-
           docker compose
           --project-name nextgoal
           --env-file /etc/default/nextgoal-env
           -f docker-compose.prod.yaml
+          -f docker-compose.rag.yaml
           up -d --build backend
       - name: Show deployment status
         run: >-
@@ -96,4 +105,5 @@ jobs:
           --project-name nextgoal
           --env-file /etc/default/nextgoal-env
           -f docker-compose.prod.yaml
+          -f docker-compose.rag.yaml
           ps

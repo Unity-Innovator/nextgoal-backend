@@ -1,0 +1,14 @@
+assistant:
+  rag:
+    enabled: true
+    api-key: ${GEMINI_API_KEY:}
+    model: ${ASSISTANT_RAG_MODEL:gemini-3.5-flash}
+spring:
+  flyway:
+    enabled: true
+    locations: classpath:db/migration,classpath:db/rag
+  jpa:
+    defer-datasource-initialization: false
+  sql:
+    init:
+      mode: never

@@ -1,0 +1,10 @@
+# Use with docker-compose.yml (local) or docker-compose.prod.yaml (deployment).
+# Existing databases must remain on PostgreSQL major version 17.
+services:
+  db:
+    image: pgvector/pgvector:pg17
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod,rag
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in the deployment environment}
+      ASSISTANT_RAG_MODEL: ${ASSISTANT_RAG_MODEL:-gemini-3.5-flash}
