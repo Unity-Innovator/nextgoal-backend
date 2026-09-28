@@ -583,14 +583,14 @@ class WithdrawalRequestWorkflowIntegrationTest {
     }
 
     @Test
-    @DisplayName("HTTP Controller: Endpoints support /api/goals/{goalId}/withdraw-requests format and PUT/POST approve")
-    void controller_AlternativeGoalEndpointsAndMethodsWork() throws Exception {
+    @DisplayName("HTTP Controller: Endpoints support creating and approving withdrawal requests via /api/withdrawal-requests")
+    void controller_CreateAndApproveEndpointsWork() throws Exception {
         String accessTokenA = jwtUtil.generateAccessToken(memberA.getPhoneNumber());
         String accessTokenB = jwtUtil.generateAccessToken(memberB.getPhoneNumber());
 
-        // POST /api/goals/{goalId}/withdraw-requests
-        String reqJson = "{\"amount\": 300.0, \"reason\": \"Flight deposit\"}";
-        String responseContent = mockMvc.perform(post("/api/goals/" + sharedGoal.getId() + "/withdraw-requests")
+        // POST /api/withdrawal-requests
+        String reqJson = String.format("{\"goalId\": \"%s\", \"amount\": 300.0, \"reason\": \"Flight deposit\"}", sharedGoal.getId());
+        String responseContent = mockMvc.perform(post("/api/withdrawal-requests")
                         .header("Authorization", "Bearer " + accessTokenA)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(reqJson))
@@ -601,8 +601,8 @@ class WithdrawalRequestWorkflowIntegrationTest {
 
         WithdrawalRequestResponse created = objectMapper.readTree(responseContent).get("data").traverse(objectMapper).readValueAs(WithdrawalRequestResponse.class);
 
-        // PUT /api/goals/{goalId}/withdraw-requests/{requestId}/approve
-        mockMvc.perform(put("/api/goals/" + sharedGoal.getId() + "/withdraw-requests/" + created.getId() + "/approve")
+        // POST /api/withdrawal-requests/{requestId}/approve
+        mockMvc.perform(post("/api/withdrawal-requests/" + created.getId() + "/approve")
                         .header("Authorization", "Bearer " + accessTokenB))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.approvedCount").value(1));
