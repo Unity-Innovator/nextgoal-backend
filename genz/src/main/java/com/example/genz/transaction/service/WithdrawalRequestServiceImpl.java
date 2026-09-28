@@ -342,7 +342,14 @@ public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
         goalRepository.save(goal);
 
         GrouplWallet wallet = goalWalletRepository.findByGoal(goal)
-                .orElseThrow(() -> new ResourceNoteFoundException("Goal wallet not found for goal: " + goal.getGoalName()));
+                .orElseGet(() -> {
+                    GrouplWallet newWallet = new GrouplWallet();
+                    newWallet.setGoal(goal);
+                    newWallet.setUser(goal.getOwner() != null ? goal.getOwner() : user);
+                    newWallet.setBalance(goal.getCurrentAmount() != null ? goal.getCurrentAmount() : BigDecimal.ZERO);
+                    newWallet.setCurrency(Currency.USD);
+                    return goalWalletRepository.save(newWallet);
+                });
 
         BigDecimal currentWalletBalance = wallet.getBalance() != null ? wallet.getBalance() : BigDecimal.ZERO;
         BigDecimal newWalletBalance = currentWalletBalance.subtract(withdrawalAmount);
