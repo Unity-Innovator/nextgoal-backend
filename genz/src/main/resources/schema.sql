@@ -14,3 +14,8 @@ ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS user_daily
 ALTER TABLE IF EXISTS user_daily_challenges DROP CONSTRAINT IF EXISTS uk_user_challenge_date;
 ALTER TABLE IF EXISTS user_daily_challenges ADD CONSTRAINT uk_user_challenge_date UNIQUE (user_id, challenge_id, challenge_date);
 ALTER TABLE IF EXISTS users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE IF EXISTS wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_transaction_type_check;
+ALTER TABLE IF EXISTS wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_status_check;
+ALTER TABLE IF EXISTS group_wallet_transactions DROP CONSTRAINT IF EXISTS group_wallet_transactions_transaction_type_check;
+ALTER TABLE IF EXISTS group_wallet_transactions DROP CONSTRAINT IF EXISTS group_wallet_transactions_status_check;
+ALTER TABLE IF EXISTS withdrawal_requests DROP CONSTRAINT IF EXISTS withdrawal_requests_status_check;
