@@ -29,4 +29,8 @@ public interface ChallengeCompletionService {
     UserDailyChallenge completeManualChallenge(UUID userDailyChallengeId, User user);
 
     int calculateStreak(User user);
+
+    int calculateStreak(User user, java.time.LocalDate asOfDate);
+
+    int updateStreak(User user);
 }

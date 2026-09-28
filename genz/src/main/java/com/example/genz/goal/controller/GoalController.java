@@ -7,6 +7,10 @@ import com.example.genz.goal.dto.UpdateGoalRequest;
 import com.example.genz.goal.enums.GoalStatus;
 import com.example.genz.common.api.ApiResponse;
 
+import com.example.genz.transaction.dto.TransactionPageResponse;
+import com.example.genz.transaction.dto.TransactionResponse;
+import com.example.genz.transaction.service.TransactionService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,6 +35,7 @@ import java.util.UUID;
 public class GoalController {
 
     private final GoalService goalService;
+    private final TransactionService transactionService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<GoalResponse>> createGoal(
@@ -79,5 +84,31 @@ public class GoalController {
         String phoneNumber = authentication.getName();
         goalService.deleteGoal(goalId, phoneNumber);
         return ResponseEntity.ok(ApiResponse.success("Goal cancelled successfully", null));
+    }
+
+    @GetMapping("/{goalId}/transactions")
+    public ResponseEntity<ApiResponse<TransactionPageResponse<TransactionResponse>>> getGoalTransactions(
+            @PathVariable UUID goalId,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size,
+            Authentication authentication
+    ) {
+        String phoneNumber = authentication.getName();
+        TransactionPageResponse<TransactionResponse> response = transactionService.getGoalTransactions(
+                goalId, type, page, size, phoneNumber
+        );
+        return ResponseEntity.ok(ApiResponse.success("Goal transactions retrieved successfully", response));
+    }
+
+    @GetMapping("/{goalId}/history")
+    public ResponseEntity<ApiResponse<TransactionPageResponse<TransactionResponse>>> getGoalHistory(
+            @PathVariable UUID goalId,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size,
+            Authentication authentication
+    ) {
+        return getGoalTransactions(goalId, type, page, size, authentication);
     }
 }

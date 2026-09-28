@@ -51,14 +51,14 @@ public class RagProvider {
                     "model", "models/" + EMBEDDING_MODEL,
                     "content", Map.of("parts", List.of(Map.of("text", text))),
                     "taskType", taskType, "outputDimensionality", 1536)).toList();
-            var data = post("/models/" + EMBEDDING_MODEL + ":batchEmbedContents",
+            JsonNode data = post("/models/" + EMBEDDING_MODEL + ":batchEmbedContents",
                     Map.of("requests", requests)).path("embeddings");
             if (!data.isArray() || data.size() != batch.size()) throw new AssistantService.Unavailable();
-            for (var item : data) {
-                var vector = item.path("values");
+            for (JsonNode item : data) {
+                JsonNode vector = item.path("values");
                 if (!vector.isArray() || vector.size() != 1536) throw new AssistantService.Unavailable();
                 double norm = 0;
-                for (var value : vector) {
+                for (JsonNode value : vector) {
                     if (!value.isNumber() || !Double.isFinite(value.asDouble())) throw new AssistantService.Unavailable();
                     norm += value.asDouble() * value.asDouble();
                 }
@@ -87,7 +87,7 @@ public class RagProvider {
         var candidate = result.path("candidates").path(0);
         if (!"STOP".equals(candidate.path("finishReason").asText())) throw new AssistantService.Unavailable();
         var answer = new StringBuilder();
-        for (var part : candidate.path("content").path("parts")) {
+        for (JsonNode part : candidate.path("content").path("parts")) {
             if (!part.path("thought").asBoolean(false) && part.path("text").isTextual())
                 answer.append(part.path("text").asText());
         }

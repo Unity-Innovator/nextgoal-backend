@@ -45,7 +45,13 @@ public class GoalContribution {
     @Column(length = 255)
     private String note;
 
-    @CreationTimestamp
     @Column(name = "contributed_at", nullable = false, updatable = false)
     private LocalDateTime contributedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (contributedAt == null) {
+            contributedAt = LocalDateTime.now();
+        }
+    }
 }

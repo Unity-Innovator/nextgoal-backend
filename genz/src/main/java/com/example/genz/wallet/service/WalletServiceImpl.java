@@ -146,6 +146,8 @@ public class WalletServiceImpl implements WalletService {
         );
         walletTransactionRepository.save(transaction);
 
+        challengeCompletionService.updateStreak(user);
+
         int coinsEarned = goalMilestoneRewardService.processMilestoneRewards(goal, user, currentAmount, newCurrentAmount);
 
         try {

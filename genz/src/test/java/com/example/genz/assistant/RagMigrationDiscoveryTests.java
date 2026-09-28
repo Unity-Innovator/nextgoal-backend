@@ -16,7 +16,7 @@ class RagMigrationDiscoveryTests {
         var migrations = assertDoesNotThrow(() -> flyway.info().all());
         var scripts = Arrays.stream(migrations).map(m -> m.getScript()).toList();
         assertTrue(scripts.contains("V20__drop_legacy_otps_table.sql"));
-        assertTrue(scripts.contains("V22__assistant_vector_knowledge.sql"));
-        assertTrue(scripts.contains("V23__assistant_embedding_model.sql"));
+        assertTrue(scripts.contains("V23__assistant_vector_knowledge.sql"));
+        assertTrue(scripts.contains("V24__assistant_embedding_model.sql"));
     }
 }

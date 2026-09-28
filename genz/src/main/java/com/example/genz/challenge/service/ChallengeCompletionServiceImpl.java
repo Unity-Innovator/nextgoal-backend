@@ -45,6 +45,8 @@ public class ChallengeCompletionServiceImpl implements ChallengeCompletionServic
     private final XpTransactionRepository xpTransactionRepository;
     private final AchievementService achievementService;
     private final ChallengeEvaluatorRegistry evaluatorRegistry;
+    private final com.example.genz.goal.repository.GoalContributionRepository goalContributionRepository;
+    private final com.example.genz.transaction.repository.WalletTransactionRepository walletTransactionRepository;
 
     @Override
     @Transactional
@@ -198,23 +200,27 @@ public class ChallengeCompletionServiceImpl implements ChallengeCompletionServic
     @Override
     @Transactional(readOnly = true)
     public int calculateStreak(User user) {
+        return calculateStreak(user, LocalDate.now());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int calculateStreak(User user, LocalDate asOfDate) {
         if (user == null || user.getId() == null) {
             return 0;
         }
 
-        List<LocalDate> completedDates = userDailyChallengeRepository.findDistinctCompletedDatesByUserId(user.getId());
-        if (completedDates == null || completedDates.isEmpty()) {
+        LocalDate referenceDate = asOfDate != null ? asOfDate : LocalDate.now();
+        Set<LocalDate> dateSet = getQualifyingActivityDates(user.getId());
+        if (dateSet.isEmpty()) {
             return 0;
         }
 
-        LocalDate today = LocalDate.now();
-        Set<LocalDate> dateSet = new HashSet<>(completedDates);
-
         LocalDate checkDate;
-        if (dateSet.contains(today)) {
-            checkDate = today;
-        } else if (dateSet.contains(today.minusDays(1))) {
-            checkDate = today.minusDays(1);
+        if (dateSet.contains(referenceDate)) {
+            checkDate = referenceDate;
+        } else if (dateSet.contains(referenceDate.minusDays(1))) {
+            checkDate = referenceDate.minusDays(1);
         } else {
             return 0;
         }
@@ -226,6 +232,67 @@ public class ChallengeCompletionServiceImpl implements ChallengeCompletionServic
         }
 
         return streak;
+    }
+
+    @Override
+    @Transactional
+    public int updateStreak(User user) {
+        if (user == null || user.getId() == null) {
+            return 0;
+        }
+
+        int newStreak = calculateStreak(user);
+        UserReward userReward = achievementService.getOrCreateUserReward(user);
+        userReward.setCurrentStreak(newStreak);
+        if (userReward.getLongestStreak() == null || newStreak > userReward.getLongestStreak()) {
+            userReward.setLongestStreak(newStreak);
+        }
+        userReward.setLastActivityDate(LocalDate.now());
+        userRewardRepository.save(userReward);
+
+        try {
+            achievementService.evaluateAndUnlockAchievements(user, BadgeRequirementType.STREAK_DAYS, Map.of("streak", newStreak));
+        } catch (Exception e) {
+            log.warn("Failed to evaluate streak badges for user {}: {}", user.getId(), e.getMessage());
+        }
+
+        return newStreak;
+    }
+
+    private Set<LocalDate> getQualifyingActivityDates(UUID userId) {
+        Set<LocalDate> dates = new HashSet<>();
+
+        // 1. Completed daily challenges
+        List<LocalDate> completedDates = userDailyChallengeRepository.findDistinctCompletedDatesByUserId(userId);
+        if (completedDates != null) {
+            dates.addAll(completedDates);
+        }
+
+        // 2. Goal contributions
+        if (goalContributionRepository != null) {
+            List<LocalDateTime> contributionTimes = goalContributionRepository.findDistinctContributedAtByUserId(userId);
+            if (contributionTimes != null) {
+                for (LocalDateTime dt : contributionTimes) {
+                    if (dt != null) {
+                        dates.add(dt.toLocalDate());
+                    }
+                }
+            }
+        }
+
+        // 3. Wallet deposit transactions
+        if (walletTransactionRepository != null) {
+            List<LocalDateTime> depositTimes = walletTransactionRepository.findDistinctDepositCreatedAtByUserId(userId);
+            if (depositTimes != null) {
+                for (LocalDateTime dt : depositTimes) {
+                    if (dt != null) {
+                        dates.add(dt.toLocalDate());
+                    }
+                }
+            }
+        }
+
+        return dates;
     }
 
     private void markCompletedAndAwardRewards(User user, UserDailyChallenge udc, DailyChallenge challenge) {
@@ -258,13 +325,6 @@ public class ChallengeCompletionServiceImpl implements ChallengeCompletionServic
 
             UserReward userReward = achievementService.getOrCreateUserReward(user);
             userReward.addXp(xpReward);
-
-            int newStreak = calculateStreak(user);
-            userReward.setCurrentStreak(newStreak);
-            if (userReward.getLongestStreak() == null || newStreak > userReward.getLongestStreak()) {
-                userReward.setLongestStreak(newStreak);
-            }
-            userReward.setLastActivityDate(LocalDate.now());
             userRewardRepository.save(userReward);
 
             XpTransaction xpTransaction = XpTransaction.builder()
@@ -274,12 +334,9 @@ public class ChallengeCompletionServiceImpl implements ChallengeCompletionServic
                     .points(xpReward)
                     .build();
             xpTransactionRepository.save(xpTransaction);
-
-            try {
-                achievementService.evaluateAndUnlockAchievements(user, BadgeRequirementType.STREAK_DAYS, Map.of("streak", newStreak));
-            } catch (Exception e) {
-                log.warn("Failed to evaluate streak badges for user {}: {}", user.getId(), e.getMessage());
-            }
         }
+
+        // 3. Update streak on qualifying challenge completion
+        updateStreak(user);
     }
 }

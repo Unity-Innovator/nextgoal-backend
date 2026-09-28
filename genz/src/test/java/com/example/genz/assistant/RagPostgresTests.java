@@ -25,8 +25,8 @@ class RagPostgresTests {
             jdbc.execute("CREATE SCHEMA " + schema);
             try {
                 jdbc.execute("SET search_path TO " + schema + ", public");
-                new ResourceDatabasePopulator(new ClassPathResource("db/rag/V22__assistant_vector_knowledge.sql"),
-                        new ClassPathResource("db/rag/V23__assistant_embedding_model.sql"))
+                new ResourceDatabasePopulator(new ClassPathResource("db/rag/V23__assistant_vector_knowledge.sql"),
+                        new ClassPathResource("db/rag/V24__assistant_embedding_model.sql"))
                     .execute(source);
                 var store = new RagStore(jdbc);
                 var extracted = new DocumentExtractor.Extracted("policy.txt","txt",
