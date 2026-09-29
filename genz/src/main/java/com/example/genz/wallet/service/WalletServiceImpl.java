@@ -125,6 +125,7 @@ public class WalletServiceImpl implements WalletService {
     @Transactional
     public TopUpResponse topUp(TopUpRequest request, String phoneNumber) {
         User user = userRepository.findByPhoneNumberForUpdate(phoneNumber)
+                .or(() -> userRepository.findByPhoneNumber(phoneNumber))
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found with phone: " + phoneNumber));
         Wallet existingWallet = walletRepository.findByUserId(user.getId())
                 .orElseGet(() -> getOrCreateWallet(user));
@@ -255,6 +256,7 @@ public class WalletServiceImpl implements WalletService {
     public DepositResponse deposit(DepositRequest request, String phoneNumber) {
         // Lock user row and wallet row to prevent concurrent double-spending
         User user = userRepository.findByPhoneNumberForUpdate(phoneNumber)
+                .or(() -> userRepository.findByPhoneNumber(phoneNumber))
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found with phone: " + phoneNumber));
 
         Wallet userWallet = walletRepository.findByUserId(user.getId())
