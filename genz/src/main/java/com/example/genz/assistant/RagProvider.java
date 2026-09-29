@@ -41,6 +41,8 @@ public class RagProvider {
             throw AssistantDiagnostics.failure("gemini", operation, ex);
         }
     }
+    String cacheModel() { return model; }
+
     public static final String EMBEDDING_MODEL = "gemini-embedding-001";
     public List<String> embed(List<String> texts) { return embed(texts, "RETRIEVAL_DOCUMENT"); }
     public String embedQuery(String question) { return embed(List.of(question), "RETRIEVAL_QUERY").getFirst(); }
