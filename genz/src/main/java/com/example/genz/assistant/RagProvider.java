@@ -30,14 +30,15 @@ public class RagProvider {
         return RestClient.builder().baseUrl("https://generativelanguage.googleapis.com/v1beta").requestFactory(factory).build();
     }
     private JsonNode post(String path, Map<String, Object> body) {
-        if (key.isBlank()) throw new AssistantService.Unavailable();
+        String operation = path.endsWith(":batchEmbedContents") ? "embedding" : "generation";
+        if (key.isBlank()) throw AssistantDiagnostics.unavailable("gemini", operation, "MISSING_API_KEY");
         try {
             JsonNode result = client.post().uri(path).header("x-goog-api-key", key)
                     .body(body).retrieve().body(JsonNode.class);
-            if (result == null) throw new AssistantService.Unavailable();
+            if (result == null) throw AssistantDiagnostics.unavailable("gemini", operation, "EMPTY_RESPONSE");
             return result;
         } catch (RuntimeException ex) {
-            throw new AssistantService.Unavailable();
+            throw AssistantDiagnostics.failure("gemini", operation, ex);
         }
     }
     public static final String EMBEDDING_MODEL = "gemini-embedding-001";
@@ -53,16 +54,20 @@ public class RagProvider {
                     "taskType", taskType, "outputDimensionality", 1536)).toList();
             JsonNode data = post("/models/" + EMBEDDING_MODEL + ":batchEmbedContents",
                     Map.of("requests", requests)).path("embeddings");
-            if (!data.isArray() || data.size() != batch.size()) throw new AssistantService.Unavailable();
+            if (!data.isArray() || data.size() != batch.size())
+                throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_COUNT");
             for (JsonNode item : data) {
                 JsonNode vector = item.path("values");
-                if (!vector.isArray() || vector.size() != 1536) throw new AssistantService.Unavailable();
+                if (!vector.isArray() || vector.size() != 1536)
+                    throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_DIMENSIONS");
                 double norm = 0;
                 for (JsonNode value : vector) {
-                    if (!value.isNumber() || !Double.isFinite(value.asDouble())) throw new AssistantService.Unavailable();
+                    if (!value.isNumber() || !Double.isFinite(value.asDouble()))
+                        throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_VALUE");
                     norm += value.asDouble() * value.asDouble();
                 }
-                if (norm == 0 || !Double.isFinite(norm)) throw new AssistantService.Unavailable();
+                if (norm == 0 || !Double.isFinite(norm))
+                    throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_NORM");
                 // Cosine search works with unnormalized vectors; preserve provider order.
                 result.add(vector.toString());
             }
@@ -85,13 +90,22 @@ public class RagProvider {
                 "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of(
                     "text", "Reference passages:\n" + context + "\n\nQuestion:\n" + question))))));
         var candidate = result.path("candidates").path(0);
-        if (!"STOP".equals(candidate.path("finishReason").asText())) throw new AssistantService.Unavailable();
+        String finishReason = candidate.path("finishReason").asText();
+        if (!"STOP".equals(finishReason)) {
+            String reason = switch (finishReason) {
+                case "MAX_TOKENS" -> "GENERATION_TOKEN_LIMIT";
+                case "SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII" -> "GENERATION_BLOCKED";
+                default -> "GENERATION_INCOMPLETE";
+            };
+            throw AssistantDiagnostics.unavailable("gemini", "generation", reason);
+        }
         var answer = new StringBuilder();
         for (JsonNode part : candidate.path("content").path("parts")) {
             if (!part.path("thought").asBoolean(false) && part.path("text").isTextual())
                 answer.append(part.path("text").asText());
         }
-        if (answer.toString().isBlank()) throw new AssistantService.Unavailable();
+        if (answer.toString().isBlank())
+            throw AssistantDiagnostics.unavailable("gemini", "generation", "EMPTY_ANSWER");
         return answer.toString();
     }
 }

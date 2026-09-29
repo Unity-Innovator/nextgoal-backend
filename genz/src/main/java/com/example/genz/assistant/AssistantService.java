@@ -42,7 +42,7 @@ public class AssistantService {
         if (sources.isEmpty()) {
             return new Reply("I could not find this in the app guide. Please ask about registration, OTP, goals, deposits, withdrawals, or account security.", List.of());
         }
-        if (key.isBlank()) throw new Unavailable();
+        if (key.isBlank()) throw AssistantDiagnostics.unavailable("groq", "generation", "MISSING_API_KEY");
         String context = sources.stream().map(s -> "[" + s.id() + "] " + s.title() + "\n" + s.excerpt())
                 .reduce("", (a, b) -> a + "\n\n" + b);
         String instructions = """
@@ -64,11 +64,11 @@ public class AssistantService {
                             Map.of("role", "user", "content", "Reference passages:\n" + context + "\n\nQuestion:\n" + question))))
                     .retrieve().body(JsonNode.class);
             String answer = result == null ? "" : result.path("choices").path(0).path("message").path("content").asText("");
-            if (answer.isBlank()) throw new Unavailable();
+            if (answer.isBlank()) throw AssistantDiagnostics.unavailable("groq", "generation", "EMPTY_ANSWER");
             return new Reply(answer, sources);
         } catch (RuntimeException ex) {
             // Provider exceptions may contain sensitive request details; do not propagate them.
-            throw new Unavailable();
+            throw AssistantDiagnostics.failure("groq", "generation", ex);
         }
     }
 }
