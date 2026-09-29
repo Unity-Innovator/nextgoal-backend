@@ -59,8 +59,8 @@ public class TransactionServiceImpl implements TransactionService {
         Collection<TransactionType> types = resolveTypes(type);
 
         Page<WalletTransaction> pagedResult = (types == null)
-                ? walletTransactionRepository.findByWallet_Goal_Id(goalId, pageable)
-                : walletTransactionRepository.findByWallet_Goal_IdAndTypeIn(goalId, types, pageable);
+                ? walletTransactionRepository.findByGoal_Id(goalId, pageable)
+                : walletTransactionRepository.findByGoal_IdAndTypeIn(goalId, types, pageable);
 
         return TransactionPageResponse.from(pagedResult.map(this::toResponse));
     }
@@ -95,10 +95,19 @@ public class TransactionServiceImpl implements TransactionService {
         }
         String normalized = type.trim().toUpperCase();
         if ("WITHDRAW".equals(normalized) || "WITHDRAWAL".equals(normalized)) {
-            return List.of(TransactionType.WITHDRAWAL);
+            return List.of(TransactionType.GOAL_WITHDRAWAL, TransactionType.WITHDRAWAL);
+        }
+        if ("GOAL_WITHDRAWAL".equals(normalized)) {
+            return List.of(TransactionType.GOAL_WITHDRAWAL);
         }
         if ("DEPOSIT".equals(normalized)) {
-            return List.of(TransactionType.DEPOSIT);
+            return List.of(TransactionType.GOAL_DEPOSIT, TransactionType.DEPOSIT);
+        }
+        if ("GOAL_DEPOSIT".equals(normalized)) {
+            return List.of(TransactionType.GOAL_DEPOSIT);
+        }
+        if ("TOP_UP".equals(normalized) || "TOPUP".equals(normalized)) {
+            return List.of(TransactionType.TOP_UP);
         }
         try {
             return List.of(TransactionType.valueOf(normalized));
@@ -108,7 +117,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private TransactionResponse toResponse(WalletTransaction t) {
-        String typeStr = (t.getType() != null) ? t.getType().name() : "DEPOSIT";
+        String typeStr = (t.getType() != null) ? t.getType().name() : "GOAL_DEPOSIT";
 
         TransactionUserResponse userResp = null;
         if (t.getUser() != null) {
@@ -123,12 +132,23 @@ public class TransactionServiceImpl implements TransactionService {
                 : "USD";
 
         String statusStr = (t.getStatus() != null) ? t.getStatus().name() : "SUCCESS";
+        String directionStr = (t.getDirection() != null)
+                ? t.getDirection().name()
+                : (t.getType() != null ? t.getType().getDefaultDirection().name() : "OUT");
+
+        UUID goalId = t.getGoal() != null ? t.getGoal().getId() : null;
+        String goalName = t.getGoal() != null ? t.getGoal().getGoalName() : null;
 
         return TransactionResponse.builder()
                 .id(t.getId())
                 .user(userResp)
                 .type(typeStr)
                 .amount(t.getAmount())
+                .direction(directionStr)
+                .goalId(goalId)
+                .goalName(goalName)
+                .balanceBefore(t.getBalanceBefore())
+                .balanceAfter(t.getBalanceAfter())
                 .currency(currencyStr)
                 .status(statusStr)
                 .description(t.getDescription())

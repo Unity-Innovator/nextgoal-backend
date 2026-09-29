@@ -30,7 +30,10 @@ import com.example.genz.transaction.repository.WalletTransactionRepository;
 import com.example.genz.transaction.repository.WithdrawalApprovalRepository;
 import com.example.genz.transaction.repository.WithdrawalRequestRepository;
 import com.example.genz.wallet.entity.GrouplWallet;
+import com.example.genz.wallet.entity.Wallet;
 import com.example.genz.wallet.repository.GoalWalletRepository;
+import com.example.genz.wallet.repository.WalletRepository;
+import com.example.genz.transaction.enums.TransactionDirection;
 import com.example.genz.goal.enums.MemberRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +55,7 @@ import java.util.stream.Collectors;
 public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
 
     private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
     private final GoalRepository goalRepository;
     private final GoalMemberRepository goalMemberRepository;
     private final GoalWalletRepository goalWalletRepository;
@@ -356,14 +360,38 @@ public class WithdrawalRequestServiceImpl implements WithdrawalRequestService {
         wallet.setBalance(newWalletBalance);
         goalWalletRepository.save(wallet);
 
-        WalletTransaction transaction = new WalletTransaction();
-        transaction.setWallet(wallet);
-        transaction.setUser(user);
-        transaction.setAmount(withdrawalAmount);
-        transaction.setType(TransactionType.WITHDRAWAL);
-        transaction.setStatus(TransactionStatus.SUCCESS);
-        transaction.setDescription("Withdrawal from goal: " + goal.getGoalName());
-        transaction.setCreatedAt(LocalDateTime.now());
+        // Credit to Requester's Personal Wallet
+        Wallet existingWallet = walletRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    Wallet newWallet = Wallet.builder()
+                            .user(user)
+                            .balance(BigDecimal.ZERO)
+                            .currency(Currency.USD)
+                            .build();
+                    return walletRepository.save(newWallet);
+                });
+        Wallet requesterWallet = walletRepository.findByIdForUpdate(existingWallet.getId())
+                .orElse(existingWallet);
+
+        BigDecimal requesterBalanceBefore = requesterWallet.getBalance() != null ? requesterWallet.getBalance() : BigDecimal.ZERO;
+        BigDecimal requesterBalanceAfter = requesterBalanceBefore.add(withdrawalAmount);
+        requesterWallet.setBalance(requesterBalanceAfter);
+        walletRepository.save(requesterWallet);
+
+        // Record WalletTransaction on requester's personal wallet
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(requesterWallet)
+                .user(user)
+                .goal(goal)
+                .amount(withdrawalAmount)
+                .balanceBefore(requesterBalanceBefore)
+                .balanceAfter(requesterBalanceAfter)
+                .direction(TransactionDirection.IN)
+                .type(TransactionType.GOAL_WITHDRAWAL)
+                .status(TransactionStatus.SUCCESS)
+                .description("Withdrawal from goal: " + goal.getGoalName())
+                .createdAt(LocalDateTime.now())
+                .build();
         walletTransactionRepository.save(transaction);
 
         // Locate requester's GoalMember record with fallback to owner/creator

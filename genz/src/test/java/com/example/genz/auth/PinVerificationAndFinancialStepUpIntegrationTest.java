@@ -77,6 +77,9 @@ class PinVerificationAndFinancialStepUpIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
+
     private User userA;
     private User userB;
     private User userNoPin;
@@ -95,6 +98,12 @@ class PinVerificationAndFinancialStepUpIntegrationTest {
                 .role(UserRole.USER)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .build());
+
+        walletRepository.saveAndFlush(com.example.genz.wallet.entity.Wallet.builder()
+                .user(userA)
+                .balance(new BigDecimal("200.00"))
+                .currency(com.example.genz.transaction.enums.Currency.USD)
                 .build());
 
         userB = userRepository.saveAndFlush(User.builder()
