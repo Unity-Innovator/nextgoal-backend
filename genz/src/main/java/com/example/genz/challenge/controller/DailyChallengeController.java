@@ -1,18 +1,21 @@
 package com.example.genz.challenge.controller;
 
-import com.example.genz.challenge.dto.UserDailyChallengeResponse;
+import java.util.Optional;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.repository.UserRepository;
+import com.example.genz.challenge.dto.UserDailyChallengeResponse;
 import com.example.genz.challenge.service.DailyChallengeService;
 import com.example.genz.common.api.ApiResponse;
 import com.example.genz.common.exception.ResourceNoteFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/daily-challenges")

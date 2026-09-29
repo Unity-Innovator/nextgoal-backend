@@ -8,6 +8,7 @@ import com.example.genz.community.post.entity.PostMedia;
 import com.example.genz.community.chat.service.SupabaseStorageService;
 import com.example.genz.settings.entity.UserSettings;
 import com.example.genz.settings.repository.UserSettingsRepository;
+import com.example.genz.community.post.repository.PostLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ public class PostMapper {
 
     private final UserSettingsRepository settingsRepository;
     private final SupabaseStorageService storageService;
+    private final PostLikeRepository postLikeRepository;
 
     public PostResponse toResponse(Post post, UUID currentUserId) {
         boolean owner = post.getAuthor().getId().equals(currentUserId);
@@ -43,6 +45,7 @@ public class PostMapper {
                 post.getStatus(),
                 post.isPinned(),
                 owner,
+                currentUserId != null && postLikeRepository.existsByPost_IdAndUser_Id(post.getId(), currentUserId),
                 post.getMedia().stream().map(this::toMediaResponse).toList(),
                 post.getLikeCount(),
                 post.getCommentCount(),
