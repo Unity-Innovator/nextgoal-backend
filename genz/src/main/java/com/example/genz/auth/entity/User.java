@@ -118,6 +118,11 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WalletTransaction> transactions;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private com.example.genz.wallet.entity.Wallet wallet;
+
     @PrePersist
 
     public void onCreate() {

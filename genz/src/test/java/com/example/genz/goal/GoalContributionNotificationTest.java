@@ -69,6 +69,8 @@ class GoalContributionNotificationTest {
     private NotificationServiceImpl notificationService;
 
     @Mock
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
+    @Mock
     private GoalRepository goalRepository;
     @Mock
     private GoalWalletRepository goalWalletRepository;
@@ -106,6 +108,7 @@ class GoalContributionNotificationTest {
     void setUp() {
         walletService = new WalletServiceImpl(
                 userRepository,
+                walletRepository,
                 goalRepository,
                 goalMemberRepository,
                 goalWalletRepository,
@@ -117,6 +120,19 @@ class GoalContributionNotificationTest {
                 goalMilestoneRewardService,
                 challengeCompletionService
         );
+
+        org.mockito.Mockito.lenient().when(walletRepository.findByUserIdForUpdate(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> java.util.Optional.of(com.example.genz.wallet.entity.Wallet.builder()
+                        .user(User.builder().id(inv.getArgument(0)).build())
+                        .balance(new BigDecimal("10000.00"))
+                        .currency(com.example.genz.transaction.enums.Currency.USD)
+                        .build()));
+        org.mockito.Mockito.lenient().when(walletRepository.findByUserId(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> java.util.Optional.of(com.example.genz.wallet.entity.Wallet.builder()
+                        .user(User.builder().id(inv.getArgument(0)).build())
+                        .balance(new BigDecimal("10000.00"))
+                        .currency(com.example.genz.transaction.enums.Currency.USD)
+                        .build()));
 
         owner = new User();
         owner.setId(UUID.randomUUID());

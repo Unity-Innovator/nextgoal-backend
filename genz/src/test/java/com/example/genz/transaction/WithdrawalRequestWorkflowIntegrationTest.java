@@ -22,6 +22,7 @@ import com.example.genz.transaction.entity.WithdrawalRequest;
 import com.example.genz.transaction.enums.ApprovalDecision;
 import com.example.genz.transaction.enums.Currency;
 import com.example.genz.transaction.enums.GroupTransactionType;
+import com.example.genz.transaction.enums.TransactionDirection;
 import com.example.genz.transaction.enums.TransactionType;
 import com.example.genz.transaction.enums.WithdrawalStatus;
 import com.example.genz.transaction.repository.GroupWalletTransactionRepository;
@@ -99,6 +100,9 @@ class WithdrawalRequestWorkflowIntegrationTest {
 
     @Autowired
     private GoalWalletRepository goalWalletRepository;
+
+    @Autowired
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -425,13 +429,18 @@ class WithdrawalRequestWorkflowIntegrationTest {
         GrouplWallet reloadedWallet = goalWalletRepository.findByGoal(sharedGoal).orElseThrow();
         assertEquals(0, BigDecimal.valueOf(1500).compareTo(reloadedWallet.getBalance()));
 
-        // WITHDRAWAL WalletTransaction created
+        // GOAL_WITHDRAWAL WalletTransaction created
         List<WalletTransaction> transactions = walletTransactionRepository.findAll();
         assertEquals(1, transactions.size());
         WalletTransaction tx = transactions.get(0);
-        assertEquals(TransactionType.WITHDRAWAL, tx.getType());
+        assertEquals(TransactionType.GOAL_WITHDRAWAL, tx.getType());
         assertEquals(memberA.getId(), tx.getUser().getId());
         assertEquals(0, BigDecimal.valueOf(500).compareTo(tx.getAmount()));
+        assertEquals(TransactionDirection.IN, tx.getDirection());
+
+        // CRITICAL CHECK: Requester's Personal Wallet received the 500
+        com.example.genz.wallet.entity.Wallet memberAWallet = walletRepository.findByUserId(memberA.getId()).orElseThrow();
+        assertEquals(0, BigDecimal.valueOf(500).compareTo(memberAWallet.getBalance()));
 
         // GroupWalletTransaction created
         List<GroupWalletTransaction> groupTxs = groupWalletTransactionRepository.findAll();
