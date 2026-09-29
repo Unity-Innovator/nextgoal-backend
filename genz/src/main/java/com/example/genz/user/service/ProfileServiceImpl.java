@@ -64,10 +64,13 @@ public class ProfileServiceImpl implements ProfileService {
         int achievementUnlockedCount = (int) userBadgeRepository.countByUser(user);
 
         int streak = challengeCompletionService.calculateStreak(user);
-        if (streak == 0 && userRewardRepository != null) {
-            streak = userRewardRepository.findByUser(user)
-                    .map(UserReward::getCurrentStreak)
-                    .orElse(0);
+        if (userRewardRepository != null) {
+            userRewardRepository.findByUser(user).ifPresent(ur -> {
+                if (ur.getCurrentStreak() != null && ur.getCurrentStreak() != streak) {
+                    ur.setCurrentStreak(streak);
+                    userRewardRepository.save(ur);
+                }
+            });
         }
 
         if (levelResponse != null) {

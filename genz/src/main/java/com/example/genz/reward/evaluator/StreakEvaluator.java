@@ -37,7 +37,12 @@ public class StreakEvaluator implements BadgeRequirementEvaluator {
             }
         }
         return userRewardRepository.findByUser(user)
-                .map(UserReward::getCurrentStreak)
-                .orElse(0);
+                .map(reward -> {
+                    if (reward.getLastActivityDate() != null && reward.getLastActivityDate().isBefore(java.time.LocalDate.now().minusDays(1))) {
+                        return 0L;
+                    }
+                    return reward.getCurrentStreak() != null ? reward.getCurrentStreak().longValue() : 0L;
+                })
+                .orElse(0L);
     }
 }

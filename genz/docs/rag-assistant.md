@@ -14,7 +14,7 @@ source IDs, names, excerpts, and PDF page numbers.
 3. Set SPRING_PROFILES_ACTIVE=prod,rag (rag must come last), keeping the existing
    datasource, JWT, Redis, and other production settings.
 4. Restart the backend. The rag profile enables Flyway and adds db/rag alongside
-   existing migrations. V22 creates the vector extension and assistant tables.
+   existing migrations. V23 creates the vector extension and assistant tables.
    The migration role needs extension-creation rights, or an administrator must
    first install vector in the public schema.
 5. Sign in, open the assistant, choose My documents, upload a small text document,
@@ -63,15 +63,15 @@ migration and re-embedding every document; never mix embedding models in one ind
 assistant.rag.min-similarity defaults to 0.3; calibrate it on representative questions.
 
 Without the rag profile, the original bundled-guide/Groq assistant remains active.
-Once V22 has been applied, keep classpath:db/rag in Flyway's locations even if
+Once V23 has been applied, keep classpath:db/rag in Flyway's locations even if
 disabling assistant.rag.enabled, so Flyway can still validate its migration history.
 Bundled guides are not automatically sent to Gemini; upload guides you want to use.
 
-The RAG migrations use V22/V23 to avoid the core V20 OTP cleanup migration.
-The earlier duplicate-V20 startup failure happens during migration discovery,
+The RAG migrations use V23/V24 to avoid the core V22 withdrawal approvals migration.
+The earlier duplicate-version startup failure happens during migration discovery,
 before RAG SQL executes; redeploy the corrected build without repairing or
 deleting Flyway history. If another database already applied the old RAG
-V20/V21 scripts, review its migration history before upgrading: renaming applied
+V20/V21/V22 scripts, review its migration history before upgrading: renaming applied
 migrations requires a separate migration plan for that database.
 
 ## API
@@ -144,7 +144,7 @@ and orchestration components remain separate so adapters can be replaced later.
 
 ## Switching from OpenAI embeddings
 
-V23 labels existing vectors as text-embedding-3-small. Gemini retrieval excludes
+V24 labels existing vectors as text-embedding-3-small. Gemini retrieval excludes
 those documents until you delete and re-upload them; their metadata remains visible.
 New uploads use gemini-embedding-001 at 1536 dimensions with RETRIEVAL_DOCUMENT;
 questions use RETRIEVAL_QUERY. Existing migration checksums remain unchanged.

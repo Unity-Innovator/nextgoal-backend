@@ -54,10 +54,15 @@ public class AchievementMapper {
         if (reward == null) {
             return null;
         }
+        Integer streak = reward.getCurrentStreak();
+        if (reward.getLastActivityDate() != null && reward.getLastActivityDate().isBefore(java.time.LocalDate.now().minusDays(1))) {
+            streak = 0;
+        }
+
         return UserRewardSummaryResponse.builder()
                 .totalXp(reward.getTotalXp())
                 .level(reward.getLevel())
-                .currentStreak(reward.getCurrentStreak())
+                .currentStreak(streak)
                 .longestStreak(reward.getLongestStreak())
                 .achievementCount(unlockedCount)
                 .totalAchievements(totalBadges)

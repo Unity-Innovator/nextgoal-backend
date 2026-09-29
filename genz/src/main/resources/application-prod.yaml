@@ -27,6 +27,7 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
     validate-migration-naming: true
+    out-of-order: true
 
   lifecycle:
     timeout-per-shutdown-phase: 30s

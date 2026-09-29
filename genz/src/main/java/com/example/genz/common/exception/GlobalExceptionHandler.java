@@ -67,6 +67,13 @@ public class GlobalExceptionHandler {
     }
 
     @Order(Ordered.HIGHEST_PRECEDENCE)
+    @ExceptionHandler(ResourceNoteFoundException.class)
+    public ResponseEntity<ErrorResponse> resourceNotFoundHandler(ResourceNoteFoundException ex) {
+        ErrorResponse error = new ErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND.value(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> authenticationHandler(AuthenticationException ex) {
         ErrorResponse error = new ErrorResponse(

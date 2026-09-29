@@ -108,23 +108,40 @@ public class GoalInvitationServiceImpl implements GoalInvitationService {
             throw new BadRequestException("This invitation does not belong to you");
         }
 
+        if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
+            Goal goal = invitation.getGoal();
+            GoalMember member = goalMemberRepository.findByGoalIdAndUserId(goal.getId(), invitee.getId())
+                    .orElseGet(() -> {
+                        GoalMember newMember = new GoalMember();
+                        newMember.setGoal(goal);
+                        newMember.setUser(invitee);
+                        newMember.setRole(MemberRole.MEMBER);
+                        return newMember;
+                    });
+            member.setStatus(MemberStatus.ACTIVE);
+            goalMemberRepository.save(member);
+            return goalInvitationMapper.toInvitationResponse(invitation);
+        }
+
         if (invitation.getStatus() != InvitationStatus.PENDING) {
             throw new BadRequestException("Invitation is not in PENDING status");
         }
 
+        Goal goal = invitation.getGoal();
+        GoalMember member = goalMemberRepository.findByGoalIdAndUserId(goal.getId(), invitee.getId())
+                .orElseGet(() -> {
+                    GoalMember newMember = new GoalMember();
+                    newMember.setGoal(goal);
+                    newMember.setUser(invitee);
+                    newMember.setRole(MemberRole.MEMBER);
+                    return newMember;
+                });
+        member.setStatus(MemberStatus.ACTIVE);
+        goalMemberRepository.save(member);
+
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitation.setRespondedAt(LocalDateTime.now());
         GoalInvitation updatedInvitation = goalInvitationRepository.save(invitation);
-
-        Goal goal = invitation.getGoal();
-        if (!goalMemberRepository.existsByGoalIdAndUserId(goal.getId(), invitee.getId())) {
-            GoalMember member = new GoalMember();
-            member.setGoal(goal);
-            member.setUser(invitee);
-            member.setRole(MemberRole.MEMBER);
-            member.setStatus(MemberStatus.ACTIVE);
-            goalMemberRepository.save(member);
-        }
 
         notificationService.markNotificationAsReadByReference(invitation.getId(), invitee.getId());
 

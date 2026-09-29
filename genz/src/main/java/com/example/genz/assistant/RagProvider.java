@@ -52,16 +52,16 @@ public class RagProvider {
                     "model", "models/" + EMBEDDING_MODEL,
                     "content", Map.of("parts", List.of(Map.of("text", text))),
                     "taskType", taskType, "outputDimensionality", 1536)).toList();
-            var data = post("/models/" + EMBEDDING_MODEL + ":batchEmbedContents",
+            JsonNode data = post("/models/" + EMBEDDING_MODEL + ":batchEmbedContents",
                     Map.of("requests", requests)).path("embeddings");
             if (!data.isArray() || data.size() != batch.size())
                 throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_COUNT");
-            for (var item : data) {
-                var vector = item.path("values");
+            for (JsonNode item : data) {
+                JsonNode vector = item.path("values");
                 if (!vector.isArray() || vector.size() != 1536)
                     throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_DIMENSIONS");
                 double norm = 0;
-                for (var value : vector) {
+                for (JsonNode value : vector) {
                     if (!value.isNumber() || !Double.isFinite(value.asDouble()))
                         throw AssistantDiagnostics.unavailable("gemini", "embedding", "INVALID_EMBEDDING_VALUE");
                     norm += value.asDouble() * value.asDouble();
@@ -100,7 +100,7 @@ public class RagProvider {
             throw AssistantDiagnostics.unavailable("gemini", "generation", reason);
         }
         var answer = new StringBuilder();
-        for (var part : candidate.path("content").path("parts")) {
+        for (JsonNode part : candidate.path("content").path("parts")) {
             if (!part.path("thought").asBoolean(false) && part.path("text").isTextual())
                 answer.append(part.path("text").asText());
         }

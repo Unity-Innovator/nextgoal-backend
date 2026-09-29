@@ -153,7 +153,7 @@ class ProfileIntegrationTest {
                 .andExpect(jsonPath("$.data.level.progressPercentage").value(21.67))
                 .andExpect(jsonPath("$.data.level.completedAchievements").value(0))
                 .andExpect(jsonPath("$.data.level.completedAchievement").doesNotExist())
-                .andExpect(jsonPath("$.data.level.streak").value(0))
+                .andExpect(jsonPath("$.data.level.streak").value(1))
                 .andExpect(jsonPath("$.data.summary.totalSaved").value(1250.00))
                 .andExpect(jsonPath("$.data.summary.totalGoals").value(2))
                 .andExpect(jsonPath("$.data.summary.coins").value(245));
