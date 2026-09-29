@@ -48,13 +48,7 @@ SET direction = CASE
 END
 WHERE direction IS NULL;
 
--- Re-point wallet_id in wallet_transactions to the user's personal wallet
-UPDATE wallet_transactions wt
-SET wallet_id = w.wallet_id
-FROM wallets w
-WHERE wt.user_id = w.user_id;
-
--- Drop old foreign key constraint pointing to group_wallets if it exists
+-- 4. Drop old foreign key constraint pointing to group_wallets if it exists
 DO $$
 DECLARE
     r RECORD;
@@ -69,6 +63,12 @@ BEGIN
         EXECUTE 'ALTER TABLE wallet_transactions DROP CONSTRAINT ' || quote_ident(r.conname);
     END LOOP;
 END $$;
+
+-- 5. Re-point wallet_id in wallet_transactions to the user's personal wallet
+UPDATE wallet_transactions wt
+SET wallet_id = w.wallet_id
+FROM wallets w
+WHERE wt.user_id = w.user_id;
 
 -- Add foreign key constraint pointing to wallets
 ALTER TABLE wallet_transactions
