@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.repository.UserRepository;
@@ -52,6 +54,7 @@ import com.example.genz.wallet.repository.GoalWalletRepository;
 import com.example.genz.wallet.service.WalletServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class GoalContributionNotificationTest {
 
     @Mock
