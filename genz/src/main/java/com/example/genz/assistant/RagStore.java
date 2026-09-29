@@ -34,6 +34,12 @@ public class RagStore {
             """, (rs, row) -> new Document(rs.getObject("id", UUID.class), rs.getString("name"),
                 rs.getString("file_type"), rs.getInt("chunk_count")), owner);
     }
+    /** All document IDs, not the paginated list. Documents are immutable after save. */
+    public String cacheRevision(String owner) {
+        return String.join(",", jdbc.query(
+                "SELECT id FROM assistant_documents WHERE owner_id=? ORDER BY id",
+                (rs, row) -> rs.getString("id"), owner));
+    }
     public boolean delete(String owner, UUID id) {
         return jdbc.update("DELETE FROM assistant_documents WHERE id=? AND owner_id=?", id, owner) > 0;
     }

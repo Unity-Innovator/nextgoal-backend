@@ -9,6 +9,14 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @ConditionalOnProperty(name = "assistant.rag.enabled", havingValue = "true")
 public class RagService {
+    private com.example.genz.common.cache.BackendResponseCache cache;
+    private java.time.Duration cacheTtl = java.time.Duration.ofMinutes(2);
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void configureCache(com.example.genz.common.cache.BackendResponseCache cache,
+            @Value("${assistant.cache.ttl:PT2M}") java.time.Duration ttl) {
+        this.cache = cache; this.cacheTtl = ttl;
+    }
     private final RagStore store;
     private final RagProvider provider;
     private final DocumentExtractor extractor;
@@ -27,16 +35,26 @@ public class RagService {
     public AssistantService.Reply answer(String owner, String question) {
         try {
             if (store.list(owner).isEmpty()) return fallback();
-            var vector = provider.embedQuery(question);
-            var sources = store.search(owner, vector, threshold);
-            if (sources.isEmpty()) return fallback();
-            return new AssistantService.Reply(provider.answer(question, sources), sources);
+            if (cache == null) return retrieveAnswer(owner, question);
+            // Reading the committed corpus revision makes invalidation work across
+            // instances, including when an upload/delete races an older answer.
+            String cacheKey = com.example.genz.common.cache.BackendResponseCache.key(
+                    "rag-answer", owner, store.cacheRevision(owner), provider.cacheModel(),
+                    RagProvider.EMBEDDING_MODEL, Double.toString(threshold), question.trim());
+            return cache.get(cacheKey, AssistantService.Reply.class, cacheTtl,
+                    () -> retrieveAnswer(owner, question));
         } catch (RuntimeException ex) {
             if (ex instanceof AssistantService.Unavailable unavailable) throw unavailable;
             String reason = ex instanceof org.springframework.dao.DataAccessException
                     ? "DOCUMENT_STORE_ERROR" : "RETRIEVAL_ERROR";
             throw AssistantDiagnostics.unavailable("rag", "retrieval", reason);
         }
+    }
+    private AssistantService.Reply retrieveAnswer(String owner, String question) {
+        var vector = provider.embedQuery(question);
+        var sources = store.search(owner, vector, threshold);
+        if (sources.isEmpty()) return fallback();
+        return new AssistantService.Reply(provider.answer(question, sources), sources);
     }
     private static AssistantService.Reply fallback() {
         return new AssistantService.Reply("I do not have enough information in your uploaded documents to answer that question.", List.of());

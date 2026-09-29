@@ -12,6 +12,14 @@ import org.springframework.web.client.RestClient;
 public class AssistantService {
     public record Reply(String answer, List<KnowledgeBase.Source> sources) {}
     public static class Unavailable extends RuntimeException {}
+    private com.example.genz.common.cache.BackendResponseCache cache;
+    private Duration cacheTtl = Duration.ofMinutes(2);
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void configureCache(com.example.genz.common.cache.BackendResponseCache cache,
+            @Value("${assistant.cache.ttl:PT2M}") Duration ttl) {
+        this.cache = cache; this.cacheTtl = ttl;
+    }
     private final KnowledgeBase knowledge;
     private final RestClient client;
     private final String key;
@@ -43,6 +51,13 @@ public class AssistantService {
             return new Reply("I could not find this in the app guide. Please ask about registration, OTP, goals, deposits, withdrawals, or account security.", List.of());
         }
         if (key.isBlank()) throw AssistantDiagnostics.unavailable("groq", "generation", "MISSING_API_KEY");
+        if (cache == null) return generate(question, sources);
+        String cacheKey = com.example.genz.common.cache.BackendResponseCache.key(
+                "guide-answer", model, question.trim(), sources.toString());
+        return cache.get(cacheKey, Reply.class, cacheTtl, () -> generate(question, sources));
+    }
+
+    private Reply generate(String question, List<KnowledgeBase.Source> sources) {
         String context = sources.stream().map(s -> "[" + s.id() + "] " + s.title() + "\n" + s.excerpt())
                 .reduce("", (a, b) -> a + "\n\n" + b);
         String instructions = """

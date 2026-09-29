@@ -27,6 +27,18 @@ public class SupabaseStorageService {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
     private static final int SIGNED_URL_TTL_SECONDS = 3_600;
 
+    private com.example.genz.common.cache.BackendResponseCache cache;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void configureCache(com.example.genz.common.cache.BackendResponseCache cache) {
+        this.cache = cache;
+    }
+
+    private String signedUrlCacheKey(String storagePath) {
+        return com.example.genz.common.cache.BackendResponseCache.key(
+                "signed-media-url", baseUrl, bucket, storagePath);
+    }
+
     private final String baseUrl;
     private final String secretKey;
     private final String bucket;
@@ -119,6 +131,14 @@ public class SupabaseStorageService {
 
     public String createSignedUrl(String storagePath) {
         requireConfiguration();
+        if (cache == null) return requestSignedUrl(storagePath);
+        // URLs are valid for one hour; reuse for only five minutes to leave
+        // ample time for clients to download or play the attachment.
+        return cache.get(signedUrlCacheKey(storagePath), String.class,
+                Duration.ofMinutes(5), () -> requestSignedUrl(storagePath));
+    }
+
+    private String requestSignedUrl(String storagePath) {
         try {
             String requestBody = objectMapper.writeValueAsString(
                     java.util.Map.of("expiresIn", SIGNED_URL_TTL_SECONDS)
@@ -156,6 +176,7 @@ public class SupabaseStorageService {
         if (storagePath == null || storagePath.isBlank() || !isConfigured()) {
             return;
         }
+        if (cache != null) cache.evict(signedUrlCacheKey(storagePath));
         try {
             HttpRequest request = HttpRequest.newBuilder(objectUri(storagePath))
                     .timeout(REQUEST_TIMEOUT)
