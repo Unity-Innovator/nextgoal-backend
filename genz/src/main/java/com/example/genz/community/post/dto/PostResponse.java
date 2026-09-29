@@ -19,6 +19,7 @@ public record PostResponse(
         PostStatus status,
         boolean pinned,
         boolean ownedByCurrentUser,
+        boolean likedByCurrentUser,
         List<PostMediaResponse> media,
         int likeCount,
         int commentCount,

@@ -8,6 +8,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.LoggerFactory;
 
 @Component
 @ConditionalOnProperty(name = "assistant.rag.enabled", havingValue = "true")
@@ -15,13 +18,20 @@ public class RagProvider {
     private final RestClient client;
     private final String key;
     private final String model;
+    @FunctionalInterface
+    interface RetryPause { void sleep(long millis) throws InterruptedException; }
+    private final RetryPause retryPause;
     @org.springframework.beans.factory.annotation.Autowired
     public RagProvider(@Value("${assistant.rag.api-key:}") String key,
                        @Value("${assistant.rag.model:gemini-3.5-flash}") String model) {
         this(key, model, client());
     }
     RagProvider(String key, String model, RestClient client) {
+        this(key, model, client, Thread::sleep);
+    }
+    RagProvider(String key, String model, RestClient client, RetryPause retryPause) {
         this.key = key; this.model = model; this.client = client;
+        this.retryPause = retryPause;
     }
     private static RestClient client() {
         var factory = new SimpleClientHttpRequestFactory();
@@ -32,13 +42,31 @@ public class RagProvider {
     private JsonNode post(String path, Map<String, Object> body) {
         String operation = path.endsWith(":batchEmbedContents") ? "embedding" : "generation";
         if (key.isBlank()) throw AssistantDiagnostics.unavailable("gemini", operation, "MISSING_API_KEY");
-        try {
-            JsonNode result = client.post().uri(path).header("x-goog-api-key", key)
-                    .body(body).retrieve().body(JsonNode.class);
-            if (result == null) throw AssistantDiagnostics.unavailable("gemini", operation, "EMPTY_RESPONSE");
-            return result;
-        } catch (RuntimeException ex) {
-            throw AssistantDiagnostics.failure("gemini", operation, ex);
+        long started = System.nanoTime();
+        for (int attempt = 0; ; attempt++) {
+            try {
+                JsonNode result = client.post().uri(path).header("x-goog-api-key", key)
+                        .body(body).retrieve().body(JsonNode.class);
+                if (result == null) throw AssistantDiagnostics.unavailable("gemini", operation, "EMPTY_RESPONSE");
+                return result;
+            } catch (RuntimeException ex) {
+                // Retry one fast, transient generation failure. Avoid adding
+                // another provider timeout to an already slow request.
+                int status = ex instanceof RestClientResponseException response
+                        ? response.getStatusCode().value() : 0;
+                boolean retry = attempt == 0 && operation.equals("generation")
+                        && (status == 502 || status == 503 || status == 504)
+                        && System.nanoTime() - started < Duration.ofSeconds(10).toNanos();
+                if (!retry) throw AssistantDiagnostics.failure("gemini", operation, ex);
+                LoggerFactory.getLogger(RagProvider.class).warn(
+                        "Assistant provider=gemini operation=generation reason=TRANSIENT_RETRY status={} nextAttempt=2", status);
+                try {
+                    retryPause.sleep(ThreadLocalRandom.current().nextLong(750, 1251));
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw AssistantDiagnostics.unavailable("gemini", operation, "RETRY_INTERRUPTED");
+                }
+            }
         }
     }
     String cacheModel() { return model; }
