@@ -32,7 +32,10 @@ public class RagService {
             if (sources.isEmpty()) return fallback();
             return new AssistantService.Reply(provider.answer(question, sources), sources);
         } catch (RuntimeException ex) {
-            throw new AssistantService.Unavailable();
+            if (ex instanceof AssistantService.Unavailable unavailable) throw unavailable;
+            String reason = ex instanceof org.springframework.dao.DataAccessException
+                    ? "DOCUMENT_STORE_ERROR" : "RETRIEVAL_ERROR";
+            throw AssistantDiagnostics.unavailable("rag", "retrieval", reason);
         }
     }
     private static AssistantService.Reply fallback() {
