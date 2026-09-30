@@ -131,6 +131,19 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success("Public feed retrieved", response));
     }
 
+    @GetMapping("/feed/random")
+    public ResponseEntity<ApiResponse<PostCursorPageResponse>> getRandomPublicFeed(
+            @RequestParam(required = false) UUID randomSeed,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant snapshot,
+            @RequestParam(required = false) UUID cursorPostId,
+            @RequestParam(defaultValue = "20") int limit,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Random feed retrieved",
+                postService.getRandomPublicFeed(authentication.getName(), randomSeed, snapshot, cursorPostId, limit)));
+    }
+
     @GetMapping("/feed/friends")
     public ResponseEntity<ApiResponse<PostCursorPageResponse>> getFriendsFeed(
             @RequestParam(required = false)

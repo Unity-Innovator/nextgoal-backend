@@ -18,5 +18,6 @@ class RagMigrationDiscoveryTests {
         assertTrue(scripts.contains("V20__drop_legacy_otps_table.sql"));
         assertTrue(scripts.contains("V23__assistant_vector_knowledge.sql"));
         assertTrue(scripts.contains("V24__assistant_embedding_model.sql"));
+        assertTrue(scripts.contains("V25__allow_shared_post_type.sql"));
     }
 }
