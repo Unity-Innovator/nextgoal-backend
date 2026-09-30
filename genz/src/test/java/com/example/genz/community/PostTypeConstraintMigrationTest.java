@@ -1,8 +1,5 @@
 package com.example.genz.community;
 
-import com.example.genz.community.post.enums.PostType;
-import org.junit.jupiter.api.Test;
-
 import java.nio.charset.StandardCharsets;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -11,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import com.example.genz.community.post.enums.PostType;
 
 class PostTypeConstraintMigrationTest {
     @Test
@@ -33,7 +33,7 @@ class PostTypeConstraintMigrationTest {
                     "INSERT INTO posts (post_type) VALUES ('SHARED_POST')"));
 
             try (var resource = getClass().getResourceAsStream(
-                    "/db/migration/V25__allow_shared_post_type.sql")) {
+                    "/db/migration/V27__allow_shared_post_type.sql")) {
                 assertNotNull(resource);
                 var migration = new String(resource.readAllBytes(), StandardCharsets.UTF_8);
                 // Also prove an already-repaired database can apply this safely.
