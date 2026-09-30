@@ -43,6 +43,9 @@ public class User implements UserDetails {
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
+    @Column(name = "username", unique = true, length = 50)
+    private String username;
+
     @Column(name = "phone_number", nullable = false, unique = true)
     private String phoneNumber;
 
@@ -152,6 +155,14 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return this.phoneNumber;
+    }
+
+    public String getProfileUsername() {
+        return this.username;
+    }
+
+    public void setProfileUsername(String username) {
+        this.username = username;
     }
 
     @Override
