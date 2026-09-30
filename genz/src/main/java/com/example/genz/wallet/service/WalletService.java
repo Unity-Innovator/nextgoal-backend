@@ -8,6 +8,8 @@ import com.example.genz.wallet.dto.TopUpRequest;
 import com.example.genz.wallet.dto.TopUpResponse;
 import com.example.genz.wallet.dto.WalletResponse;
 import com.example.genz.wallet.dto.WalletSummaryResponse;
+import com.example.genz.wallet.dto.WithdrawRequest;
+import com.example.genz.wallet.dto.WithdrawResponse;
 import com.example.genz.wallet.entity.Wallet;
 
 public interface WalletService {
@@ -18,6 +20,8 @@ public interface WalletService {
     WalletSummaryResponse getWalletSummary(String phoneNumber);
 
     TopUpResponse topUp(TopUpRequest request, String phoneNumber);
+
+    WithdrawResponse withdraw(WithdrawRequest request, String phoneNumber);
 
     TopUpOptionsResponse getTopUpOptions();
 

@@ -12,6 +12,8 @@ import com.example.genz.wallet.dto.TopUpRequest;
 import com.example.genz.wallet.dto.TopUpResponse;
 import com.example.genz.wallet.dto.WalletResponse;
 import com.example.genz.wallet.dto.WalletSummaryResponse;
+import com.example.genz.wallet.dto.WithdrawRequest;
+import com.example.genz.wallet.dto.WithdrawResponse;
 import com.example.genz.wallet.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +69,17 @@ public class WalletController {
         String phoneNumber = authentication.getName();
         DepositResponse response = walletService.deposit(request, phoneNumber);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @RequireStepUp
+    @PostMapping("/withdraw")
+    public ResponseEntity<ApiResponse<WithdrawResponse>> withdraw(
+            @Valid @RequestBody WithdrawRequest request,
+            Authentication authentication
+    ) {
+        String phoneNumber = authentication.getName();
+        WithdrawResponse response = walletService.withdraw(request, phoneNumber);
+        return ResponseEntity.ok(ApiResponse.success("Withdrawal processed successfully", response));
     }
 
     @GetMapping("/transactions")

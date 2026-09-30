@@ -43,6 +43,8 @@ import com.example.genz.wallet.dto.DepositRequest;
 import com.example.genz.wallet.dto.DepositResponse;
 import com.example.genz.wallet.dto.TopUpRequest;
 import com.example.genz.wallet.dto.WalletResponse;
+import com.example.genz.wallet.dto.WithdrawRequest;
+import com.example.genz.wallet.dto.WithdrawResponse;
 import com.example.genz.wallet.entity.GrouplWallet;
 import com.example.genz.wallet.entity.Wallet;
 import com.example.genz.wallet.repository.GoalWalletRepository;
@@ -344,6 +346,114 @@ public class PersonalWalletIntegrationTest {
         assertEquals(0, new BigDecimal("500.00").compareTo(tx.getBalanceBefore()));
         assertEquals(0, new BigDecimal("650.00").compareTo(tx.getBalanceAfter()));
         assertNull(tx.getGoal());
+    }
+
+    @Test
+    @DisplayName("Withdraw wallet: Valid step-up token reduces balance, records OUT WITHDRAWAL transaction")
+    void testWithdrawWallet_Success() throws Exception {
+        String token = jwtUtil.generateAccessToken(alice.getPhoneNumber());
+        String stepUpToken = jwtUtil.generateStepUpToken(alice.getPhoneNumber(), JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        WithdrawRequest req = WithdrawRequest.builder()
+                .amount(new BigDecimal("150.00"))
+                .currency("USD")
+                .paymentMethod("Bank Transfer")
+                .bank("ABA Bank")
+                .description("Cash withdrawal to ABA")
+                .build();
+
+        mockMvc.perform(post("/api/wallet/withdraw")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Step-Up-Token", stepUpToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.balance").value(350.00))
+                .andExpect(jsonPath("$.data.remainingBalance").value(350.00))
+                .andExpect(jsonPath("$.data.amount").value(150.00))
+                .andExpect(jsonPath("$.data.referenceId").isNotEmpty())
+                .andExpect(jsonPath("$.data.paymentMethod").value("Bank Transfer"));
+
+        Wallet aliceWallet = walletRepository.findByUserId(alice.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("350.00").compareTo(aliceWallet.getBalance()));
+
+        List<WalletTransaction> txs = walletTransactionRepository.findByUser_Id(alice.getId(), null).getContent();
+        assertEquals(1, txs.size());
+        WalletTransaction tx = txs.get(0);
+        assertEquals(TransactionType.WITHDRAWAL, tx.getType());
+        assertEquals(TransactionDirection.OUT, tx.getDirection());
+        assertEquals(0, new BigDecimal("150.00").compareTo(tx.getAmount()));
+        assertEquals(0, new BigDecimal("500.00").compareTo(tx.getBalanceBefore()));
+        assertEquals(0, new BigDecimal("350.00").compareTo(tx.getBalanceAfter()));
+        assertEquals("Cash withdrawal to ABA", tx.getDescription());
+        assertNull(tx.getGoal());
+    }
+
+    @Test
+    @DisplayName("Withdraw wallet: Insufficient balance throws 400 Bad Request")
+    void testWithdrawWallet_InsufficientBalance_Fails() throws Exception {
+        String token = jwtUtil.generateAccessToken(alice.getPhoneNumber());
+        String stepUpToken = jwtUtil.generateStepUpToken(alice.getPhoneNumber(), JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        WithdrawRequest req = WithdrawRequest.builder()
+                .amount(new BigDecimal("9999.00"))
+                .currency("USD")
+                .build();
+
+        mockMvc.perform(post("/api/wallet/withdraw")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Step-Up-Token", stepUpToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Insufficient wallet balance")));
+
+        Wallet aliceWallet = walletRepository.findByUserId(alice.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("500.00").compareTo(aliceWallet.getBalance()));
+    }
+
+    @Test
+    @DisplayName("Withdraw wallet: Missing X-Step-Up-Token header is rejected with 400")
+    void testWithdrawWallet_MissingStepUpToken_Rejected() throws Exception {
+        String token = jwtUtil.generateAccessToken(alice.getPhoneNumber());
+        WithdrawRequest req = WithdrawRequest.builder()
+                .amount(new BigDecimal("50.00"))
+                .currency("USD")
+                .build();
+
+        mockMvc.perform(post("/api/wallet/withdraw")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Missing X-Step-Up-Token header"));
+    }
+
+    @Test
+    @DisplayName("Withdraw wallet: KHR currency is correctly converted to USD at 4100 rate")
+    void testWithdrawWallet_KhrCurrencyConversion() throws Exception {
+        String token = jwtUtil.generateAccessToken(alice.getPhoneNumber());
+        String stepUpToken = jwtUtil.generateStepUpToken(alice.getPhoneNumber(), JwtUtil.FINANCIAL_TRANSACTION_SCOPE);
+
+        // 41,000 KHR = 10.00 USD
+        WithdrawRequest req = WithdrawRequest.builder()
+                .amount(new BigDecimal("41000"))
+                .currency("KHR")
+                .paymentMethod("QR Code")
+                .build();
+
+        mockMvc.perform(post("/api/wallet/withdraw")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Step-Up-Token", stepUpToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.balance").value(490.00))
+                .andExpect(jsonPath("$.data.remainingBalance").value(490.00));
+
+        Wallet aliceWallet = walletRepository.findByUserId(alice.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("490.00").compareTo(aliceWallet.getBalance()));
     }
 
     // =========================================================================
