@@ -30,6 +30,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {
@@ -68,6 +70,7 @@ class ProfileIntegrationTest {
     void setUp() {
         testUser = User.builder()
                 .fullName("Chea Teng")
+                .username("cheateng")
                 .phoneNumber("012345678")
                 .dateOfBirth(LocalDate.of(2000, 1, 1))
                 .gender(Gender.MALE)
@@ -143,6 +146,8 @@ class ProfileIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Profile retrieved successfully"))
                 .andExpect(jsonPath("$.data.user.id").value(testUser.getId().toString()))
                 .andExpect(jsonPath("$.data.user.fullName").value("Chea Teng"))
+                .andExpect(jsonPath("$.data.user.username").value("cheateng"))
+                .andExpect(jsonPath("$.data.user.phoneNumber").value("012345678"))
                 .andExpect(jsonPath("$.data.user.achievementUnlockedCount").value(0))
                 .andExpect(jsonPath("$.data.level.level").value(3))
                 .andExpect(jsonPath("$.data.level.name").value("Goal Builder"))
@@ -177,6 +182,7 @@ class ProfileIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Profile retrieved"))
                 .andExpect(jsonPath("$.data.name").value("Chea Teng"))
+                .andExpect(jsonPath("$.data.username").value("cheateng"))
                 .andExpect(jsonPath("$.data.phone").value("012345678"))
                 .andExpect(jsonPath("$.data.birthday").value("2000-01-01"))
                 .andExpect(jsonPath("$.data.gender").value("MALE"))
@@ -191,5 +197,96 @@ class ProfileIntegrationTest {
         mockMvc.perform(get("/api/v1/profile")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "012345678", roles = {"USER"})
+    @DisplayName("PUT /api/users/me/profile updates fullName, username, phone, avatarUrl and returns new tokens when phone changes")
+    void updateMyProfile_Put_UpdatesProfileAndReturnsTokensOnPhoneChange() throws Exception {
+        String requestBody = """
+                {
+                    "fullName": "Pon Kouyseng",
+                    "username": "@ponkouyseng",
+                    "phoneNumber": "0714232439",
+                    "avatarUrl": "https://example.com/avatar.png"
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Profile updated successfully"))
+                .andExpect(jsonPath("$.data.id").value(testUser.getId().toString()))
+                .andExpect(jsonPath("$.data.fullName").value("Pon Kouyseng"))
+                .andExpect(jsonPath("$.data.username").value("ponkouyseng"))
+                .andExpect(jsonPath("$.data.phoneNumber").value("0714232439"))
+                .andExpect(jsonPath("$.data.avatarUrl").value("https://example.com/avatar.png"))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.tokenType").value("Bearer"));
+    }
+
+    @Test
+    @WithMockUser(username = "012345678", roles = {"USER"})
+    @DisplayName("PATCH /api/v1/profile updates fields without re-issuing tokens when phone number is unchanged")
+    void updateMyProfile_Patch_NoPhoneChangeDoesNotReissueTokens() throws Exception {
+        String requestBody = """
+                {
+                    "fullName": "Pon Kouyseng",
+                    "username": "ponkouyseng"
+                }
+                """;
+
+        mockMvc.perform(patch("/api/v1/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.fullName").value("Pon Kouyseng"))
+                .andExpect(jsonPath("$.data.username").value("ponkouyseng"))
+                .andExpect(jsonPath("$.data.phoneNumber").value("012345678"))
+                .andExpect(jsonPath("$.data.accessToken").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "012345678", roles = {"USER"})
+    @DisplayName("PUT /api/users/me/profile returns 400 when username or phone number already belongs to another user")
+    void updateMyProfile_DuplicatePhoneOrUsername_ReturnsBadRequest() throws Exception {
+        User otherUser = User.builder()
+                .fullName("Other User")
+                .username("existinguser")
+                .phoneNumber("099888777")
+                .dateOfBirth(LocalDate.of(1999, 5, 5))
+                .gender(Gender.FEMALE)
+                .status("ACTIVE")
+                .role(UserRole.USER)
+                .build();
+        userRepository.save(otherUser);
+
+        String duplicateUsernameRequest = """
+                {
+                    "username": "@ExistingUser"
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicateUsernameRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Username already exists"));
+
+        String duplicatePhoneRequest = """
+                {
+                    "phoneNumber": "099888777"
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicatePhoneRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Phone number already exists"));
     }
 }
