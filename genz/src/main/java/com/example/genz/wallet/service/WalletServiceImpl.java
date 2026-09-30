@@ -10,6 +10,8 @@ import com.example.genz.wallet.dto.TopUpRequest;
 import com.example.genz.wallet.dto.TopUpResponse;
 import com.example.genz.wallet.dto.WalletResponse;
 import com.example.genz.wallet.dto.WalletSummaryResponse;
+import com.example.genz.wallet.dto.WithdrawRequest;
+import com.example.genz.wallet.dto.WithdrawResponse;
 import com.example.genz.wallet.entity.Wallet;
 import com.example.genz.wallet.entity.GrouplWallet;
 import com.example.genz.auth.entity.User;
@@ -185,6 +187,88 @@ public class WalletServiceImpl implements WalletService {
                 .newBalance(balanceAfter)
                 .completedAt(transaction.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public WithdrawResponse withdraw(WithdrawRequest request, String phoneNumber) {
+        User user = userRepository.findByPhoneNumberForUpdate(phoneNumber)
+                .or(() -> userRepository.findByPhoneNumber(phoneNumber))
+                .orElseThrow(() -> new ResourceNoteFoundException("User not found with phone: " + phoneNumber));
+        Wallet existingWallet = walletRepository.findByUserId(user.getId())
+                .orElseGet(() -> getOrCreateWallet(user));
+        Wallet wallet = walletRepository.findByIdForUpdate(existingWallet.getId())
+                .orElse(existingWallet);
+
+        String currencyStr = (request.getCurrency() != null && !request.getCurrency().isBlank())
+                ? request.getCurrency().trim().toUpperCase()
+                : "USD";
+
+        // Convert KHR to USD if currency is KHR (approx 4100 KHR = 1 USD)
+        BigDecimal debitAmountInUsd = request.getAmount();
+        if ("KHR".equals(currencyStr)) {
+            debitAmountInUsd = request.getAmount().divide(BigDecimal.valueOf(4100), 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal balanceBefore = wallet.getBalance() != null ? wallet.getBalance() : BigDecimal.ZERO;
+        if (balanceBefore.compareTo(debitAmountInUsd) < 0) {
+            throw new BadRequestException("Insufficient wallet balance for withdrawal. Available: $" + balanceBefore + ", requested: $" + debitAmountInUsd);
+        }
+
+        BigDecimal balanceAfter = balanceBefore.subtract(debitAmountInUsd);
+        wallet.setBalance(balanceAfter);
+        Wallet savedWallet = walletRepository.save(wallet);
+
+        String bankName = (request.getBank() != null && !request.getBank().isBlank()) ? request.getBank().trim() : null;
+        String paymentMethod = (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank()) ? request.getPaymentMethod().trim() : null;
+        String description;
+        if (request.getDescription() != null && !request.getDescription().isBlank()) {
+            description = request.getDescription();
+        } else if (bankName != null) {
+            description = "Withdrawal — " + bankName;
+        } else if (paymentMethod != null) {
+            description = "Withdrawal — " + paymentMethod;
+        } else {
+            description = "Wallet withdrawal";
+        }
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .wallet(savedWallet)
+                .user(user)
+                .goal(null)
+                .amount(debitAmountInUsd)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .direction(TransactionDirection.OUT)
+                .type(TransactionType.WITHDRAWAL)
+                .status(TransactionStatus.SUCCESS)
+                .description(description)
+                .createdAt(LocalDateTime.now())
+                .build();
+        walletTransactionRepository.save(transaction);
+
+        String referenceId = generateWithdrawReference();
+
+        return WithdrawResponse.builder()
+                .success(true)
+                .message(String.format("Successfully withdrew $%.2f from your wallet.", debitAmountInUsd))
+                .walletId(savedWallet.getId())
+                .referenceId(referenceId)
+                .amount(request.getAmount())
+                .currency(currencyStr)
+                .bank(bankName)
+                .paymentMethod(paymentMethod)
+                .balance(balanceAfter)
+                .newBalance(balanceAfter)
+                .remainingBalance(balanceAfter)
+                .completedAt(transaction.getCreatedAt())
+                .build();
+    }
+
+    private String generateWithdrawReference() {
+        int year = LocalDateTime.now().getYear();
+        int randomSuffix = java.util.concurrent.ThreadLocalRandom.current().nextInt(10000, 100000);
+        return String.format("REF-%d-WTH-%05d", year, randomSuffix);
     }
 
     @Override
