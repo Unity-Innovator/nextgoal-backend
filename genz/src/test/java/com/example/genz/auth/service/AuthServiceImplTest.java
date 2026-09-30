@@ -80,6 +80,9 @@ class AuthServiceImplTest {
     @Mock
     private PinAttemptService pinAttemptService;
 
+    @Mock
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
+
     @InjectMocks
     private AuthServiceImpl authService;
 

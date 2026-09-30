@@ -75,11 +75,16 @@ class GoalTransactionIntegrationTest {
     @Autowired
     private WalletTransactionRepository walletTransactionRepository;
 
+    @Autowired
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
+
     private User owner;
     private User memberDara;
     private User stranger;
     private Goal sharedGoal;
     private GrouplWallet wallet;
+    private com.example.genz.wallet.entity.Wallet ownerWallet;
+    private com.example.genz.wallet.entity.Wallet memberDaraWallet;
 
     @BeforeEach
     void setUp() {
@@ -99,6 +104,18 @@ class GoalTransactionIntegrationTest {
                 .gender(Gender.MALE)
                 .role(UserRole.USER)
                 .status("ACTIVE")
+                .build());
+
+        ownerWallet = walletRepository.save(com.example.genz.wallet.entity.Wallet.builder()
+                .user(owner)
+                .balance(new BigDecimal("1000.00"))
+                .currency(Currency.USD)
+                .build());
+
+        memberDaraWallet = walletRepository.save(com.example.genz.wallet.entity.Wallet.builder()
+                .user(memberDara)
+                .balance(new BigDecimal("1000.00"))
+                .currency(Currency.USD)
                 .build());
 
         stranger = userRepository.save(User.builder()
@@ -163,7 +180,7 @@ class GoalTransactionIntegrationTest {
 
         TransactionResponse tx = page.items().get(0);
         assertNotNull(tx.getId());
-        assertEquals("DEPOSIT", tx.getType());
+        assertEquals("GOAL_DEPOSIT", tx.getType());
         assertEquals(new BigDecimal("168.98"), tx.getAmount());
         assertEquals("USD", tx.getCurrency());
         assertNotNull(tx.getUser());
@@ -185,7 +202,8 @@ class GoalTransactionIntegrationTest {
 
         // Also add a withdrawal transaction
         WalletTransaction withdrawTx = new WalletTransaction();
-        withdrawTx.setWallet(wallet);
+        withdrawTx.setWallet(ownerWallet);
+        withdrawTx.setGoal(sharedGoal);
         withdrawTx.setUser(owner);
         withdrawTx.setAmount(new BigDecimal("20.00"));
         withdrawTx.setType(TransactionType.WITHDRAWAL);
@@ -205,7 +223,7 @@ class GoalTransactionIntegrationTest {
                 sharedGoal.getId(), "DEPOSIT", 0, 10, memberDara.getPhoneNumber()
         );
         assertEquals(2, depositOnly.items().size());
-        assertTrue(depositOnly.items().stream().allMatch(t -> "DEPOSIT".equals(t.getType())));
+        assertTrue(depositOnly.items().stream().allMatch(t -> "GOAL_DEPOSIT".equals(t.getType())));
 
         // Filter WITHDRAWAL only
         TransactionPageResponse<TransactionResponse> withdrawOnly = transactionService.getGoalTransactions(

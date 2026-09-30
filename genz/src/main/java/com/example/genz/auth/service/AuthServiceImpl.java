@@ -49,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final PinAttemptService pinAttemptService;
+    private final com.example.genz.wallet.repository.WalletRepository walletRepository;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -107,6 +108,13 @@ public class AuthServiceImpl implements AuthService {
         User user = userMapper.toEntity(request, passwordHash, pinHash, fullName);
         user.setStatus("ACTIVE");
         User savedUser = userRepository.save(user);
+
+        com.example.genz.wallet.entity.Wallet userWallet = com.example.genz.wallet.entity.Wallet.builder()
+                .user(savedUser)
+                .balance(java.math.BigDecimal.ZERO)
+                .currency(com.example.genz.transaction.enums.Currency.USD)
+                .build();
+        walletRepository.save(userWallet);
 
         verificationToken.setUser(savedUser);
         verificationToken.setUsed(true);

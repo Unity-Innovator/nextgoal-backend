@@ -82,6 +82,9 @@ class GoalMilestoneDepositIntegrationTest {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
+
     private User owner;
     private User memberB;
     private Goal goal;
@@ -102,6 +105,12 @@ class GoalMilestoneDepositIntegrationTest {
         owner.setCoinBalance(0);
         owner = userRepository.saveAndFlush(owner);
 
+        walletRepository.saveAndFlush(com.example.genz.wallet.entity.Wallet.builder()
+                .user(owner)
+                .balance(new BigDecimal("1000.00"))
+                .currency(Currency.USD)
+                .build());
+
         memberB = new User();
         memberB.setFullName("Bob Member");
         memberB.setPhoneNumber("0982223334");
@@ -111,6 +120,12 @@ class GoalMilestoneDepositIntegrationTest {
         memberB.setRole(UserRole.USER);
         memberB.setCoinBalance(0);
         memberB = userRepository.saveAndFlush(memberB);
+
+        walletRepository.saveAndFlush(com.example.genz.wallet.entity.Wallet.builder()
+                .user(memberB)
+                .balance(new BigDecimal("1000.00"))
+                .currency(Currency.USD)
+                .build());
 
         goal = new Goal();
         goal.setGoalName("New Laptop");

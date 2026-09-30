@@ -14,5 +14,8 @@ import java.util.UUID;
 public class ProfileUserResponse {
     private UUID id;
     private String fullName;
+    private String username;
+    private String phoneNumber;
+    private String avatarUrl;
     private int achievementUnlockedCount;
 }

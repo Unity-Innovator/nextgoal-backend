@@ -83,6 +83,9 @@ class StreakResetLogicIntegrationTest {
     @Autowired
     private UserRewardRepository userRewardRepository;
 
+    @Autowired
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
+
     private User testUser;
     private Goal testGoal;
     private GoalMember testMember;
@@ -97,6 +100,12 @@ class StreakResetLogicIntegrationTest {
                 .gender(Gender.MALE)
                 .status("ACTIVE")
                 .role(UserRole.USER)
+                .build());
+
+        walletRepository.save(com.example.genz.wallet.entity.Wallet.builder()
+                .user(testUser)
+                .balance(new BigDecimal("500.00"))
+                .currency(Currency.USD)
                 .build());
 
         testGoal = new Goal();

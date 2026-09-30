@@ -16,9 +16,13 @@ public class ProfileMapper {
         if (user == null) {
             return null;
         }
+        String avatarUrl = user.getSettings() != null ? user.getSettings().getAvatarUrl() : null;
         return ProfileUserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
+                .username(user.getProfileUsername())
+                .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(avatarUrl)
                 .achievementUnlockedCount(achievementUnlockedCount)
                 .build();
     }

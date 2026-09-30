@@ -8,11 +8,17 @@ import com.example.genz.goal.repository.GoalRepository;
 import com.example.genz.reward.dto.UserRewardSummaryResponse;
 import com.example.genz.reward.service.AchievementService;
 import com.example.genz.user.dto.ProfileResponse;
+import com.example.genz.user.dto.UpdateProfileRequest;
+import com.example.genz.user.dto.UpdateProfileResponse;
 import com.example.genz.user.service.ProfileService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -33,13 +39,36 @@ public class ProfileController {
         return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", response));
     }
 
+    @PutMapping({"/api/users/me/profile", "/api/v1/profile"})
+    public ResponseEntity<ApiResponse<UpdateProfileResponse>> updateMyProfilePut(
+            @Valid @RequestBody UpdateProfileRequest request,
+            Authentication authentication
+    ) {
+        User user = getUser(authentication);
+        UpdateProfileResponse response = profileService.updateProfile(user, request);
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", response));
+    }
+
+    @PatchMapping({"/api/users/me/profile", "/api/v1/profile"})
+    public ResponseEntity<ApiResponse<UpdateProfileResponse>> updateMyProfilePatch(
+            @Valid @RequestBody UpdateProfileRequest request,
+            Authentication authentication
+    ) {
+        User user = getUser(authentication);
+        UpdateProfileResponse response = profileService.updateProfile(user, request);
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", response));
+    }
+
     @GetMapping("/api/v1/profile")
     public ResponseEntity<ApiResponse<ProfileV1Response>> getProfileV1(Authentication authentication) {
         User user = getUser(authentication);
         UserRewardSummaryResponse rewards = achievementService.getUserRewardSummary(user);
+        String avatarUrl = user.getSettings() != null ? user.getSettings().getAvatarUrl() : null;
         ProfileV1Response response = new ProfileV1Response(
                 user.getFullName(),
+                user.getProfileUsername(),
                 user.getPhoneNumber(),
+                avatarUrl,
                 user.getDateOfBirth(),
                 user.getGender() != null ? user.getGender().name() : null,
                 rewards != null ? rewards.getLevel() : null,
@@ -61,7 +90,7 @@ public class ProfileController {
                 .orElseThrow(() -> new ResourceNoteFoundException("User not found with phone number: " + authentication.getName()));
     }
 
-    public record ProfileV1Response(String name, String phone, LocalDate birthday,
+    public record ProfileV1Response(String name, String username, String phone, String avatarUrl, LocalDate birthday,
                                     String gender, Integer level, long goalsCount, Integer coinsCount) {}
 }
 

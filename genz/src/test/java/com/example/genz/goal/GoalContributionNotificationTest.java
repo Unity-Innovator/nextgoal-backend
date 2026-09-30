@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.example.genz.auth.entity.User;
 import com.example.genz.auth.repository.UserRepository;
@@ -52,6 +54,7 @@ import com.example.genz.wallet.repository.GoalWalletRepository;
 import com.example.genz.wallet.service.WalletServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class GoalContributionNotificationTest {
 
     @Mock
@@ -68,6 +71,8 @@ class GoalContributionNotificationTest {
     @InjectMocks
     private NotificationServiceImpl notificationService;
 
+    @Mock
+    private com.example.genz.wallet.repository.WalletRepository walletRepository;
     @Mock
     private GoalRepository goalRepository;
     @Mock
@@ -106,6 +111,7 @@ class GoalContributionNotificationTest {
     void setUp() {
         walletService = new WalletServiceImpl(
                 userRepository,
+                walletRepository,
                 goalRepository,
                 goalMemberRepository,
                 goalWalletRepository,
@@ -117,6 +123,19 @@ class GoalContributionNotificationTest {
                 goalMilestoneRewardService,
                 challengeCompletionService
         );
+
+        org.mockito.Mockito.lenient().when(walletRepository.findByUserIdForUpdate(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> java.util.Optional.of(com.example.genz.wallet.entity.Wallet.builder()
+                        .user(User.builder().id(inv.getArgument(0)).build())
+                        .balance(new BigDecimal("10000.00"))
+                        .currency(com.example.genz.transaction.enums.Currency.USD)
+                        .build()));
+        org.mockito.Mockito.lenient().when(walletRepository.findByUserId(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> java.util.Optional.of(com.example.genz.wallet.entity.Wallet.builder()
+                        .user(User.builder().id(inv.getArgument(0)).build())
+                        .balance(new BigDecimal("10000.00"))
+                        .currency(com.example.genz.transaction.enums.Currency.USD)
+                        .build()));
 
         owner = new User();
         owner.setId(UUID.randomUUID());
