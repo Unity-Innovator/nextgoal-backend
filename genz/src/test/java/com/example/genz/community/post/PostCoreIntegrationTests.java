@@ -56,7 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc
 @Transactional
-class PostCoreIntegrationTests {
+public class PostCoreIntegrationTests {
 
     @Autowired
     private UserRepository userRepository;
@@ -397,6 +397,59 @@ class PostCoreIntegrationTests {
                         viewer.getPhoneNumber(), active.createdAt(), null, 20
                 )
         );
+    }
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    public static String md5(String value) {
+        return org.springframework.util.DigestUtils.md5DigestAsHex(
+                value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void randomFeedUsesStableSeedAndCursorAcrossPagesAndRefreshes() throws Exception {
+        jdbc.execute("CREATE ALIAS IF NOT EXISTS MD5 FOR \"com.example.genz.community.post.PostCoreIntegrationTests.md5\"");
+        User author = saveUser("Random author", "0128000001");
+        User viewer = saveUser("Random viewer", "0128000002");
+        Set<java.util.UUID> expected = new HashSet<>();
+        for (int i = 0; i < 7; i++) {
+            expected.add(createTextPost(author, "Random " + i, PostVisibility.PUBLIC).id());
+        }
+        createTextPost(author, "Private", PostVisibility.PRIVATE);
+        PostResponse removed = createTextPost(author, "Removed", PostVisibility.PUBLIC);
+        postService.deletePost(removed.id(), author.getPhoneNumber());
+        postRepository.flush();
+        PostCursorPageResponse page = postService.getRandomPublicFeed(viewer.getPhoneNumber(), null, null, null, 2);
+        var firstCursor = page.nextCursor();
+        assertNotNull(firstCursor.randomSeed());
+        assertNotNull(firstCursor.snapshot());
+        assertEquals(page.items().stream().map(PostResponse::id).toList(),
+                postService.getRandomPublicFeed(viewer.getPhoneNumber(), firstCursor.randomSeed(),
+                        firstCursor.snapshot(), null, 2).items().stream().map(PostResponse::id).toList());
+        // Posts created during a paging session wait until the next refresh.
+        PostResponse later = createTextPost(author, "Later", PostVisibility.PUBLIC);
+        Post laterEntity = postRepository.findById(later.id()).orElseThrow();
+        laterEntity.setCreatedAt(firstCursor.snapshot().plusSeconds(1));
+        postRepository.saveAndFlush(laterEntity);
+        Set<java.util.UUID> seen = new HashSet<>();
+        while (true) {
+            for (var item : page.items()) assertTrue(seen.add(item.id()), "Duplicate post");
+            if (!page.hasNext()) break;
+            var cursor = page.nextCursor();
+            page = postService.getRandomPublicFeed(viewer.getPhoneNumber(), cursor.randomSeed(),
+                    cursor.snapshot(), cursor.postId(), 2);
+        }
+        assertEquals(expected, seen);
+        var refreshed = postService.getRandomPublicFeed(viewer.getPhoneNumber(), null, null, null, 2);
+        org.junit.jupiter.api.Assertions.assertNotEquals(firstCursor.randomSeed(), refreshed.nextCursor().randomSeed());
+        assertThrows(PostBadRequestException.class, () -> postService.getRandomPublicFeed(
+                viewer.getPhoneNumber(), null, null, firstCursor.postId(), 2));
+        mockMvc.perform(get("/api/community/feed/random").with(user(viewer.getPhoneNumber())).param("limit", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(2))
+                .andExpect(jsonPath("$.data.nextCursor.randomSeed").isNotEmpty())
+                .andExpect(jsonPath("$.data.nextCursor.snapshot").isNotEmpty());
     }
 
     private PostResponse createTextPost(User author, String content, PostVisibility visibility) {

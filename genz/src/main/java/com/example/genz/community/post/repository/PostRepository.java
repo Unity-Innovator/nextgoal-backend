@@ -86,6 +86,58 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
             select p
             from Post p
             where p.status = com.example.genz.community.post.enums.PostStatus.ACTIVE
+              and p.visibility = com.example.genz.community.post.enums.PostVisibility.PUBLIC
+              and (
+                  p.author.id = :viewerId
+                  or not exists (
+                      select settings.id from UserSettings settings
+                      where settings.user.id = p.author.id
+                  )
+                  or exists (
+                      select settings.id from UserSettings settings
+                      where settings.user.id = p.author.id
+                        and settings.profileVisibility = com.example.genz.community.post.enums.PostVisibility.PUBLIC
+                  )
+                  or (
+                      exists (
+                          select settings.id from UserSettings settings
+                          where settings.user.id = p.author.id
+                            and settings.profileVisibility = com.example.genz.community.post.enums.PostVisibility.FRIENDS_ONLY
+                      )
+                      and exists (
+                          select profileFriendship.id from Friendship profileFriendship
+                          where (profileFriendship.userOne.id = :viewerId and profileFriendship.userTwo.id = p.author.id)
+                             or (profileFriendship.userOne.id = p.author.id and profileFriendship.userTwo.id = :viewerId)
+                      )
+                  )
+              )
+              and not exists (
+                  select b.id
+                  from UserBlock b
+                  where (b.blocker.id = :viewerId and b.blockedUser.id = p.author.id)
+                     or (b.blocker.id = p.author.id and b.blockedUser.id = :viewerId)
+              )
+              and p.createdAt <= :snapshot
+              and (
+                  cast(function('md5', concat(cast(p.id as string), :seed)) as string) > :cursorRank
+                  or (cast(function('md5', concat(cast(p.id as string), :seed)) as string) = :cursorRank
+                      and p.id > :cursorPostId)
+              )
+            order by cast(function('md5', concat(cast(p.id as string), :seed)) as string), p.id
+            """)
+    List<Post> findRandomPublicFeed(
+            @Param("viewerId") UUID viewerId,
+            @Param("snapshot") Instant snapshot,
+            @Param("seed") String seed,
+            @Param("cursorRank") String cursorRank,
+            @Param("cursorPostId") UUID cursorPostId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select p
+            from Post p
+            where p.status = com.example.genz.community.post.enums.PostStatus.ACTIVE
               and p.visibility in (
                   com.example.genz.community.post.enums.PostVisibility.PUBLIC,
                   com.example.genz.community.post.enums.PostVisibility.FRIENDS_ONLY

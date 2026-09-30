@@ -12,3 +12,10 @@
 # Operating-system metadata
 .DS_Store
 Thumbs.db
+
+# Temporary files and local credentials
+*.tmp
+*.bak
+.env
+.env.*
+!.env.example

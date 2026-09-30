@@ -1,443 +1,725 @@
+%% NextGoal physical schema: 2026-09-30
+%% Fresh database: B1 + V1.1 through V22.1; optional rag V23 and V24.
+%% 52 core tables + 2 rag tables; 461 columns. Excludes flyway_schema_history.
+%% PK = primary key (all PK fields together for composite keys).
+%% FK = participates in a real SQL FK. UK marks only single-column uniqueness.
+%% Composite/partial unique keys and delete actions are in nextgoal_schema_explained.md.
+%% Every edge represents one FK; labels list child columns then referenced columns.
+%% Solid = all FK columns are part of the child's PK; dotted = otherwise.
+%% Cardinality describes the FK; application rules may be stricter.
+%% No FK exists from assistant_documents.owner_id to users or from user_rewards.level to levels.
 erDiagram
+    users {
+        uuid user_id PK "required"
+        varchar(255) full_name "required"
+        varchar(255) phone_number UK "required"
+        date date_of_birth "required"
+        varchar(255) gender "required"
+        varchar(255) password_hash "nullable"
+        varchar(255) pin_hash "nullable"
+        varchar(255) status "required"
+        varchar(20) role "required"
+        integer energy "required"
+        integer total_xp "required"
+        date energy_reset_date "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        integer coin_balance "required"
+    }
 
-  USERS ||--|| USER_SETTINGS : has
-  USERS ||--o{ BILLS : creates
-  USERS ||--o{ BILL_PARTICIPANTS : joins
-  USERS ||--o{ SETTLEMENTS : pays
-  USERS ||--o{ SETTLEMENTS : receives
-  USERS ||--o{ SAVING_GOALS : owns
-  USERS ||--o{ SAVING_CONTRIBUTIONS : makes
-  USERS ||--o{ USER_REWARDS : earns
-  USERS ||--o{ USER_LESSONS : completes
-  USERS ||--o{ AI_CHAT_MESSAGES : sends
-  USERS ||--o{ POSTS : creates
-  USERS ||--o{ POST_LIKES : gives
-  USERS ||--o{ POST_COMMENTS : writes
-  USERS ||--o{ POST_REPORTS : files
-  USERS ||--o{ USER_FOLLOWS : follows
-  USERS ||--o{ USER_FOLLOWS : followed_by
-  USERS ||--o{ SAVING_GROUPS : creates
-  USERS ||--o{ GROUP_MEMBERS : joins
-  USERS ||--o{ GROUP_CONTRIBUTIONS : makes
-  USERS ||--o{ GROUP_INVITATIONS : sends
-  USERS ||--|| WALLETS : has
-  USERS ||--o{ PAYMENT_METHODS : owns
-  USERS ||--o{ GROUP_WALLET_TRANSACTIONS : initiates
-  USERS ||--o{ GROUP_WITHDRAWAL_REQUESTS : requests
-  USERS ||--o{ GROUP_WITHDRAWAL_APPROVALS : decides
-  USERS ||--o{ PAYMENT_QR_CODES : generates
-  USERS ||--o{ QR_SCAN_LOGS : scans
+    user_settings {
+        uuid settings_id PK "required"
+        uuid user_id FK, UK "required"
+        varchar(255) language "required"
+        varchar(255) theme "required"
+        boolean bill_reminder "required"
+        varchar(255) avatar_url "nullable"
+        boolean goal_alert "required"
+        boolean lesson_reminder "required"
+        boolean ai_tips "required"
+        boolean daily_challenge_enabled "required"
+        boolean face_id_enabled "required"
+        integer auto_lock_minutes "required"
+        boolean push_notifications_enabled "required"
+        boolean sms_notifications_enabled "required"
+        boolean email_notifications_enabled "required"
+        varchar(255) profile_visibility "required"
+        boolean show_savings_goals_publicly "required"
+        boolean show_full_name_on_posts "required"
+        boolean allow_comments_on_posts "required"
+        varchar(255) preferred_currency "required"
+        timestamp created_at "required"
+        timestamp updated_at "nullable"
+    }
 
-  BILLS ||--o{ BILL_PARTICIPANTS : has
-  BILLS ||--o{ SETTLEMENTS : generates
+    password_reset_tokens {
+        uuid token_id PK "required"
+        uuid user_id FK "required"
+        varchar(255) token_hash "required"
+        timestamp expires_at "required"
+        boolean used "required"
+        timestamp created_at "required"
+    }
 
-  SAVING_GOALS ||--o{ SAVING_CONTRIBUTIONS : receives
-  SAVING_GOALS ||--o{ SAVING_MILESTONES : triggers
-  SAVING_GOALS ||--o{ POSTS : referenced_by
+    verification_tokens {
+        uuid token_id PK "required"
+        varchar(30) phone_number "required"
+        varchar(30) purpose "required"
+        uuid user_id FK "nullable"
+        varchar(255) token_hash "required"
+        timestamp expires_at "required"
+        boolean used "required"
+        timestamp created_at "required"
+    }
 
-  SAVING_MILESTONES ||--o{ USER_REWARDS : grants
+    refresh_tokens {
+        uuid token_id PK "required"
+        uuid user_id FK "required"
+        varchar(255) token_hash UK "required"
+        timestamp expires_at "required"
+        boolean revoked "required"
+        timestamp created_at "required"
+        uuid replaced_by_token_id "nullable"
+    }
 
-  LESSONS ||--o{ LESSON_QUESTIONS : contains
-  LESSONS ||--o{ USER_LESSONS : tracked_by
+    goals {
+        uuid goal_id PK "required"
+        varchar(100) goal_name "required"
+        numeric target_amount "required; NUMERIC(19, 4)"
+        numeric current_amount "required; NUMERIC(19, 4)"
+        date target_date "required"
+        varchar(255) category "required"
+        varchar(500) image_url "nullable"
+        numeric remain_balance "nullable; NUMERIC(38, 2)"
+        varchar(255) status "required"
+        varchar(50) goal_type "required"
+        uuid owner_id FK "required"
+        timestamp created_at "required"
+        timestamp updated_at "nullable"
+        timestamp completed_at "nullable"
+    }
 
-  REWARDS ||--o{ USER_REWARDS : assigned_to
+    goal_members {
+        uuid goal_member_id PK "required"
+        uuid goal_id FK "required"
+        uuid user_id FK "required"
+        varchar(255) role "required"
+        varchar(255) status "required"
+        timestamp joined_at "nullable"
+    }
 
-  POSTS ||--o{ POST_LIKES : receives
-  POSTS ||--o{ POST_COMMENTS : receives
-  POSTS ||--o{ POST_REPORTS : flagged_by
+    goal_invitations {
+        uuid invitation_id PK "required"
+        uuid goal_id FK "required"
+        uuid inviter_id FK "required"
+        uuid invitee_id FK "required"
+        varchar(255) status "required"
+        timestamp created_at "required"
+        timestamp responded_at "nullable"
+    }
 
-  POST_COMMENTS ||--o{ POST_COMMENTS : replies_to
+    group_wallets {
+        uuid wallet_id PK "required"
+        numeric balance "required; NUMERIC(19, 2)"
+        uuid creator_id FK "required"
+        uuid goal_id FK, UK "required"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        varchar(255) currency "required"
+    }
 
-  SAVING_GROUPS ||--o{ GROUP_MEMBERS : has
-  SAVING_GROUPS ||--o{ GROUP_CONTRIBUTIONS : receives
-  SAVING_GROUPS ||--o{ GROUP_INVITATIONS : sends
-  SAVING_GROUPS ||--o{ POSTS : referenced_by
-  SAVING_GROUPS ||--|| GROUP_WALLETS : has
+    saving_plans {
+        uuid plan_id PK "required"
+        uuid goal_id FK, UK "required"
+        numeric contribution_amount "required; NUMERIC(19, 4)"
+        varchar(50) frequency "required"
+        date next_contribution_date "required"
+        varchar(50) status "required"
+        numeric contributed_this_period "required; NUMERIC(19, 4)"
+        timestamp created_at "required"
+        timestamp updated_at "nullable"
+    }
 
-  WALLETS ||--o{ WALLET_TRANSACTIONS : records
-  PAYMENT_METHODS ||--o{ WALLET_TRANSACTIONS : used_in
-  PAYMENT_METHODS ||--o{ GROUP_WALLET_TRANSACTIONS : used_in
+    goal_contributions {
+        uuid contribution_id PK "required"
+        uuid goal_id FK "required"
+        uuid goal_member_id FK "required"
+        numeric amount "required; NUMERIC(19, 4)"
+        varchar(255) note "nullable"
+        timestamp contributed_at "required"
+    }
 
-  GROUP_WALLETS ||--o{ GROUP_WALLET_TRANSACTIONS : records
-  GROUP_WALLETS ||--o{ GROUP_WITHDRAWAL_REQUESTS : has
-  GROUP_WALLETS ||--o{ PAYMENT_QR_CODES : generates
+    wallet_transactions {
+        uuid transaction_id PK "required"
+        uuid wallet_id FK "required"
+        uuid user_id FK "required"
+        numeric amount "required; NUMERIC(19, 2)"
+        varchar(255) transaction_type "required"
+        varchar(255) status "required"
+        varchar(255) description "required"
+        timestamp created_at "required"
+    }
 
-  GROUP_WITHDRAWAL_REQUESTS ||--o{ GROUP_WITHDRAWAL_APPROVALS : receives
+    group_wallet_transactions {
+        uuid group_wallet_transaction_id PK "required"
+        uuid group_wallet_id FK "required"
+        uuid goal_member_id FK "required"
+        uuid withdrawal_request_id FK "nullable"
+        varchar(255) transaction_type "required"
+        numeric amount "required; NUMERIC(19, 4)"
+        varchar(255) currency "required"
+        numeric balance_before "required; NUMERIC(19, 4)"
+        numeric balance_after "required; NUMERIC(19, 4)"
+        varchar(255) status "required"
+        timestamp created_at "required"
+    }
 
-  PAYMENT_QR_CODES ||--o{ QR_SCAN_LOGS : scanned_via
+    withdrawal_requests {
+        uuid request_id PK "required"
+        uuid goal_id FK "required"
+        uuid wallet_id FK "required"
+        uuid requested_by FK "required"
+        numeric amount "required; NUMERIC(19, 4)"
+        varchar(500) reason "nullable"
+        varchar(255) status "required"
+        timestamp created_at "required"
+        timestamp resolved_at "nullable"
+    }
 
-  USERS {
-    uuid id PK
-    string full_name
-    string phone_number
-    string password_hash
-    string pin_hash
-    string status
-    timestamp created_at
-    timestamp updated_at
-  }
+    withdrawal_approvals {
+        uuid approval_id PK "required"
+        uuid request_id FK "required"
+        uuid user_id FK "required"
+        varchar(255) decision "required"
+        timestamp decided_at "required"
+    }
 
-  USER_SETTINGS {
-    uuid id PK
-    uuid user_id FK
-    string language
-    string theme
-    string avatar_url
-    boolean bill_reminder
-    boolean goal_alert
-    boolean lesson_reminder
-    boolean ai_tips
-    boolean face_id_enabled
-    int auto_lock_minutes
-    boolean push_notifications_enabled
-    boolean sms_notifications_enabled
-    boolean email_notifications_enabled
-    string profile_visibility
-    boolean show_savings_goals_publicly
-    boolean show_full_name_on_posts
-    boolean allow_comments_on_posts
-    string preferred_currency
-    timestamp created_at
-    timestamp updated_at
-  }
+    payment_methods {
+        uuid payment_method_id PK "required"
+        uuid user_id FK "required"
+        varchar(255) method_type "required"
+        varchar(100) provider "required"
+        varchar(200) account_name "required"
+        varchar(50) account_number_masked "required"
+        varchar(500) account_token "nullable"
+        varchar(255) currency "required"
+        boolean is_default "nullable"
+        varchar(255) status "required"
+        timestamp verified_at "nullable"
+        timestamp created_at "required"
+        timestamp updated_at "nullable"
+    }
 
-  BILLS {
-    uuid id PK
-    uuid creator_id FK
-    string name
-    decimal total_amount
-    string currency
-    string category
-    string receipt_url
-    string status
-    date bill_date
-    timestamp created_at
-    timestamp updated_at
-  }
+    saving_milestones {
+        uuid id PK "required"
+        uuid goal_id FK "required"
+        numeric percentage "required; NUMERIC(38, 2)"
+        numeric amount_required "required; NUMERIC(19, 4)"
+        varchar(255) status "required"
+        timestamp reached_at "nullable"
+        timestamp created_at "nullable"
+    }
 
-  BILL_PARTICIPANTS {
-    uuid id PK
-    uuid bill_id FK
-    uuid user_id FK
-    decimal amount_owed
-    string split_type
-    boolean is_paid
-    timestamp paid_at
-  }
+    notifications {
+        uuid notification_id PK "required"
+        uuid user_id FK "required"
+        varchar(255) title "required"
+        varchar(500) message "required"
+        varchar(50) type "required"
+        uuid reference_id "nullable"
+        boolean is_read "required"
+        timestamp created_at "required"
+    }
 
-  SETTLEMENTS {
-    uuid id PK
-    uuid bill_id FK
-    uuid payer_id FK
-    uuid receiver_id FK
-    decimal amount
-    string currency
-    string status
-    timestamp settled_at
-  }
+    lessons {
+        uuid lesson_id PK "required"
+        varchar(200) title "required"
+        varchar(50) category "required"
+        text content "nullable"
+        varchar(50) difficulty "required"
+        int points_reward "nullable"
+        boolean is_active "nullable"
+        timestamp created_at "required"
+        timestamp updated_at "nullable"
+    }
 
-  SAVING_GOALS {
-    uuid id PK
-    uuid user_id FK
-    string name
-    decimal target_amount
-    decimal current_amount
-    string currency
-    string category
-    string icon
-    date deadline
-    string status
-    timestamp created_at
-    timestamp updated_at
-  }
+    lesson_questions {
+        uuid question_id PK "required"
+        uuid lesson_id FK "required"
+        text question "required"
+        varchar(500) option_a "required"
+        varchar(500) option_b "required"
+        varchar(500) option_c "required"
+        varchar(500) option_d "required"
+        varchar(10) correct_answer "required"
+        int order_index "nullable"
+    }
 
-  SAVING_CONTRIBUTIONS {
-    uuid id PK
-    uuid goal_id FK
-    uuid user_id FK
-    decimal amount
-    string note
-    timestamp contributed_at
-  }
+    user_lessons {
+        uuid user_lesson_id PK "required"
+        uuid user_id FK "required"
+        uuid lesson_id FK "required"
+        varchar(50) status "required"
+        int score "nullable"
+        timestamp started_at "nullable"
+        timestamp completed_at "nullable"
+    }
 
-  SAVING_MILESTONES {
-    uuid id PK
-    uuid goal_id FK
-    int percentage
-    decimal amount_required
-    boolean is_reached
-    timestamp reached_at
-  }
+    quiz_attempts {
+        uuid quiz_attempt_id PK "required"
+        uuid user_id FK "required"
+        int total_questions "required"
+        int correct_answers "nullable"
+        double score "nullable"
+        int base_xp "required"
+        int bonus_xp "required"
+        int total_xp "required"
+        boolean is_completed "required"
+        timestamp started_at "required"
+        timestamp completed_at "nullable"
+    }
 
-  REWARDS {
-    uuid id PK
-    string name
-    string type
-    string icon_url
-    string description
-    int points_value
-    boolean is_active
-    timestamp created_at
-  }
+    quiz_attempt_questions {
+        uuid quiz_attempt_id PK, FK "required"
+        uuid question_id PK, FK "required"
+    }
 
-  USER_REWARDS {
-    uuid id PK
-    uuid user_id FK
-    uuid reward_id FK
-    uuid milestone_id FK
-    string source
-    int points_earned
-    timestamp earned_at
-  }
+    user_answers {
+        uuid user_answer_id PK "required"
+        uuid user_id FK "required"
+        uuid quiz_attempt_id FK "nullable"
+        uuid question_id FK "required"
+        varchar(50) selected_answer "required"
+        boolean is_correct "nullable"
+        timestamp answered_at "required"
+    }
 
-  LESSONS {
-    uuid id PK
-    string title
-    string category
-    string content
-    string difficulty
-    int estimated_minutes
-    int points_reward
-    boolean is_active
-    timestamp created_at
-  }
+    daily_challenges {
+        uuid challenge_id PK "required"
+        varchar(200) title "required"
+        varchar(500) description "nullable"
+        varchar(255) challenge_type "required"
+        integer xp_reward "nullable"
+        boolean is_active "required"
+        timestamp created_at "required"
+        varchar(50) rule_type "nullable"
+        numeric minimum_amount "nullable; NUMERIC(19, 4)"
+        integer target_count "nullable"
+        numeric target_value "nullable; NUMERIC(19, 4)"
+        integer reward_coins "nullable"
+    }
 
-  LESSON_QUESTIONS {
-    uuid id PK
-    uuid lesson_id FK
-    string question
-    string option_a
-    string option_b
-    string option_c
-    string option_d
-    string correct_answer
-    int order_index
-  }
+    user_daily_challenges {
+        uuid user_daily_challenge_id PK "required"
+        uuid user_id FK "required"
+        uuid challenge_id FK "required"
+        varchar(255) status "required"
+        timestamp completed_at "nullable"
+        date challenge_date "required"
+        integer xp_awarded "nullable"
+        numeric progress "nullable; NUMERIC(19, 4)"
+        integer reward_coins_awarded "nullable"
+    }
 
-  USER_LESSONS {
-    uuid id PK
-    uuid user_id FK
-    uuid lesson_id FK
-    string status
-    int score
-    int streak_count
-    timestamp started_at
-    timestamp completed_at
-  }
+    badges {
+        uuid badge_id PK "required"
+        varchar(100) name "required"
+        varchar(500) description "nullable"
+        varchar(255) icon_url "nullable"
+        varchar(50) category "required"
+        varchar(255) requirement_type "required"
+        integer requirement_value "nullable"
+        integer xp_reward "required"
+        varchar(50) rarity "required"
+        boolean active "required"
+    }
 
-  AI_CHAT_MESSAGES {
-    uuid id PK
-    uuid user_id FK
-    string role
-    text content
-    string context_type
-    timestamp created_at
-  }
+    user_badges {
+        uuid user_badge_id PK "required"
+        uuid user_id FK "required"
+        uuid badge_id FK "required"
+        timestamp earned_at "required"
+    }
 
-  POSTS {
-    uuid id PK
-    uuid user_id FK
-    string post_type
-    text content
-    string image_url
-    uuid goal_id FK
-    uuid group_id FK
-    string visibility
-    boolean is_pinned
-    string status
-    int like_count
-    int comment_count
-    timestamp created_at
-    timestamp updated_at
-  }
+    xp_transactions {
+        uuid xp_transaction_id PK "required"
+        uuid user_id FK "required"
+        varchar(255) activity_type "required"
+        uuid reference_id "nullable"
+        integer points "required"
+        timestamp created_at "required"
+    }
 
-  POST_LIKES {
-    uuid id PK
-    uuid post_id FK
-    uuid user_id FK
-    timestamp created_at
-  }
+    user_rewards {
+        uuid reward_id PK "required"
+        uuid user_id FK, UK "required"
+        integer total_xp "required"
+        integer level "required"
+        integer current_streak "required"
+        integer longest_streak "required"
+        date last_activity_date "nullable"
+        timestamp updated_at "nullable"
+    }
 
-  POST_COMMENTS {
-    uuid id PK
-    uuid post_id FK
-    uuid user_id FK
-    uuid parent_comment_id FK
-    text content
-    string status
-    timestamp created_at
-    timestamp updated_at
-  }
+    levels {
+        uuid id PK "required"
+        integer level_number UK "required"
+        varchar(100) name "required"
+        integer required_xp UK "required"
+        timestamp created_at "required"
+        timestamp updated_at "required"
+    }
 
-  USER_FOLLOWS {
-    uuid id PK
-    uuid follower_id FK
-    uuid following_id FK
-    timestamp created_at
-  }
+    goal_milestone_rewards {
+        uuid id PK "required"
+        uuid goal_id FK "required"
+        uuid user_id FK "required"
+        varchar(50) milestone "required"
+        integer coins_earned "required"
+        timestamp created_at "required"
+    }
 
-  POST_REPORTS {
-    uuid id PK
-    uuid post_id FK
-    uuid reported_by FK
-    string reason
-    text details
-    string status
-    timestamp created_at
-  }
+    coin_rewards {
+        uuid id PK "required"
+        varchar(100) name "required"
+        varchar(500) image_url "required"
+        text description "required"
+        integer redeem_coins "required"
+        integer stock "required"
+        boolean is_active "required"
+        timestamp created_at "required"
+        timestamp updated_at "required"
+    }
 
-  SAVING_GROUPS {
-    uuid id PK
-    uuid creator_id FK
-    string name
-    string description
-    decimal target_amount
-    decimal current_amount
-    string currency
-    string icon
-    date deadline
-    string invite_code
-    string status
-    timestamp created_at
-    timestamp updated_at
-  }
+    coin_reward_sizes {
+        uuid id PK "required"
+        uuid coin_reward_id FK "required"
+        varchar(20) size "required"
+        integer stock "required"
+    }
 
-  GROUP_MEMBERS {
-    uuid id PK
-    uuid group_id FK
-    uuid user_id FK
-    string role
-    string status
-    timestamp joined_at
-  }
+    reward_redemptions {
+        uuid id PK "required"
+        varchar(60) reference_number UK "required"
+        uuid user_id FK "required"
+        uuid coin_reward_id FK "required"
+        uuid coin_reward_size_id FK "nullable"
+        varchar(100) item_name "required"
+        varchar(20) selected_size "nullable"
+        integer coins_used "required"
+        varchar(30) phone_number "required"
+        text delivery_address "required"
+        varchar(30) status "required"
+        date estimated_delivery_from "required"
+        date estimated_delivery_to "required"
+        timestamp created_at "required"
+        timestamp updated_at "required"
+    }
 
-  GROUP_CONTRIBUTIONS {
-    uuid id PK
-    uuid group_id FK
-    uuid user_id FK
-    decimal amount
-    string currency
-    string note
-    timestamp contributed_at
-  }
+    friend_requests {
+        uuid request_id PK "required"
+        uuid sender_id FK "required"
+        uuid receiver_id FK "required"
+        varchar(20) status "required"
+        timestamptz responded_at "nullable"
+        timestamptz created_at "required"
+        timestamptz updated_at "required"
+    }
 
-  GROUP_INVITATIONS {
-    uuid id PK
-    uuid group_id FK
-    uuid invited_by FK
-    string phone_number
-    string status
-    string qr_code_data
-    string qr_image_url
-    timestamp created_at
-    timestamp expires_at
-  }
+    friendships {
+        uuid friendship_id PK "required"
+        uuid user_one_id FK "required"
+        uuid user_two_id FK "required"
+        uuid request_id FK, UK "nullable"
+        timestamptz created_at "required"
+    }
 
-  WALLETS {
-    uuid id PK
-    uuid user_id FK
-    decimal balance_khr
-    decimal balance_usd
-    string status
-    timestamp created_at
-    timestamp updated_at
-  }
+    user_blocks {
+        uuid block_id PK "required"
+        uuid blocker_id FK "required"
+        uuid blocked_user_id FK "required"
+        timestamptz created_at "required"
+    }
 
-  PAYMENT_METHODS {
-    uuid id PK
-    uuid user_id FK
-    string method_type
-    string provider
-    string account_name
-    string account_number_masked
-    boolean is_default
-    string status
-    timestamp created_at
-  }
+    posts {
+        uuid post_id PK "required"
+        uuid user_id FK "required"
+        uuid goal_id FK "nullable"
+        uuid shared_post_id FK "nullable"
+        varchar(30) post_type "required"
+        text content "nullable"
+        varchar(20) visibility "required"
+        varchar(20) status "required"
+        boolean is_pinned "required"
+        integer like_count "required"
+        integer comment_count "required"
+        integer share_count "required"
+        timestamptz created_at "required"
+        timestamptz updated_at "required"
+        timestamptz deleted_at "nullable"
+    }
 
-  WALLET_TRANSACTIONS {
-    uuid id PK
-    uuid wallet_id FK
-    uuid payment_method_id FK
-    string transaction_type
-    decimal amount
-    string currency
-    decimal balance_before
-    decimal balance_after
-    string reference_type
-    uuid reference_id
-    string status
-    string description
-    timestamp created_at
-  }
+    post_media {
+        uuid media_id PK "required"
+        uuid post_id FK "required"
+        varchar(20) media_type "required"
+        text media_url "required"
+        text thumbnail_url "nullable"
+        integer width_px "nullable"
+        integer height_px "nullable"
+        integer duration_ms "nullable"
+        smallint sort_order "required"
+        timestamptz created_at "required"
+        text storage_path "nullable"
+    }
 
-  GROUP_WALLETS {
-    uuid id PK
-    uuid group_id FK
-    decimal balance_khr
-    decimal balance_usd
-    string status
-    timestamp created_at
-    timestamp updated_at
-  }
+    post_comments {
+        uuid comment_id PK "required"
+        uuid post_id FK "required"
+        uuid user_id FK "required"
+        uuid parent_comment_id FK "nullable"
+        text content "required"
+        varchar(20) status "required"
+        integer like_count "required"
+        integer reply_count "required"
+        timestamptz created_at "required"
+        timestamptz updated_at "required"
+        timestamptz deleted_at "nullable"
+    }
 
-  GROUP_WALLET_TRANSACTIONS {
-    uuid id PK
-    uuid group_wallet_id FK
-    uuid user_id FK
-    uuid payment_method_id FK
-    string transaction_type
-    decimal amount
-    string currency
-    decimal balance_before
-    decimal balance_after
-    string status
-    string description
-    timestamp created_at
-  }
+    post_likes {
+        uuid like_id PK "required"
+        uuid post_id FK "required"
+        uuid user_id FK "required"
+        timestamptz created_at "required"
+    }
 
-  GROUP_WITHDRAWAL_REQUESTS {
-    uuid id PK
-    uuid group_wallet_id FK
-    uuid requested_by FK
-    decimal amount
-    string currency
-    string reason
-    string status
-    int approvals_required
-    int approvals_received
-    timestamp created_at
-    timestamp resolved_at
-  }
+    comment_likes {
+        uuid comment_like_id PK "required"
+        uuid comment_id FK "required"
+        uuid user_id FK "required"
+        timestamptz created_at "required"
+    }
 
-  GROUP_WITHDRAWAL_APPROVALS {
-    uuid id PK
-    uuid withdrawal_request_id FK
-    uuid user_id FK
-    string decision
-    timestamp decided_at
-  }
+    post_reports {
+        uuid report_id PK "required"
+        uuid post_id FK "required"
+        uuid reported_by FK "required"
+        varchar(30) reason "required"
+        text details "nullable"
+        varchar(20) status "required"
+        uuid reviewed_by FK "nullable"
+        timestamptz reviewed_at "nullable"
+        varchar(1000) moderation_note "nullable"
+        timestamptz created_at "required"
+    }
 
-  PAYMENT_QR_CODES {
-    uuid id PK
-    uuid user_id FK
-    uuid group_wallet_id FK
-    string qr_type
-    decimal amount
-    string currency
-    string qr_code_data
-    string qr_image_url
-    string status
-    timestamp expires_at
-    timestamp used_at
-    timestamp created_at
-  }
+    comment_reports {
+        uuid report_id PK "required"
+        uuid comment_id FK "required"
+        uuid reported_by FK "required"
+        varchar(30) reason "required"
+        text details "nullable"
+        varchar(20) status "required"
+        uuid reviewed_by FK "nullable"
+        timestamptz reviewed_at "nullable"
+        varchar(1000) moderation_note "nullable"
+        timestamptz created_at "required"
+    }
 
-  QR_SCAN_LOGS {
-    uuid id PK
-    uuid qr_code_id FK
-    uuid scanned_by FK
-    string result
-    uuid transaction_id
-    timestamp scanned_at
-  }
+    community_notifications {
+        uuid notification_id PK "required"
+        uuid recipient_id FK "required"
+        uuid actor_id FK "nullable"
+        varchar(30) notification_type "required"
+        varchar(30) reference_type "nullable"
+        uuid reference_id "nullable"
+        jsonb payload "required"
+        timestamptz read_at "nullable"
+        timestamptz created_at "required"
+    }
+
+    chat_conversations {
+        uuid conversation_id PK, FK "required"
+        varchar(10) conversation_type "required"
+        uuid created_by FK "required"
+        varchar(120) title "nullable"
+        text image_url "nullable"
+        varchar(73) direct_key UK "nullable"
+        uuid last_message_id FK "nullable"
+        timestamptz last_message_at "nullable"
+        timestamptz created_at "required"
+        timestamptz updated_at "required"
+    }
+
+    chat_conversation_members {
+        uuid conversation_id PK, FK "required"
+        uuid user_id PK, FK "required"
+        varchar(10) member_role "required"
+        varchar(10) membership_status "required"
+        timestamptz joined_at "required"
+        timestamptz left_at "nullable"
+        uuid last_read_message_id FK "nullable"
+        timestamptz last_read_at "nullable"
+        timestamptz muted_until "nullable"
+        boolean is_archived "required"
+    }
+
+    chat_messages {
+        uuid message_id PK "required"
+        uuid conversation_id FK "required"
+        uuid sender_id FK "nullable"
+        uuid reply_to_message_id FK "nullable"
+        uuid client_message_id "nullable"
+        varchar(15) message_type "required"
+        text body "nullable"
+        jsonb metadata "required"
+        varchar(10) status "required"
+        timestamptz created_at "required"
+        timestamptz edited_at "nullable"
+        timestamptz deleted_at "nullable"
+    }
+
+    chat_message_attachments {
+        uuid attachment_id PK "required"
+        uuid message_id FK "required"
+        varchar(10) attachment_type "required"
+        text file_url "required"
+        text thumbnail_url "nullable"
+        varchar(255) original_name "nullable"
+        varchar(100) mime_type "nullable"
+        bigint file_size_bytes "nullable"
+        integer width_px "nullable"
+        integer height_px "nullable"
+        integer duration_ms "nullable"
+        timestamptz created_at "required"
+        text storage_path "nullable"
+    }
+
+    chat_message_reactions {
+        uuid reaction_id PK "required"
+        uuid message_id FK "required"
+        uuid user_id FK "required"
+        varchar(32) emoji "required"
+        timestamptz created_at "required"
+    }
+
+    chat_message_receipts {
+        uuid conversation_id FK "required"
+        uuid message_id PK, FK "required"
+        uuid user_id PK, FK "required"
+        timestamptz delivered_at "nullable"
+        timestamptz read_at "nullable"
+    }
+
+    assistant_documents {
+        uuid id PK "required"
+        varchar(255) owner_id "required"
+        varchar(255) name "required"
+        varchar(10) file_type "required"
+        integer chunk_count "required"
+        timestamptz created_at "required"
+        varchar(100) embedding_model "required"
+    }
+
+    assistant_document_chunks {
+        uuid id PK "required"
+        uuid document_id FK "required"
+        text content "required"
+        vector(1536) embedding "required"
+        integer page_number "nullable"
+        integer chunk_index "required"
+        timestamptz created_at "required"
+    }
+
+    users ||..o| user_settings : "user_id to user_id"
+    users ||..o{ password_reset_tokens : "user_id to user_id"
+    users |o..o{ verification_tokens : "user_id to user_id"
+    users ||..o{ refresh_tokens : "user_id to user_id"
+    users ||..o{ goals : "owner_id to user_id"
+    goals ||..o{ goal_members : "goal_id to goal_id"
+    users ||..o{ goal_members : "user_id to user_id"
+    goals ||..o{ goal_invitations : "goal_id to goal_id"
+    users ||..o{ goal_invitations : "inviter_id to user_id"
+    users ||..o{ goal_invitations : "invitee_id to user_id"
+    users ||..o{ group_wallets : "creator_id to user_id"
+    goals ||..o| group_wallets : "goal_id to goal_id"
+    goals ||..o| saving_plans : "goal_id to goal_id"
+    goals ||..o{ goal_contributions : "goal_id to goal_id"
+    goal_members ||..o{ goal_contributions : "goal_member_id to goal_member_id"
+    group_wallets ||..o{ wallet_transactions : "wallet_id to wallet_id"
+    users ||..o{ wallet_transactions : "user_id to user_id"
+    group_wallets ||..o{ group_wallet_transactions : "group_wallet_id to wallet_id"
+    goal_members ||..o{ group_wallet_transactions : "goal_member_id to goal_member_id"
+    withdrawal_requests |o..o{ group_wallet_transactions : "withdrawal_request_id to request_id"
+    goals ||..o{ withdrawal_requests : "goal_id to goal_id"
+    group_wallets ||..o{ withdrawal_requests : "wallet_id to wallet_id"
+    users ||..o{ withdrawal_requests : "requested_by to user_id"
+    withdrawal_requests ||..o{ withdrawal_approvals : "request_id to request_id"
+    users ||..o{ withdrawal_approvals : "user_id to user_id"
+    users ||..o{ payment_methods : "user_id to user_id"
+    goals ||..o{ saving_milestones : "goal_id to goal_id"
+    users ||..o{ notifications : "user_id to user_id"
+    lessons ||..o{ lesson_questions : "lesson_id to lesson_id"
+    users ||..o{ user_lessons : "user_id to user_id"
+    lessons ||..o{ user_lessons : "lesson_id to lesson_id"
+    users ||..o{ quiz_attempts : "user_id to user_id"
+    quiz_attempts ||--o{ quiz_attempt_questions : "quiz_attempt_id to quiz_attempt_id"
+    lesson_questions ||--o{ quiz_attempt_questions : "question_id to question_id"
+    users ||..o{ user_answers : "user_id to user_id"
+    quiz_attempts |o..o{ user_answers : "quiz_attempt_id to quiz_attempt_id"
+    lesson_questions ||..o{ user_answers : "question_id to question_id"
+    users ||..o{ user_daily_challenges : "user_id to user_id"
+    daily_challenges ||..o{ user_daily_challenges : "challenge_id to challenge_id"
+    users ||..o{ user_badges : "user_id to user_id"
+    badges ||..o{ user_badges : "badge_id to badge_id"
+    users ||..o{ xp_transactions : "user_id to user_id"
+    users ||..o| user_rewards : "user_id to user_id"
+    goals ||..o{ goal_milestone_rewards : "goal_id to goal_id"
+    users ||..o{ goal_milestone_rewards : "user_id to user_id"
+    coin_rewards ||..o{ coin_reward_sizes : "coin_reward_id to id"
+    users ||..o{ reward_redemptions : "user_id to user_id"
+    coin_rewards ||..o{ reward_redemptions : "coin_reward_id to id"
+    coin_reward_sizes |o..o{ reward_redemptions : "coin_reward_size_id to id"
+    users ||..o{ friend_requests : "sender_id to user_id"
+    users ||..o{ friend_requests : "receiver_id to user_id"
+    users ||..o{ friendships : "user_one_id to user_id"
+    users ||..o{ friendships : "user_two_id to user_id"
+    friend_requests |o..o| friendships : "request_id to request_id"
+    users ||..o{ user_blocks : "blocker_id to user_id"
+    users ||..o{ user_blocks : "blocked_user_id to user_id"
+    users ||..o{ posts : "user_id to user_id"
+    goals |o..o{ posts : "goal_id to goal_id"
+    posts |o..o{ posts : "shared_post_id to post_id"
+    posts ||..o{ post_media : "post_id to post_id"
+    posts ||..o{ post_comments : "post_id to post_id"
+    users ||..o{ post_comments : "user_id to user_id"
+    post_comments |o..o{ post_comments : "parent_comment_id to comment_id"
+    posts ||..o{ post_likes : "post_id to post_id"
+    users ||..o{ post_likes : "user_id to user_id"
+    post_comments ||..o{ comment_likes : "comment_id to comment_id"
+    users ||..o{ comment_likes : "user_id to user_id"
+    posts ||..o{ post_reports : "post_id to post_id"
+    users ||..o{ post_reports : "reported_by to user_id"
+    users |o..o{ post_reports : "reviewed_by to user_id"
+    post_comments ||..o{ comment_reports : "comment_id to comment_id"
+    users ||..o{ comment_reports : "reported_by to user_id"
+    users |o..o{ comment_reports : "reviewed_by to user_id"
+    users ||..o{ community_notifications : "recipient_id to user_id"
+    users |o..o{ community_notifications : "actor_id to user_id"
+    users ||..o{ chat_conversations : "created_by to user_id"
+    chat_messages |o..o| chat_conversations : "conversation_id, last_message_id to conversation_id, message_id"
+    chat_conversations ||--o{ chat_conversation_members : "conversation_id to conversation_id"
+    users ||--o{ chat_conversation_members : "user_id to user_id"
+    chat_messages |o..o{ chat_conversation_members : "conversation_id, last_read_message_id to conversation_id, message_id"
+    chat_conversations ||..o{ chat_messages : "conversation_id to conversation_id"
+    chat_conversation_members |o..o{ chat_messages : "conversation_id, sender_id to conversation_id, user_id"
+    chat_messages |o..o{ chat_messages : "conversation_id, reply_to_message_id to conversation_id, message_id"
+    chat_messages ||..o{ chat_message_attachments : "message_id to message_id"
+    chat_messages ||..o{ chat_message_reactions : "message_id to message_id"
+    users ||..o{ chat_message_reactions : "user_id to user_id"
+    chat_messages ||--o{ chat_message_receipts : "message_id to message_id"
+    users ||--o{ chat_message_receipts : "user_id to user_id"
+    chat_messages ||..o{ chat_message_receipts : "conversation_id, message_id to conversation_id, message_id"
+    chat_conversation_members ||..o{ chat_message_receipts : "conversation_id, user_id to conversation_id, user_id"
+    assistant_documents ||..o{ assistant_document_chunks : "document_id to id"

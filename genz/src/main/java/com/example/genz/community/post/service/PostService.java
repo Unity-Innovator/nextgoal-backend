@@ -198,6 +198,34 @@ public class PostService {
         return toCursorPage(posts, currentUser.getId(), limit);
     }
 
+    // A seeded hash gives every eligible post a stable random position. The
+    // snapshot excludes new posts until refresh; keyset paging survives deletes.
+    @Transactional(readOnly = true)
+    public PostCursorPageResponse getRandomPublicFeed(
+            String currentPhoneNumber, UUID seed, Instant snapshot,
+            UUID cursorPostId, int limit
+    ) {
+        User currentUser = requireCurrentUser(currentPhoneNumber);
+        if (cursorPostId != null && (seed == null || snapshot == null)) {
+            throw new PostBadRequestException("Random feed cursor requires seed and snapshot");
+        }
+        UUID sessionSeed = seed == null ? UUID.randomUUID() : seed;
+        Instant sessionSnapshot = snapshot == null ? Instant.now() : snapshot;
+        if (sessionSnapshot.isAfter(Instant.now())) {
+            throw new PostBadRequestException("Feed snapshot cannot be in the future");
+        }
+        String rank = cursorPostId == null ? "" : org.springframework.util.DigestUtils.md5DigestAsHex(
+                (cursorPostId.toString() + sessionSeed).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        List<Post> posts = postRepository.findRandomPublicFeed(
+                currentUser.getId(), sessionSnapshot, sessionSeed.toString(), rank,
+                cursorPostId == null ? new UUID(0, 0) : cursorPostId, cursorPageRequest(limit));
+        PostCursorPageResponse page = toCursorPage(posts, currentUser.getId(), limit);
+        PostCursorResponse cursor = page.nextCursor();
+        return new PostCursorPageResponse(page.items(), cursor == null ? null :
+                new PostCursorResponse(cursor.createdAt(), cursor.postId(), sessionSeed, sessionSnapshot),
+                page.hasNext());
+    }
+
     @Transactional(readOnly = true)
     public PostCursorPageResponse getFriendsFeed(
             String currentPhoneNumber,
