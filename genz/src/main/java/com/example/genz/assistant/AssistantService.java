@@ -46,6 +46,8 @@ public class AssistantService {
     }
 
     public Reply answer(String question) {
+        var greeting = AssistantSmallTalk.reply(question);
+        if (greeting != null) return greeting;
         var sources = knowledge.search(question);
         if (sources.isEmpty()) {
             return new Reply("I could not find this in the app guide. Please ask about registration, OTP, goals, deposits, withdrawals, or account security.", List.of());

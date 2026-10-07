@@ -2,7 +2,7 @@
 
 The Flutter assistant now includes **My documents** for PDF/DOCX/TXT/MD upload,
 listing, and deletion. The backend extracts text, chunks it, creates Gemini
-embeddings, stores vectors in PostgreSQL/pgvector, retrieves up to five private
+embeddings, stores vectors in PostgreSQL/pgvector, retrieves up to five accessible
 passages, and sends those passages to Gemini 3.5 Flash. Answers include retrieved
 source IDs, names, excerpts, and PDF page numbers.
 
@@ -103,7 +103,7 @@ All embeddings complete before one database transaction inserts metadata/chunks.
 Extraction/provider failure leaves no partial indexed document.
 Deleting metadata cascades to chunks; no original file bytes are retained.
 
-Retrieval uses a materialized owner-filtered set before exact cosine ranking.
+Retrieval ranks a materialized set containing admin-owned documents and the caller's own documents before exact cosine ranking.
 No approximate index is used in V1; measure recall and query time before adding one.
 Chat retains the existing per-user, per-process ten-requests/minute limit.
 Multi-instance limits, storage quotas, background indexing, OCR, tenant sharing,
@@ -150,3 +150,24 @@ New uploads use gemini-embedding-001 at 1536 dimensions with RETRIEVAL_DOCUMENT;
 questions use RETRIEVAL_QUERY. Existing migration checksums remain unchanged.
 The Gemini key must have access to gemini-3.5-flash and gemini-embedding-001.
 The bundled-guide fallback still uses Groq when the rag profile is disabled.
+
+## Shared administrator knowledge
+
+Only administrators can upload, list, or delete documents, and management remains
+scoped to their own uploads. Chat retrieval includes documents owned by an account
+whose current database role is ADMIN, plus any legacy private uploads owned by the
+person asking the question. The document owner is the uploader's phone number.
+Existing admin uploads become available to all signed-in users after deployment;
+no re-upload or database migration is required. Other users' private documents
+are never included. Removing ADMIN from an uploader removes their documents from
+shared retrieval. Deleting a shared document changes every affected user's server
+cache revision. Existing conversation messages are not rewritten.
+
+Simple greetings and thanks are answered without retrieval. The assistant also searches
+the bundled app guides (including login help), alongside retrieved uploaded passages,
+and uses the same configured Gemini provider. Unknown questions still receive an
+honest fallback. An uploaded style guide is reference content, not a replacement
+for the assistant's system instructions.
+
+The Flutter answer cache lasts up to two minutes. After deploying this change,
+restart the app or wait for that cache to expire before repeating an old question.

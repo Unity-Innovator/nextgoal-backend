@@ -20,7 +20,7 @@ class AssistantDiagnosticsTests {
     @Test void documentStoreFailureIsDiagnosedWithoutSqlOrUserDetails(CapturedOutput output) {
         var store = org.mockito.Mockito.mock(RagStore.class);
         var provider = org.mockito.Mockito.mock(RagProvider.class);
-        org.mockito.Mockito.when(store.list("private-owner")).thenThrow(
+        org.mockito.Mockito.when(store.cacheRevision("private-owner")).thenThrow(
                 new org.springframework.dao.DataAccessResourceFailureException("private-sql"));
         var service = new RagService(store, provider, new DocumentExtractor(), 0.3);
         assertThrows(AssistantService.Unavailable.class, () -> service.answer("private-owner", "private-question"));

@@ -49,7 +49,7 @@ class BackendCacheTests {
         var cache = cache();
         var store = mock(RagStore.class); var provider = mock(RagProvider.class);
         when(provider.cacheModel()).thenReturn("model");
-        when(store.list(anyString())).thenReturn(List.of(new RagStore.Document(UUID.randomUUID(), "doc", "txt", 1)));
+
         when(store.cacheRevision(anyString())).thenReturn("version-one");
         when(provider.embedQuery(anyString())).thenReturn("vector");
         var sources = List.of(new KnowledgeBase.Source("1", "Doc", "Private content"));
@@ -64,7 +64,7 @@ class BackendCacheTests {
         when(store.cacheRevision("alice")).thenReturn("version-two");
         service.answer("alice", "question");
         verify(provider, times(3)).embedQuery(anyString());
-        when(store.list("alice")).thenReturn(List.of());
+        when(store.cacheRevision("alice")).thenReturn("");
         assertTrue(service.answer("alice", "question").sources().isEmpty());
     }
     @Test void concurrentMissesShareOneProviderCall() throws Exception {
