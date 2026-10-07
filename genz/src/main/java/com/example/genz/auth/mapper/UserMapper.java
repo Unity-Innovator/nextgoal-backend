@@ -20,6 +20,7 @@ public class UserMapper {
                 .phoneNumber(user.getPhoneNumber())
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
+                .role(user.getRole() == null ? com.example.genz.auth.enums.UserRole.USER : user.getRole())
                 .status(user.getStatus())
                 .build();
     }
