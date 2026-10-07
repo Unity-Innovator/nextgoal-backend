@@ -20,6 +20,7 @@ public class ProfileMapper {
         return ProfileUserResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
+                .role(user.getRole() == null ? com.example.genz.auth.enums.UserRole.USER : user.getRole())
                 .username(user.getProfileUsername())
                 .phoneNumber(user.getPhoneNumber())
                 .avatarUrl(avatarUrl)
