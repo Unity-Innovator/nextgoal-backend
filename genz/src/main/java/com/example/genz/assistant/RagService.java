@@ -17,6 +17,9 @@ public class RagService {
             @Value("${assistant.cache.ttl:PT2M}") java.time.Duration ttl) {
         this.cache = cache; this.cacheTtl = ttl;
     }
+    private KnowledgeBase knowledge;
+    @org.springframework.beans.factory.annotation.Autowired
+    void configureKnowledge(KnowledgeBase knowledge) { this.knowledge = knowledge; }
     private final RagStore store;
     private final RagProvider provider;
     private final DocumentExtractor extractor;
@@ -33,16 +36,19 @@ public class RagService {
         return store.save(owner, document, vectors);
     }
     public AssistantService.Reply answer(String owner, String question) {
+        var greeting = AssistantSmallTalk.reply(question);
+        if (greeting != null) return greeting;
         try {
-            if (store.list(owner).isEmpty()) return fallback();
-            if (cache == null) return retrieveAnswer(owner, question);
-            // Reading the committed corpus revision makes invalidation work across
-            // instances, including when an upload/delete races an older answer.
+            String revision = store.cacheRevision(owner);
+            var guideSources = knowledge == null ? List.<KnowledgeBase.Source>of() : knowledge.search(question);
+            if (revision.isEmpty() && guideSources.isEmpty()) return fallback();
+            if (cache == null) return retrieveAnswer(owner, question, !revision.isEmpty(), guideSources);
+            // Shared uploads, deletion, and admin role changes alter every affected user's revision.
             String cacheKey = com.example.genz.common.cache.BackendResponseCache.key(
-                    "rag-answer", owner, store.cacheRevision(owner), provider.cacheModel(),
+                    "rag-shared-answer", owner, revision, provider.cacheModel(), guideSources.toString(),
                     RagProvider.EMBEDDING_MODEL, Double.toString(threshold), question.trim());
             return cache.get(cacheKey, AssistantService.Reply.class, cacheTtl,
-                    () -> retrieveAnswer(owner, question));
+                    () -> retrieveAnswer(owner, question, !revision.isEmpty(), guideSources));
         } catch (RuntimeException ex) {
             if (ex instanceof AssistantService.Unavailable unavailable) throw unavailable;
             String reason = ex instanceof org.springframework.dao.DataAccessException
@@ -50,13 +56,19 @@ public class RagService {
             throw AssistantDiagnostics.unavailable("rag", "retrieval", reason);
         }
     }
-    private AssistantService.Reply retrieveAnswer(String owner, String question) {
-        var vector = provider.embedQuery(question);
-        var sources = store.search(owner, vector, threshold);
+    private AssistantService.Reply retrieveAnswer(String owner, String question, boolean hasDocuments,
+                                                  List<KnowledgeBase.Source> guideSources) {
+        List<KnowledgeBase.Source> sources = List.of();
+        if (hasDocuments) {
+            var vector = provider.embedQuery(question);
+            sources = store.search(owner, vector, threshold);
+        }
+        // Include exact app-guide matches even when a loosely related upload was retrieved.
+        sources = java.util.stream.Stream.concat(sources.stream(), guideSources.stream()).distinct().toList();
         if (sources.isEmpty()) return fallback();
         return new AssistantService.Reply(provider.answer(question, sources), sources);
     }
     private static AssistantService.Reply fallback() {
-        return new AssistantService.Reply("I do not have enough information in your uploaded documents to answer that question.", List.of());
+        return new AssistantService.Reply("I could not find that information in the available documents or app guide. Please try a more specific question.", List.of());
     }
 }

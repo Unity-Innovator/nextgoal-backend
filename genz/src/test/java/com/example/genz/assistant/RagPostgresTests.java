@@ -28,6 +28,8 @@ class RagPostgresTests {
                 new ResourceDatabasePopulator(new ClassPathResource("db/rag/V23__assistant_vector_knowledge.sql"),
                         new ClassPathResource("db/rag/V24__assistant_embedding_model.sql"))
                     .execute(source);
+                jdbc.execute("CREATE TABLE users (phone_number VARCHAR(255) PRIMARY KEY, role VARCHAR(20))");
+                jdbc.update("INSERT INTO users VALUES ('alice','USER'),('bob','USER'),('admin','ADMIN')");
                 var store = new RagStore(jdbc);
                 var extracted = new DocumentExtractor.Extracted("policy.txt","txt",
                     List.of(new DocumentExtractor.Chunk("Annual leave is 18 days.", null)));
@@ -36,6 +38,16 @@ class RagPostgresTests {
                 store.save("bob",extracted,List.of(vector));
                 assertEquals(1,store.search("alice",vector,0.3).size());
                 assertEquals(0,store.search("charlie",vector,0.3).size());
+                var shared = store.save("admin", extracted, List.of(vector));
+                assertEquals(1, store.search("charlie", vector, 0.3).size());
+                assertEquals(2, store.search("alice", vector, 0.3).size());
+                assertFalse(store.delete("charlie", shared.id()));
+                jdbc.update("UPDATE users SET role='USER' WHERE phone_number='admin'");
+                assertTrue(store.search("charlie", vector, 0.3).isEmpty());
+                jdbc.update("UPDATE users SET role='ADMIN' WHERE phone_number='admin'");
+                assertEquals(1, store.search("charlie", vector, 0.3).size());
+                assertTrue(store.delete("admin", shared.id()));
+                assertTrue(store.search("charlie", vector, 0.3).isEmpty());
                 assertFalse(store.delete("bob",alice.id()));
                 assertEquals(1,store.list("alice").size());
                 var transaction = new TransactionTemplate(new DataSourceTransactionManager(source));

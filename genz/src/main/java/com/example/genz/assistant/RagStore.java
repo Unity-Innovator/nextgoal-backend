@@ -34,10 +34,15 @@ public class RagStore {
             """, (rs, row) -> new Document(rs.getObject("id", UUID.class), rs.getString("name"),
                 rs.getString("file_type"), rs.getInt("chunk_count")), owner);
     }
-    /** All document IDs, not the paginated list. Documents are immutable after save. */
+    /** Visible document IDs include shared admin knowledge and the caller's private uploads. */
     public String cacheRevision(String owner) {
         return String.join(",", jdbc.query(
-                "SELECT id FROM assistant_documents WHERE owner_id=? ORDER BY id",
+                """
+                SELECT d.id FROM assistant_documents d
+                WHERE d.owner_id=? OR EXISTS (
+                    SELECT 1 FROM users u WHERE u.phone_number=d.owner_id AND u.role='ADMIN'
+                ) ORDER BY d.id
+                """,
                 (rs, row) -> rs.getString("id"), owner));
     }
     public boolean delete(String owner, UUID id) {
@@ -45,12 +50,15 @@ public class RagStore {
     }
     public List<KnowledgeBase.Source> search(String owner, String vector, double threshold) {
         return jdbc.query("""
-            WITH owned AS MATERIALIZED (
+            WITH accessible AS MATERIALIZED (
                 SELECT c.id,c.content,c.page_number,c.embedding,d.name
                 FROM assistant_document_chunks c
-                JOIN assistant_documents d ON d.id=c.document_id WHERE d.owner_id=? AND d.embedding_model=?
+                JOIN assistant_documents d ON d.id=c.document_id
+                WHERE (d.owner_id=? OR EXISTS (
+                    SELECT 1 FROM users u WHERE u.phone_number=d.owner_id AND u.role='ADMIN'
+                )) AND d.embedding_model=?
             )
-            SELECT id,content,page_number,name FROM owned
+            SELECT id,content,page_number,name FROM accessible
             WHERE 1 - (embedding <=> CAST(? AS vector)) >= ?
             ORDER BY embedding <=> CAST(? AS vector),id LIMIT 5
             """, (rs, row) -> new KnowledgeBase.Source(rs.getString("id"), rs.getString("name"),

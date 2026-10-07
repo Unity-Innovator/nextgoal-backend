@@ -108,10 +108,10 @@ class RagTests {
     @Test void emptyKnowledgeSkipsProviderAndRetrievalUsesAuthenticatedOwner() {
         var store = mock(RagStore.class); var provider = mock(RagProvider.class);
         var service = new RagService(store,provider,new DocumentExtractor(),0.3);
-        when(store.list("alice")).thenReturn(List.of());
+        when(store.cacheRevision("alice")).thenReturn("");
         assertTrue(service.answer("alice","policy").sources().isEmpty());
         verifyNoInteractions(provider);
-        when(store.list("alice")).thenReturn(List.of(new RagStore.Document(UUID.randomUUID(),"p.txt","txt",1)));
+        when(store.cacheRevision("alice")).thenReturn("shared-document");
         when(provider.embedQuery("policy")).thenReturn("[0.1]");
         when(store.search("alice","[0.1]",0.3)).thenReturn(List.of());
         assertTrue(service.answer("alice","policy").sources().isEmpty());
