@@ -14,6 +14,7 @@ import java.util.UUID;
 public class ProfileUserResponse {
     private UUID id;
     private String fullName;
+    private com.example.genz.auth.enums.UserRole role;
     private String username;
     private String phoneNumber;
     private String avatarUrl;

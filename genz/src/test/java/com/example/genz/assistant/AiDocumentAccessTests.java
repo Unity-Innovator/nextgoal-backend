@@ -39,6 +39,16 @@ class AiDocumentAccessTests {
         assertEquals(UserRole.USER, mapper.toUserResponse(User.builder().role(null).build()).role());
     }
 
+    @Test void profileIncludesCurrentDatabaseRole() {
+        var mapper = new com.example.genz.user.mapper.ProfileMapper();
+        var account = User.builder().role(UserRole.USER).build();
+        assertEquals(UserRole.USER, mapper.toUserResponse(account).getRole());
+        account.setRole(UserRole.ADMIN);
+        assertEquals(UserRole.ADMIN, mapper.toUserResponse(account).getRole());
+        account.setRole(UserRole.USER);
+        assertEquals(UserRole.USER, mapper.toUserResponse(account).getRole());
+    }
+
     @Test void regularUserCannotManageDocuments() throws Exception {
         mvc.perform(get("/api/assistant/documents").with(user("member").roles("USER")))
             .andExpect(status().isForbidden());
