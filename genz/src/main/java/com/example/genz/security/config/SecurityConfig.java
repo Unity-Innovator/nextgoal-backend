@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/assistant/documents", "/api/assistant/documents/**").hasRole("ADMIN")
                         .requestMatchers("/api/community/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/saving-plans/run").hasRole("ADMIN")
                         .requestMatchers(

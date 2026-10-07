@@ -15,5 +15,6 @@ public record UserResponse(
         String phoneNumber,
         Gender gender,
         LocalDate dateOfBirth,
+        com.example.genz.auth.enums.UserRole role,
         String status
 ) {}
